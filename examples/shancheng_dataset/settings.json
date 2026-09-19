@@ -1,0 +1,21 @@
+{
+  "schema_version": "field-document-v1",
+  "dataset_id": "synthetic-shancheng-example",
+  "version": "1",
+  "synthetic": true,
+  "role": "settings",
+  "payload": {
+    "limits": {
+      "voltage_min_pu": 0.95,
+      "voltage_max_pu": 1.05,
+      "pcc_import_min_mw": 0.0,
+      "pcc_import_max_mw": 8.0,
+      "power_factor_min": 0.9
+    },
+    "max_age_seconds": 60.0,
+    "max_skew_seconds": 5.0,
+    "inventory_complete": true,
+    "mapping_confirmed": true,
+    "metering_scopes_confirmed": true
+  }
+}

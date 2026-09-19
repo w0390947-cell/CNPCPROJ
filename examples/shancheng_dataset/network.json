@@ -1,0 +1,55 @@
+{
+  "schema_version": "field-document-v1",
+  "dataset_id": "synthetic-shancheng-example",
+  "version": "1",
+  "synthetic": true,
+  "role": "network",
+  "payload": {
+    "network_id": "synthetic-field-snapshot-demo",
+    "base_mva": 10.0,
+    "pcc_bus_id": "PCC",
+    "buses": [
+      {
+        "bus_id": "PCC",
+        "name": "上级电网示例母线",
+        "nominal_voltage_kv": 35.0
+      },
+      {
+        "bus_id": "MAIN",
+        "name": "示例主母线",
+        "nominal_voltage_kv": 10.0
+      },
+      {
+        "bus_id": "WIND",
+        "name": "示例风电接入母线",
+        "nominal_voltage_kv": 10.0
+      }
+    ],
+    "branches": [
+      {
+        "branch_id": "T1",
+        "from_bus_id": "PCC",
+        "to_bus_id": "MAIN",
+        "kind": "transformer",
+        "r_pu": 0.01,
+        "x_pu": 0.04,
+        "s_max_mva": 8.0,
+        "fixed_tap_ratio": 1.02
+      },
+      {
+        "branch_id": "L1",
+        "from_bus_id": "MAIN",
+        "to_bus_id": "WIND",
+        "kind": "line",
+        "r_pu": 0.01,
+        "x_pu": 0.02,
+        "s_max_mva": 6.0
+      }
+    ],
+    "provenance": {
+      "source": "synthetic documentation example, not Shancheng field data",
+      "dataset_version": "1",
+      "synthetic": true
+    }
+  }
+}

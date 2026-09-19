@@ -1,0 +1,902 @@
+{
+  "Catalog": {
+    "$defs": {
+      "DeviceSpec": {
+        "additionalProperties": false,
+        "properties": {
+          "device_id": {
+            "minLength": 1,
+            "title": "Device Id",
+            "type": "string"
+          },
+          "region": {
+            "title": "Region",
+            "type": "string"
+          },
+          "bus_id": {
+            "title": "Bus Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "wind",
+              "pv",
+              "storage",
+              "svg"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "p_min_mw": {
+            "title": "P Min Mw",
+            "type": "number"
+          },
+          "p_max_mw": {
+            "title": "P Max Mw",
+            "type": "number"
+          },
+          "q_max_mvar": {
+            "minimum": 0,
+            "title": "Q Max Mvar",
+            "type": "number"
+          },
+          "s_max_mva": {
+            "exclusiveMinimum": 0,
+            "title": "S Max Mva",
+            "type": "number"
+          },
+          "ramp_mw_per_minute": {
+            "exclusiveMinimum": 0,
+            "title": "Ramp Mw Per Minute",
+            "type": "number"
+          },
+          "energy_mwh": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Energy Mwh",
+            "type": "number"
+          },
+          "minimum_mwh": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Minimum Mwh",
+            "type": "number"
+          },
+          "initial_mwh": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Initial Mwh",
+            "type": "number"
+          },
+          "eta_charge": {
+            "default": 0.95,
+            "exclusiveMinimum": 0,
+            "maximum": 1,
+            "title": "Eta Charge",
+            "type": "number"
+          },
+          "eta_discharge": {
+            "default": 0.95,
+            "exclusiveMinimum": 0,
+            "maximum": 1,
+            "title": "Eta Discharge",
+            "type": "number"
+          }
+        },
+        "required": [
+          "device_id",
+          "region",
+          "bus_id",
+          "kind",
+          "p_min_mw",
+          "p_max_mw",
+          "q_max_mvar",
+          "s_max_mva",
+          "ramp_mw_per_minute"
+        ],
+        "title": "DeviceSpec",
+        "type": "object"
+      },
+      "JsonValue": {}
+    },
+    "additionalProperties": false,
+    "properties": {
+      "dataset_id": {
+        "title": "Dataset Id",
+        "type": "string"
+      },
+      "synthetic": {
+        "const": true,
+        "default": true,
+        "title": "Synthetic",
+        "type": "boolean"
+      },
+      "source": {
+        "title": "Source",
+        "type": "string"
+      },
+      "presets": {
+        "additionalProperties": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "type": "object"
+        },
+        "title": "Presets",
+        "type": "object"
+      },
+      "devices": {
+        "items": {
+          "$ref": "#/$defs/DeviceSpec"
+        },
+        "title": "Devices",
+        "type": "array"
+      }
+    },
+    "required": [
+      "dataset_id",
+      "source",
+      "presets",
+      "devices"
+    ],
+    "title": "Catalog",
+    "type": "object"
+  },
+  "Command": {
+    "additionalProperties": false,
+    "properties": {
+      "command_id": {
+        "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+        "title": "Command Id",
+        "type": "string"
+      },
+      "epoch": {
+        "title": "Epoch",
+        "type": "string"
+      },
+      "device_id": {
+        "title": "Device Id",
+        "type": "string"
+      },
+      "p_mw": {
+        "title": "P Mw",
+        "type": "number"
+      },
+      "q_mvar": {
+        "title": "Q Mvar",
+        "type": "number"
+      },
+      "expires_at": {
+        "format": "date-time",
+        "title": "Expires At",
+        "type": "string"
+      }
+    },
+    "required": [
+      "command_id",
+      "epoch",
+      "device_id",
+      "p_mw",
+      "q_mvar",
+      "expires_at"
+    ],
+    "title": "Command",
+    "type": "object"
+  },
+  "FaultRequest": {
+    "additionalProperties": false,
+    "properties": {
+      "fault": {
+        "enum": [
+          "normal",
+          "communication_loss",
+          "bad_quality",
+          "voltage_sag",
+          "ack_timeout",
+          "load_drop",
+          "wind_trip",
+          "nonconvergence"
+        ],
+        "title": "Fault",
+        "type": "string"
+      }
+    },
+    "required": [
+      "fault"
+    ],
+    "title": "FaultRequest",
+    "type": "object"
+  },
+  "Frame": {
+    "$defs": {
+      "Command": {
+        "additionalProperties": false,
+        "properties": {
+          "command_id": {
+            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+            "title": "Command Id",
+            "type": "string"
+          },
+          "epoch": {
+            "title": "Epoch",
+            "type": "string"
+          },
+          "device_id": {
+            "title": "Device Id",
+            "type": "string"
+          },
+          "p_mw": {
+            "title": "P Mw",
+            "type": "number"
+          },
+          "q_mvar": {
+            "title": "Q Mvar",
+            "type": "number"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "command_id",
+          "epoch",
+          "device_id",
+          "p_mw",
+          "q_mvar",
+          "expires_at"
+        ],
+        "title": "Command",
+        "type": "object"
+      },
+      "JsonValue": {},
+      "Reading": {
+        "additionalProperties": false,
+        "properties": {
+          "device_id": {
+            "title": "Device Id",
+            "type": "string"
+          },
+          "region": {
+            "title": "Region",
+            "type": "string"
+          },
+          "bus_id": {
+            "title": "Bus Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "p_mw": {
+            "title": "P Mw",
+            "type": "number"
+          },
+          "q_mvar": {
+            "title": "Q Mvar",
+            "type": "number"
+          },
+          "available_mw": {
+            "title": "Available Mw",
+            "type": "number"
+          },
+          "energy_mwh": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Energy Mwh"
+          }
+        },
+        "required": [
+          "device_id",
+          "region",
+          "bus_id",
+          "kind",
+          "p_mw",
+          "q_mvar",
+          "available_mw",
+          "energy_mwh"
+        ],
+        "title": "Reading",
+        "type": "object"
+      },
+      "Receipt": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "$ref": "#/$defs/Command"
+          },
+          "status": {
+            "enum": [
+              "accepted",
+              "executing",
+              "executed",
+              "rejected",
+              "expired",
+              "timeout",
+              "superseded"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "command",
+          "status",
+          "reason",
+          "updated_at"
+        ],
+        "title": "Receipt",
+        "type": "object"
+      },
+      "Safety": {
+        "additionalProperties": false,
+        "properties": {
+          "region": {
+            "title": "Region",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "valid": {
+            "title": "Valid",
+            "type": "boolean"
+          },
+          "recovery_safe": {
+            "title": "Recovery Safe",
+            "type": "boolean"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "pcc_import_mw": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pcc Import Mw"
+          },
+          "pcc_q_mvar": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pcc Q Mvar"
+          },
+          "loss_mw": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Loss Mw"
+          },
+          "voltage_min_pu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Voltage Min Pu"
+          },
+          "voltage_max_pu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Voltage Max Pu"
+          },
+          "max_loading_pu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Max Loading Pu"
+          },
+          "power_factor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Power Factor"
+          },
+          "flow": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/$defs/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Flow"
+          }
+        },
+        "required": [
+          "region",
+          "status",
+          "valid",
+          "recovery_safe",
+          "reasons"
+        ],
+        "title": "Safety",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": "oilfield-telemetry-v1",
+        "default": "oilfield-telemetry-v1",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "synthetic": {
+        "const": true,
+        "default": true,
+        "title": "Synthetic",
+        "type": "boolean"
+      },
+      "dataset_id": {
+        "title": "Dataset Id",
+        "type": "string"
+      },
+      "epoch": {
+        "title": "Epoch",
+        "type": "string"
+      },
+      "sequence": {
+        "title": "Sequence",
+        "type": "integer"
+      },
+      "simulated_at": {
+        "format": "date-time",
+        "title": "Simulated At",
+        "type": "string"
+      },
+      "observed_at": {
+        "format": "date-time",
+        "title": "Observed At",
+        "type": "string"
+      },
+      "fault": {
+        "enum": [
+          "normal",
+          "communication_loss",
+          "bad_quality",
+          "voltage_sag",
+          "ack_timeout",
+          "load_drop",
+          "wind_trip",
+          "nonconvergence"
+        ],
+        "title": "Fault",
+        "type": "string"
+      },
+      "quality_valid": {
+        "title": "Quality Valid",
+        "type": "boolean"
+      },
+      "recovery_blocked": {
+        "title": "Recovery Blocked",
+        "type": "boolean"
+      },
+      "safe_cycles": {
+        "title": "Safe Cycles",
+        "type": "integer"
+      },
+      "devices": {
+        "items": {
+          "$ref": "#/$defs/Reading"
+        },
+        "title": "Devices",
+        "type": "array"
+      },
+      "networks": {
+        "items": {
+          "$ref": "#/$defs/Safety"
+        },
+        "title": "Networks",
+        "type": "array"
+      },
+      "receipts": {
+        "items": {
+          "$ref": "#/$defs/Receipt"
+        },
+        "title": "Receipts",
+        "type": "array"
+      }
+    },
+    "required": [
+      "dataset_id",
+      "epoch",
+      "sequence",
+      "simulated_at",
+      "observed_at",
+      "fault",
+      "quality_valid",
+      "recovery_blocked",
+      "safe_cycles",
+      "devices",
+      "networks",
+      "receipts"
+    ],
+    "title": "Frame",
+    "type": "object"
+  },
+  "Receipt": {
+    "$defs": {
+      "Command": {
+        "additionalProperties": false,
+        "properties": {
+          "command_id": {
+            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+            "title": "Command Id",
+            "type": "string"
+          },
+          "epoch": {
+            "title": "Epoch",
+            "type": "string"
+          },
+          "device_id": {
+            "title": "Device Id",
+            "type": "string"
+          },
+          "p_mw": {
+            "title": "P Mw",
+            "type": "number"
+          },
+          "q_mvar": {
+            "title": "Q Mvar",
+            "type": "number"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "command_id",
+          "epoch",
+          "device_id",
+          "p_mw",
+          "q_mvar",
+          "expires_at"
+        ],
+        "title": "Command",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "command": {
+        "$ref": "#/$defs/Command"
+      },
+      "status": {
+        "enum": [
+          "accepted",
+          "executing",
+          "executed",
+          "rejected",
+          "expired",
+          "timeout",
+          "superseded"
+        ],
+        "title": "Status",
+        "type": "string"
+      },
+      "reason": {
+        "title": "Reason",
+        "type": "string"
+      },
+      "updated_at": {
+        "format": "date-time",
+        "title": "Updated At",
+        "type": "string"
+      }
+    },
+    "required": [
+      "command",
+      "status",
+      "reason",
+      "updated_at"
+    ],
+    "title": "Receipt",
+    "type": "object"
+  },
+  "ResourceAvailability": {
+    "$defs": {
+      "AvailabilityPoint": {
+        "additionalProperties": false,
+        "properties": {
+          "minute_of_day": {
+            "exclusiveMaximum": 1440,
+            "minimum": 0,
+            "title": "Minute Of Day",
+            "type": "integer"
+          },
+          "p_available_mw": {
+            "minimum": 0,
+            "title": "P Available Mw",
+            "type": "number"
+          }
+        },
+        "required": [
+          "minute_of_day",
+          "p_available_mw"
+        ],
+        "title": "AvailabilityPoint",
+        "type": "object"
+      },
+      "DeviceAvailabilitySeries": {
+        "additionalProperties": false,
+        "properties": {
+          "device_id": {
+            "minLength": 1,
+            "title": "Device Id",
+            "type": "string"
+          },
+          "region": {
+            "title": "Region",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "wind",
+              "pv"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "resolution_minutes": {
+            "const": 15,
+            "default": 15,
+            "title": "Resolution Minutes",
+            "type": "integer"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/$defs/AvailabilityPoint"
+            },
+            "maxItems": 96,
+            "minItems": 96,
+            "title": "Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "device_id",
+          "region",
+          "kind",
+          "points"
+        ],
+        "title": "DeviceAvailabilitySeries",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Read-only, per-device renewable capability from the fixed demo bundle.",
+    "properties": {
+      "schema_version": {
+        "const": "oilfield-resource-availability-v1",
+        "default": "oilfield-resource-availability-v1",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "synthetic": {
+        "const": true,
+        "default": true,
+        "title": "Synthetic",
+        "type": "boolean"
+      },
+      "source": {
+        "const": "synthetic_bundle_profile",
+        "default": "synthetic_bundle_profile",
+        "title": "Source",
+        "type": "string"
+      },
+      "dataset_id": {
+        "minLength": 1,
+        "title": "Dataset Id",
+        "type": "string"
+      },
+      "period_minutes": {
+        "const": 1440,
+        "default": 1440,
+        "title": "Period Minutes",
+        "type": "integer"
+      },
+      "series": {
+        "items": {
+          "$ref": "#/$defs/DeviceAvailabilitySeries"
+        },
+        "title": "Series",
+        "type": "array"
+      }
+    },
+    "required": [
+      "dataset_id",
+      "series"
+    ],
+    "title": "ResourceAvailability",
+    "type": "object"
+  },
+  "JobStatus": {
+    "$defs": {
+      "JobState": {
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "cancelled",
+          "interrupted"
+        ],
+        "title": "JobState",
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "simulation_id": {
+        "title": "Simulation Id",
+        "type": "string"
+      },
+      "name": {
+        "title": "Name",
+        "type": "string"
+      },
+      "state": {
+        "$ref": "#/$defs/JobState"
+      },
+      "created_at": {
+        "title": "Created At",
+        "type": "string"
+      },
+      "updated_at": {
+        "title": "Updated At",
+        "type": "string"
+      },
+      "stage": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Stage"
+      },
+      "stage_label": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Stage Label"
+      },
+      "stage_sequence": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Stage Sequence"
+      },
+      "total_stages": {
+        "default": 6,
+        "minimum": 1,
+        "title": "Total Stages",
+        "type": "integer"
+      },
+      "result_available": {
+        "default": false,
+        "title": "Result Available",
+        "type": "boolean"
+      },
+      "error_code": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error Code"
+      },
+      "error_message": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error Message"
+      }
+    },
+    "required": [
+      "simulation_id",
+      "name",
+      "state",
+      "created_at",
+      "updated_at"
+    ],
+    "title": "JobStatus",
+    "type": "object"
+  }
+}

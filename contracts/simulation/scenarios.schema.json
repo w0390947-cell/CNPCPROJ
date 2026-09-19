@@ -1,0 +1,62 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "SC-scenarios-v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "seed": {
+      "minimum": 0,
+      "title": "Seed",
+      "type": "integer"
+    },
+    "cases": {
+      "items": {
+        "enum": [
+          "normal",
+          "load_drop",
+          "wind_trip",
+          "bad_quality",
+          "stale_telemetry",
+          "voltage_violation",
+          "nonconvergence"
+        ],
+        "type": "string"
+      },
+      "title": "Cases",
+      "type": "array"
+    },
+    "fault_start_minute": {
+      "minimum": 0,
+      "title": "Fault Start Minute",
+      "type": "integer"
+    },
+    "fault_end_minute": {
+      "exclusiveMinimum": 0,
+      "title": "Fault End Minute",
+      "type": "integer"
+    },
+    "rearm_minute": {
+      "exclusiveMinimum": 0,
+      "title": "Rearm Minute",
+      "type": "integer"
+    },
+    "window_intervals": {
+      "const": 4,
+      "title": "Window Intervals",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schema_version",
+    "seed",
+    "cases",
+    "fault_start_minute",
+    "fault_end_minute",
+    "rearm_minute",
+    "window_intervals"
+  ],
+  "title": "ScenarioCatalog",
+  "type": "object"
+}

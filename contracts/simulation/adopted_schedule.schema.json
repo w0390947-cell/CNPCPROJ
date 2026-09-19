@@ -1,0 +1,180 @@
+{
+  "$defs": {
+    "AdoptedOrigin": {
+      "additionalProperties": false,
+      "properties": {
+        "interval_index": {
+          "minimum": 0,
+          "title": "Interval Index",
+          "type": "integer"
+        },
+        "window_start_interval": {
+          "minimum": 0,
+          "title": "Window Start Interval",
+          "type": "integer"
+        },
+        "window_end_interval": {
+          "exclusiveMinimum": 0,
+          "title": "Window End Interval",
+          "type": "integer"
+        },
+        "source_slot": {
+          "const": 0,
+          "default": 0,
+          "title": "Source Slot",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "interval_index",
+        "window_start_interval",
+        "window_end_interval"
+      ],
+      "title": "AdoptedOrigin",
+      "type": "object"
+    },
+    "ResourceTrajectory": {
+      "additionalProperties": false,
+      "properties": {
+        "resource_id": {
+          "minLength": 1,
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "bus_id": {
+          "minLength": 1,
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "resource_type": {
+          "enum": [
+            "wind",
+            "pv",
+            "storage",
+            "svg"
+          ],
+          "title": "Resource Type",
+          "type": "string"
+        },
+        "active_power_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Active Power Mw",
+          "type": "array"
+        },
+        "reactive_power_mvar": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Reactive Power Mvar",
+          "type": "array"
+        }
+      },
+      "required": [
+        "resource_id",
+        "bus_id",
+        "resource_type",
+        "active_power_mw",
+        "reactive_power_mvar"
+      ],
+      "title": "ResourceTrajectory",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "PCC import positive; resource injection positive; no global solve claim.",
+  "properties": {
+    "schema_version": {
+      "const": "adopted-schedule-v1",
+      "default": "adopted-schedule-v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "microgrid_id": {
+      "minLength": 1,
+      "title": "Microgrid Id",
+      "type": "string"
+    },
+    "start": {
+      "format": "date-time",
+      "title": "Start",
+      "type": "string"
+    },
+    "step_minutes": {
+      "exclusiveMinimum": 0,
+      "title": "Step Minutes",
+      "type": "integer"
+    },
+    "p_grid_mw": {
+      "items": {
+        "type": "number"
+      },
+      "title": "P Grid Mw",
+      "type": "array"
+    },
+    "q_grid_mvar": {
+      "items": {
+        "type": "number"
+      },
+      "title": "Q Grid Mvar",
+      "type": "array"
+    },
+    "wind_available_mw": {
+      "items": {
+        "type": "number"
+      },
+      "title": "Wind Available Mw",
+      "type": "array"
+    },
+    "resource_schedules": {
+      "items": {
+        "$ref": "#/$defs/ResourceTrajectory"
+      },
+      "title": "Resource Schedules",
+      "type": "array"
+    },
+    "origins": {
+      "items": {
+        "$ref": "#/$defs/AdoptedOrigin"
+      },
+      "title": "Origins",
+      "type": "array"
+    },
+    "scope": {
+      "const": "adopted_commands_not_measurements",
+      "default": "adopted_commands_not_measurements",
+      "title": "Scope",
+      "type": "string"
+    },
+    "optimality_status": {
+      "const": "not_assessed_for_adopted_horizon",
+      "default": "not_assessed_for_adopted_horizon",
+      "title": "Optimality Status",
+      "type": "string"
+    },
+    "objective_cny": {
+      "default": null,
+      "title": "Objective Cny",
+      "type": "null"
+    },
+    "objective_status": {
+      "const": "not_computed_for_adopted_horizon",
+      "default": "not_computed_for_adopted_horizon",
+      "title": "Objective Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "microgrid_id",
+    "start",
+    "step_minutes",
+    "p_grid_mw",
+    "q_grid_mvar",
+    "wind_available_mw",
+    "resource_schedules",
+    "origins"
+  ],
+  "title": "AdoptedSchedule",
+  "type": "object"
+}

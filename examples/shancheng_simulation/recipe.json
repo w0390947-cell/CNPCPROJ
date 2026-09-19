@@ -1,0 +1,58 @@
+{
+  "schema_version": "shancheng-simulation-v1",
+  "dataset_id": "SC-complete-synthetic",
+  "revision": "2026-09-15-v1",
+  "synthetic": true,
+  "seed": 20260915,
+  "start": "2026-09-15T00:00:00+08:00",
+  "intervals": 96,
+  "interval_minutes": 15,
+  "rolling_horizon_intervals": 16,
+  "solver_seconds": 120.0,
+  "pcc_min_mw": 0.5,
+  "pcc_max_mw": 18.0,
+  "pf_min": 0.9,
+  "voltage_min_pu": 0.95,
+  "voltage_max_pu": 1.05,
+  "storage": {
+    "energy_mwh": 5.0, "minimum_mwh": 0.5, "initial_mwh": 2.5,
+    "eta_charge": 0.95, "eta_discharge": 0.95
+  },
+  "resources": [
+    {"resource_id": "SC:wind:SC_WT1", "bus_id": "SC_WT1", "kind": "wind", "p_max_mw": 5.0, "s_max_mva": 5.25, "q_max_mvar": 1.64},
+    {"resource_id": "SC:wind:SC_WT2", "bus_id": "SC_WT2", "kind": "wind", "p_max_mw": 5.0, "s_max_mva": 5.25, "q_max_mvar": 1.64},
+    {"resource_id": "SC:pv:SC_PV1", "bus_id": "SC_PV1", "kind": "pv", "p_max_mw": 2.4, "s_max_mva": 2.52, "q_max_mvar": 1.0},
+    {"resource_id": "SC:pv:SC_PV2", "bus_id": "SC_PV2", "kind": "pv", "p_max_mw": 1.8, "s_max_mva": 1.89, "q_max_mvar": 0.7},
+    {"resource_id": "SC:storage:SC_FLEX", "bus_id": "SC_FLEX", "kind": "storage", "p_max_mw": 2.5, "s_max_mva": 2.7, "q_max_mvar": 2.0},
+    {"resource_id": "SC:svg:SC_FLEX", "bus_id": "SC_FLEX", "kind": "svg", "p_max_mw": 0.0, "s_max_mva": 2.5, "q_max_mvar": 2.5}
+  ],
+  "loads": [
+    {"bus_id": "SC_MAIN", "peak_mw": 6.2, "power_factor": 0.92},
+    {"bus_id": "SC_WT1", "peak_mw": 1.0, "power_factor": 0.93},
+    {"bus_id": "SC_WT2", "peak_mw": 1.0, "power_factor": 0.91},
+    {"bus_id": "SC_PV1", "peak_mw": 2.0, "power_factor": 0.94},
+    {"bus_id": "SC_PV2", "peak_mw": 2.0, "power_factor": 0.92},
+    {"bus_id": "SC_FLEX", "peak_mw": 1.8, "power_factor": 0.93}
+  ],
+  "network": {
+    "network_id": "SC-seven-bus-synthetic-v1", "base_mva": 20.0, "pcc_bus_id": "SC_PCC",
+    "buses": [
+      {"bus_id": "SC_PCC", "name": "模拟上级电网", "nominal_voltage_kv": 35.0},
+      {"bus_id": "SC_MAIN", "name": "模拟主母线", "nominal_voltage_kv": 10.0},
+      {"bus_id": "SC_WT1", "name": "模拟风机1", "nominal_voltage_kv": 10.0},
+      {"bus_id": "SC_WT2", "name": "模拟风机2", "nominal_voltage_kv": 10.0},
+      {"bus_id": "SC_PV1", "name": "模拟光伏区域1", "nominal_voltage_kv": 10.0},
+      {"bus_id": "SC_PV2", "name": "模拟光伏区域2", "nominal_voltage_kv": 10.0},
+      {"bus_id": "SC_FLEX", "name": "模拟储能SVG", "nominal_voltage_kv": 10.0}
+    ],
+    "branches": [
+      {"branch_id": "SC_T1", "from_bus_id": "SC_PCC", "to_bus_id": "SC_MAIN", "kind": "transformer", "r_pu": 0.004, "x_pu": 0.03, "s_max_mva": 20.0, "fixed_tap_ratio": 1.0},
+      {"branch_id": "SC_L1", "from_bus_id": "SC_MAIN", "to_bus_id": "SC_WT1", "kind": "line", "r_pu": 0.01, "x_pu": 0.014, "s_max_mva": 6.0},
+      {"branch_id": "SC_L2", "from_bus_id": "SC_MAIN", "to_bus_id": "SC_WT2", "kind": "line", "r_pu": 0.011, "x_pu": 0.015, "s_max_mva": 6.0},
+      {"branch_id": "SC_L3", "from_bus_id": "SC_MAIN", "to_bus_id": "SC_PV1", "kind": "line", "r_pu": 0.012, "x_pu": 0.015, "s_max_mva": 4.0},
+      {"branch_id": "SC_L4", "from_bus_id": "SC_MAIN", "to_bus_id": "SC_PV2", "kind": "line", "r_pu": 0.015, "x_pu": 0.017, "s_max_mva": 4.0},
+      {"branch_id": "SC_L5", "from_bus_id": "SC_MAIN", "to_bus_id": "SC_FLEX", "kind": "line", "r_pu": 0.009, "x_pu": 0.013, "s_max_mva": 7.0}
+    ],
+    "provenance": {"source": "project-generated synthetic study; not Shancheng field data", "dataset_version": "2026-09-15-v1", "synthetic": true}
+  }
+}

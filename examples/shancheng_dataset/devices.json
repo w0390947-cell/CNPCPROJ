@@ -1,0 +1,61 @@
+{
+  "schema_version": "field-document-v1",
+  "dataset_id": "synthetic-shancheng-example",
+  "version": "1",
+  "synthetic": true,
+  "role": "devices",
+  "payload": {
+    "devices": [
+      {
+        "resource_id": "WT1",
+        "bus_id": "WIND",
+        "resource_type": "wind",
+        "p_min_mw": 0.0,
+        "p_max_mw": 5.0
+      },
+      {
+        "resource_id": "WT2",
+        "bus_id": "WIND",
+        "resource_type": "wind",
+        "p_min_mw": 0.0,
+        "p_max_mw": 5.0
+      },
+      {
+        "resource_id": "PV1",
+        "bus_id": "MAIN",
+        "resource_type": "pv"
+      },
+      {
+        "resource_id": "ESS1",
+        "bus_id": "MAIN",
+        "resource_type": "storage"
+      },
+      {
+        "resource_id": "SVG1",
+        "bus_id": "MAIN",
+        "resource_type": "svg"
+      }
+    ],
+    "loads": [
+      {
+        "load_id": "LOAD_MAIN",
+        "bus_id": "MAIN",
+        "scope_members": [
+          "LOAD_MAIN_exclusive_consumers"
+        ],
+        "basis": "gross_load"
+      },
+      {
+        "load_id": "LOAD_WIND",
+        "bus_id": "WIND",
+        "scope_members": [
+          "LOAD_WIND_exclusive_consumers"
+        ],
+        "basis": "gross_load"
+      }
+    ],
+    "zero_load_bus_ids": [
+      "PCC"
+    ]
+  }
+}

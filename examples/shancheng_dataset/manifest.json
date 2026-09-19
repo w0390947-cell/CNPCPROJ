@@ -1,0 +1,51 @@
+{
+  "schema_version": "field-dataset-v1",
+  "dataset_id": "synthetic-shancheng-example",
+  "revision": "demo-1",
+  "source": "Synthetic software example, not Shancheng field evidence",
+  "synthetic": true,
+  "files": [
+    {
+      "file_id": "network",
+      "role": "network",
+      "path": "network.json",
+      "version": "1",
+      "sha256": "e0bfebbc13a8b4c11b32d1bf1c734300c64f1e778ddf29324dabea6794f0107a"
+    },
+    {
+      "file_id": "devices",
+      "role": "devices",
+      "path": "devices.json",
+      "version": "1",
+      "sha256": "30c608a2d9077cdfa1f7ada534ce44cfe1cd83968b671be596bc9e0f3de8ad89"
+    },
+    {
+      "file_id": "point_mapping",
+      "role": "point_mapping",
+      "path": "point_mapping.json",
+      "version": "1",
+      "sha256": "f10ba6cc2ede911b4f5d38e097c0215334c7f34812804474163e9c298a8b9200"
+    },
+    {
+      "file_id": "operating_modes",
+      "role": "operating_modes",
+      "path": "operating_modes.json",
+      "version": "1",
+      "sha256": "12c4de15c447bef0adfe8e49a7d12e11907761cab96e0523c35925de6ddb2883"
+    },
+    {
+      "file_id": "settings",
+      "role": "settings",
+      "path": "settings.json",
+      "version": "1",
+      "sha256": "1047d418aa55d657de8c439d78371d40debbd3d68250764602271ca1222cae91"
+    },
+    {
+      "file_id": "telemetry",
+      "role": "measurements",
+      "path": "measurements.csv",
+      "version": "1",
+      "sha256": "86d754603c7fc28f610c334d512818359e7e73da2e6660fb2514d54250d83589"
+    }
+  ]
+}

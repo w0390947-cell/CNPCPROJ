@@ -1,0 +1,677 @@
+{
+  "$defs": {
+    "BranchFlowResult": {
+      "properties": {
+        "branch_id": {
+          "title": "Branch Id",
+          "type": "string"
+        },
+        "parent_bus_id": {
+          "title": "Parent Bus Id",
+          "type": "string"
+        },
+        "child_bus_id": {
+          "title": "Child Bus Id",
+          "type": "string"
+        },
+        "tap_ratio": {
+          "title": "Tap Ratio",
+          "type": "number"
+        },
+        "sending_p_mw": {
+          "title": "Sending P Mw",
+          "type": "number"
+        },
+        "sending_q_mvar": {
+          "title": "Sending Q Mvar",
+          "type": "number"
+        },
+        "receiving_p_mw": {
+          "title": "Receiving P Mw",
+          "type": "number"
+        },
+        "receiving_q_mvar": {
+          "title": "Receiving Q Mvar",
+          "type": "number"
+        },
+        "loading_pu": {
+          "title": "Loading Pu",
+          "type": "number"
+        },
+        "active_loss_mw": {
+          "title": "Active Loss Mw",
+          "type": "number"
+        },
+        "reactive_loss_mvar": {
+          "title": "Reactive Loss Mvar",
+          "type": "number"
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Kind"
+        },
+        "sending_current_a": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sending Current A"
+        },
+        "receiving_current_a": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Receiving Current A"
+        }
+      },
+      "required": [
+        "branch_id",
+        "parent_bus_id",
+        "child_bus_id",
+        "tap_ratio",
+        "sending_p_mw",
+        "sending_q_mvar",
+        "receiving_p_mw",
+        "receiving_q_mvar",
+        "loading_pu",
+        "active_loss_mw",
+        "reactive_loss_mvar"
+      ],
+      "title": "BranchFlowResult",
+      "type": "object"
+    },
+    "BusFlowResult": {
+      "properties": {
+        "bus_id": {
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "voltage_pu": {
+          "title": "Voltage Pu",
+          "type": "number"
+        },
+        "fixed_shunt_q_mvar": {
+          "title": "Fixed Shunt Q Mvar",
+          "type": "number"
+        },
+        "voltage_kv": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Voltage Kv"
+        }
+      },
+      "required": [
+        "bus_id",
+        "voltage_pu",
+        "fixed_shunt_q_mvar"
+      ],
+      "title": "BusFlowResult",
+      "type": "object"
+    },
+    "NetworkScenario": {
+      "properties": {
+        "scenario_id": {
+          "title": "Scenario Id",
+          "type": "string"
+        },
+        "operating_mode_id": {
+          "title": "Operating Mode Id",
+          "type": "string"
+        },
+        "contingency_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Contingency Id"
+        },
+        "recovery_operating_mode_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recovery Operating Mode Id"
+        }
+      },
+      "required": [
+        "scenario_id",
+        "operating_mode_id"
+      ],
+      "title": "NetworkScenario",
+      "type": "object"
+    },
+    "NetworkScenarioResult": {
+      "properties": {
+        "scenario": {
+          "$ref": "#/$defs/NetworkScenario"
+        },
+        "outaged_branch_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Outaged Branch Ids",
+          "type": "array"
+        },
+        "status": {
+          "$ref": "#/$defs/ScenarioStatus"
+        },
+        "stages": {
+          "items": {
+            "$ref": "#/$defs/ScenarioStageResult"
+          },
+          "title": "Stages",
+          "type": "array"
+        },
+        "reasons": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "scenario",
+        "outaged_branch_ids",
+        "status",
+        "stages"
+      ],
+      "title": "NetworkScenarioResult",
+      "type": "object"
+    },
+    "NetworkSecurityLimits": {
+      "description": "调用者显式给出研究范围内限值；核心不猜测现场定值。",
+      "properties": {
+        "voltage_min_pu": {
+          "title": "Voltage Min Pu",
+          "type": "number"
+        },
+        "voltage_max_pu": {
+          "title": "Voltage Max Pu",
+          "type": "number"
+        },
+        "pcc_import_min_mw": {
+          "title": "Pcc Import Min Mw",
+          "type": "number"
+        },
+        "pcc_import_max_mw": {
+          "title": "Pcc Import Max Mw",
+          "type": "number"
+        },
+        "power_factor_min": {
+          "title": "Power Factor Min",
+          "type": "number"
+        },
+        "comparison_tolerance": {
+          "default": 1e-06,
+          "title": "Comparison Tolerance",
+          "type": "number"
+        },
+        "flow_tolerance": {
+          "default": 1e-10,
+          "title": "Flow Tolerance",
+          "type": "number"
+        },
+        "max_iterations": {
+          "default": 100,
+          "title": "Max Iterations",
+          "type": "integer"
+        },
+        "power_tolerance_pu": {
+          "default": 1e-08,
+          "title": "Power Tolerance Pu",
+          "type": "number"
+        },
+        "singular_voltage_pu": {
+          "default": 1e-08,
+          "title": "Singular Voltage Pu",
+          "type": "number"
+        }
+      },
+      "required": [
+        "voltage_min_pu",
+        "voltage_max_pu",
+        "pcc_import_min_mw",
+        "pcc_import_max_mw",
+        "power_factor_min"
+      ],
+      "title": "NetworkSecurityLimits",
+      "type": "object"
+    },
+    "PointFlowResult": {
+      "properties": {
+        "point_id": {
+          "title": "Point Id",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/ScenarioStatus"
+        },
+        "reasons": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        },
+        "iterations": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Iterations"
+        },
+        "pcc_import_mw": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pcc Import Mw"
+        },
+        "pcc_reactive_mvar": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pcc Reactive Mvar"
+        },
+        "power_factor": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Power Factor"
+        },
+        "loss_mw": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Loss Mw"
+        },
+        "reactive_loss_mvar": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reactive Loss Mvar"
+        },
+        "buses": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/BusFlowResult"
+          },
+          "title": "Buses",
+          "type": "array"
+        },
+        "branches": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/BranchFlowResult"
+          },
+          "title": "Branches",
+          "type": "array"
+        },
+        "violations": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SecurityViolation"
+          },
+          "title": "Violations",
+          "type": "array"
+        },
+        "maximum_power_balance_residual_pu": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Maximum Power Balance Residual Pu"
+        }
+      },
+      "required": [
+        "point_id",
+        "source",
+        "status"
+      ],
+      "title": "PointFlowResult",
+      "type": "object"
+    },
+    "PointInputValidation": {
+      "properties": {
+        "point_id": {
+          "title": "Point Id",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "point_id",
+        "source",
+        "reasons"
+      ],
+      "title": "PointInputValidation",
+      "type": "object"
+    },
+    "ScenarioStageResult": {
+      "properties": {
+        "stage": {
+          "title": "Stage",
+          "type": "string"
+        },
+        "operating_mode_id": {
+          "title": "Operating Mode Id",
+          "type": "string"
+        },
+        "contingency_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Contingency Id"
+        },
+        "status": {
+          "$ref": "#/$defs/ScenarioStatus"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        },
+        "active_branch_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Active Branch Ids",
+          "type": "array"
+        },
+        "reachable_bus_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reachable Bus Ids",
+          "type": "array"
+        },
+        "disconnected_bus_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Disconnected Bus Ids",
+          "type": "array"
+        },
+        "points": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/PointFlowResult"
+          },
+          "title": "Points",
+          "type": "array"
+        },
+        "topology_status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ScenarioStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "stage",
+        "operating_mode_id",
+        "contingency_id",
+        "status",
+        "reasons",
+        "active_branch_ids",
+        "reachable_bus_ids",
+        "disconnected_bus_ids"
+      ],
+      "title": "ScenarioStageResult",
+      "type": "object"
+    },
+    "ScenarioStatus": {
+      "enum": [
+        "secure",
+        "transfer_secure",
+        "violation",
+        "islanded",
+        "unsupported",
+        "invalid_input",
+        "not_converged",
+        "not_applicable"
+      ],
+      "title": "ScenarioStatus",
+      "type": "string"
+    },
+    "SecurityViolation": {
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "asset_id": {
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "actual": {
+          "title": "Actual",
+          "type": "number"
+        },
+        "limit": {
+          "title": "Limit",
+          "type": "number"
+        }
+      },
+      "required": [
+        "code",
+        "asset_id",
+        "actual",
+        "limit"
+      ],
+      "title": "SecurityViolation",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "network_id": {
+      "title": "Network Id",
+      "type": "string"
+    },
+    "data_source": {
+      "title": "Data Source",
+      "type": "string"
+    },
+    "dataset_version": {
+      "title": "Dataset Version",
+      "type": "string"
+    },
+    "synthetic": {
+      "title": "Synthetic",
+      "type": "boolean"
+    },
+    "limits": {
+      "$ref": "#/$defs/NetworkSecurityLimits"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/NetworkScenarioResult"
+      },
+      "title": "Results",
+      "type": "array"
+    },
+    "uncovered_n_minus_one": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Uncovered N Minus One",
+      "type": "array"
+    },
+    "point_inputs": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/PointInputValidation"
+      },
+      "title": "Point Inputs",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "network-scenarios-v2",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "scope": {
+      "const": "fixed_injection_balanced_radial_static_screening",
+      "title": "Scope",
+      "type": "string"
+    },
+    "inputs_valid": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Inputs Valid"
+    },
+    "all_final_states_secure": {
+      "title": "All Final States Secure",
+      "type": "boolean"
+    },
+    "all_immediate_states_secure": {
+      "title": "All Immediate States Secure",
+      "type": "boolean"
+    },
+    "n_minus_one_coverage_complete": {
+      "title": "N Minus One Coverage Complete",
+      "type": "boolean"
+    },
+    "field_acceptance_certified": {
+      "const": false,
+      "title": "Field Acceptance Certified",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "all_final_states_secure",
+    "all_immediate_states_secure",
+    "data_source",
+    "dataset_version",
+    "field_acceptance_certified",
+    "inputs_valid",
+    "limits",
+    "n_minus_one_coverage_complete",
+    "network_id",
+    "results",
+    "schema_version",
+    "scope",
+    "synthetic",
+    "uncovered_n_minus_one"
+  ],
+  "title": "NetworkScenarioSummaryV2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "x-generator": {
+    "name": "tools/export_network_scenario_contract.py",
+    "version": "1",
+    "pydantic_version": "2.13.5"
+  },
+  "description": "Generated by tools/export_network_scenario_contract.py from NetworkScenarioBatch and NetworkScenarioSummaryMetadata (Pydantic 2); do not edit. Physical equation, topology, and finite-value checks remain runtime requirements."
+}

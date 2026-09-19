@@ -1,0 +1,1820 @@
+{
+  "$defs": {
+    "ADMMHistoryPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "iteration": {
+          "title": "Iteration",
+          "type": "integer"
+        },
+        "primal_residual": {
+          "title": "Primal Residual",
+          "type": "number"
+        },
+        "dual_residual": {
+          "title": "Dual Residual",
+          "type": "number"
+        },
+        "primal_tolerance": {
+          "title": "Primal Tolerance",
+          "type": "number"
+        },
+        "dual_tolerance": {
+          "title": "Dual Tolerance",
+          "type": "number"
+        },
+        "fresh_region_count": {
+          "title": "Fresh Region Count",
+          "type": "integer"
+        },
+        "convergence_streak": {
+          "title": "Convergence Streak",
+          "type": "integer"
+        },
+        "fallback_regions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Fallback Regions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "iteration",
+        "primal_residual",
+        "dual_residual",
+        "primal_tolerance",
+        "dual_tolerance",
+        "fresh_region_count",
+        "convergence_streak",
+        "fallback_regions"
+      ],
+      "title": "ADMMHistoryPoint",
+      "type": "object"
+    },
+    "ClusterImportAssessment": {
+      "properties": {
+        "stage": {
+          "enum": [
+            "centralized_reference",
+            "admm_reference",
+            "day_ahead",
+            "intraday",
+            "minute"
+          ],
+          "title": "Stage",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "violated",
+            "unknown",
+            "not_computed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "limit_mw": {
+          "title": "Limit Mw",
+          "type": "number"
+        },
+        "tolerance_mw": {
+          "title": "Tolerance Mw",
+          "type": "number"
+        },
+        "peak_import_mw": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Peak Import Mw"
+        },
+        "violation_steps": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Violation Steps"
+        },
+        "sample_count": {
+          "title": "Sample Count",
+          "type": "integer"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stage",
+        "status",
+        "limit_mw",
+        "tolerance_mw",
+        "peak_import_mw",
+        "violation_steps",
+        "sample_count",
+        "reason"
+      ],
+      "title": "ClusterImportAssessment",
+      "type": "object"
+    },
+    "ClusterTimeSeriesPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "time_hour": {
+          "title": "Time Hour",
+          "type": "number"
+        },
+        "aggregate_load_mw": {
+          "title": "Aggregate Load Mw",
+          "type": "number"
+        },
+        "aggregate_renewable_mw": {
+          "title": "Aggregate Renewable Mw",
+          "type": "number"
+        },
+        "aggregate_import_mw": {
+          "title": "Aggregate Import Mw",
+          "type": "number"
+        },
+        "aggregate_q_mvar": {
+          "title": "Aggregate Q Mvar",
+          "type": "number"
+        },
+        "import_limit_mw": {
+          "title": "Import Limit Mw",
+          "type": "number"
+        },
+        "regional_import_mw": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Regional Import Mw",
+          "type": "object"
+        }
+      },
+      "required": [
+        "time_hour",
+        "aggregate_load_mw",
+        "aggregate_renewable_mw",
+        "aggregate_import_mw",
+        "aggregate_q_mvar",
+        "import_limit_mw",
+        "regional_import_mw"
+      ],
+      "title": "ClusterTimeSeriesPoint",
+      "type": "object"
+    },
+    "ClusterValidation": {
+      "description": "A reference-only pass never certifies uncomputed execution stages.",
+      "properties": {
+        "scope": {
+          "enum": [
+            "reference_only",
+            "hierarchical_execution"
+          ],
+          "title": "Scope",
+          "type": "string"
+        },
+        "assessed_scope_status": {
+          "enum": [
+            "passed",
+            "violated",
+            "unknown",
+            "not_computed"
+          ],
+          "title": "Assessed Scope Status",
+          "type": "string"
+        },
+        "execution_status": {
+          "enum": [
+            "passed",
+            "violated",
+            "unknown",
+            "not_computed"
+          ],
+          "title": "Execution Status",
+          "type": "string"
+        },
+        "stages": {
+          "items": {
+            "$ref": "#/$defs/ClusterImportAssessment"
+          },
+          "title": "Stages",
+          "type": "array"
+        },
+        "version": {
+          "const": "cluster-validation-v1",
+          "default": "cluster-validation-v1",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "scope",
+        "assessed_scope_status",
+        "execution_status",
+        "stages"
+      ],
+      "title": "ClusterValidation",
+      "type": "object"
+    },
+    "CommunicationEventExecution": {
+      "description": "Observed coverage, not a claim that one event alone caused each drop.",
+      "properties": {
+        "window": {
+          "$ref": "#/$defs/CommunicationFaultWindow"
+        },
+        "status": {
+          "enum": [
+            "executed",
+            "partially_executed",
+            "not_reached"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "observed_ticks": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Observed Ticks",
+          "type": "array"
+        },
+        "matched_messages": {
+          "title": "Matched Messages",
+          "type": "integer"
+        },
+        "dropped_while_active": {
+          "title": "Dropped While Active",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "window",
+        "status",
+        "observed_ticks",
+        "matched_messages",
+        "dropped_while_active"
+      ],
+      "title": "CommunicationEventExecution",
+      "type": "object"
+    },
+    "CommunicationFaultWindow": {
+      "description": "Inclusive iteration window; packet loss retains explicit global semantics.",
+      "properties": {
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "outage",
+            "packet_loss"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "scope": {
+          "enum": [
+            "region",
+            "global"
+          ],
+          "title": "Scope",
+          "type": "string"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Target"
+        },
+        "start": {
+          "title": "Start",
+          "type": "integer"
+        },
+        "end": {
+          "title": "End",
+          "type": "integer"
+        },
+        "probability": {
+          "title": "Probability",
+          "type": "number"
+        }
+      },
+      "required": [
+        "event_id",
+        "kind",
+        "scope",
+        "target",
+        "start",
+        "end",
+        "probability"
+      ],
+      "title": "CommunicationFaultWindow",
+      "type": "object"
+    },
+    "CommunicationSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "sent": {
+          "title": "Sent",
+          "type": "integer"
+        },
+        "delivered": {
+          "title": "Delivered",
+          "type": "integer"
+        },
+        "dropped": {
+          "title": "Dropped",
+          "type": "integer"
+        },
+        "delayed": {
+          "title": "Delayed",
+          "type": "integer"
+        },
+        "outage_dropped": {
+          "title": "Outage Dropped",
+          "type": "integer"
+        },
+        "stale_uses": {
+          "title": "Stale Uses",
+          "type": "integer"
+        },
+        "fallback_uses": {
+          "title": "Fallback Uses",
+          "type": "integer"
+        },
+        "loss_probability": {
+          "title": "Loss Probability",
+          "type": "number"
+        },
+        "loss_start_iteration": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Loss Start Iteration"
+        },
+        "loss_end_iteration": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Loss End Iteration"
+        },
+        "outage_region": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outage Region"
+        },
+        "outage_start_iteration": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outage Start Iteration"
+        },
+        "outage_end_iteration": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outage End Iteration"
+        },
+        "event_executions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CommunicationEventExecution"
+          },
+          "title": "Event Executions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "sent",
+        "delivered",
+        "dropped",
+        "delayed",
+        "outage_dropped",
+        "stale_uses",
+        "fallback_uses",
+        "loss_probability"
+      ],
+      "title": "CommunicationSummary",
+      "type": "object"
+    },
+    "CoordinationResiduals": {
+      "properties": {
+        "primal": {
+          "title": "Primal",
+          "type": "number"
+        },
+        "dual": {
+          "title": "Dual",
+          "type": "number"
+        },
+        "primal_tolerance": {
+          "title": "Primal Tolerance",
+          "type": "number"
+        },
+        "dual_tolerance": {
+          "title": "Dual Tolerance",
+          "type": "number"
+        }
+      },
+      "required": [
+        "primal",
+        "dual",
+        "primal_tolerance",
+        "dual_tolerance"
+      ],
+      "title": "CoordinationResiduals",
+      "type": "object"
+    },
+    "CoordinationSnapshot": {
+      "description": "One completed barrier update; row order is the order of `regions`.\n\nThe local plans consumed epoch k, and the new references/duals are for k+1.\n`converged` certifies the aggregate convex problem only, never execution.",
+      "properties": {
+        "epoch": {
+          "title": "Epoch",
+          "type": "integer"
+        },
+        "communication_tick": {
+          "title": "Communication Tick",
+          "type": "integer"
+        },
+        "converged": {
+          "title": "Converged",
+          "type": "boolean"
+        },
+        "capabilities": {
+          "$ref": "#/$defs/DispatchCapabilities"
+        },
+        "regions": {
+          "items": {
+            "$ref": "#/$defs/RegionalPlanSnapshot"
+          },
+          "title": "Regions",
+          "type": "array"
+        },
+        "p_references_mw": {
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "P References Mw",
+          "type": "array"
+        },
+        "q_references_mvar": {
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Q References Mvar",
+          "type": "array"
+        },
+        "previous_p_references_mw": {
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Previous P References Mw",
+          "type": "array"
+        },
+        "previous_q_references_mvar": {
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Previous Q References Mvar",
+          "type": "array"
+        },
+        "dual_p": {
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Dual P",
+          "type": "array"
+        },
+        "dual_q": {
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Dual Q",
+          "type": "array"
+        },
+        "rho": {
+          "title": "Rho",
+          "type": "number"
+        },
+        "residuals": {
+          "$ref": "#/$defs/CoordinationResiduals"
+        },
+        "version": {
+          "const": "coordination-snapshot-v1",
+          "default": "coordination-snapshot-v1",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "epoch",
+        "communication_tick",
+        "converged",
+        "capabilities",
+        "regions",
+        "p_references_mw",
+        "q_references_mvar",
+        "previous_p_references_mw",
+        "previous_q_references_mvar",
+        "dual_p",
+        "dual_q",
+        "rho",
+        "residuals"
+      ],
+      "title": "CoordinationSnapshot",
+      "type": "object"
+    },
+    "DispatchCapabilities": {
+      "description": "One dispatch request's device participation, not physical nameplate data.\n\nDisabled storage provides neither active nor reactive support, matching\nexisting central solvers. Its initial energy is held fixed.",
+      "properties": {
+        "storage_enabled": {
+          "default": true,
+          "title": "Storage Enabled",
+          "type": "boolean"
+        },
+        "version": {
+          "const": "dispatch-capabilities-v1",
+          "default": "dispatch-capabilities-v1",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "title": "DispatchCapabilities",
+      "type": "object"
+    },
+    "EconomicCost": {
+      "properties": {
+        "import_cost_cny": {
+          "title": "Import Cost Cny",
+          "type": "number"
+        },
+        "curtailment_cost_cny": {
+          "title": "Curtailment Cost Cny",
+          "type": "number"
+        },
+        "storage_degradation_cost_cny": {
+          "title": "Storage Degradation Cost Cny",
+          "type": "number"
+        },
+        "loss_cost_cny": {
+          "title": "Loss Cost Cny",
+          "type": "number"
+        },
+        "economic_cost_cny": {
+          "title": "Economic Cost Cny",
+          "type": "number"
+        }
+      },
+      "required": [
+        "import_cost_cny",
+        "curtailment_cost_cny",
+        "storage_degradation_cost_cny",
+        "loss_cost_cny",
+        "economic_cost_cny"
+      ],
+      "title": "EconomicCost",
+      "type": "object"
+    },
+    "EventTimeAxis": {
+      "enum": [
+        "clock_minute",
+        "coordination_iteration"
+      ],
+      "title": "EventTimeAxis",
+      "type": "string"
+    },
+    "EventType": {
+      "enum": [
+        "pv_surge",
+        "wind_surge",
+        "load_drop",
+        "load_surge",
+        "communication_packet_loss",
+        "communication_outage"
+      ],
+      "title": "EventType",
+      "type": "string"
+    },
+    "ExecutiveSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "overall_passed": {
+          "title": "Overall Passed",
+          "type": "boolean"
+        },
+        "headline": {
+          "title": "Headline",
+          "type": "string"
+        },
+        "economic_improvement_percent": {
+          "title": "Economic Improvement Percent",
+          "type": "number"
+        },
+        "baseline_economic_cost_cny": {
+          "title": "Baseline Economic Cost Cny",
+          "type": "number"
+        },
+        "optimized_economic_cost_cny": {
+          "title": "Optimized Economic Cost Cny",
+          "type": "number"
+        },
+        "optimized_peak_import_mw": {
+          "title": "Optimized Peak Import Mw",
+          "type": "number"
+        },
+        "total_active_loss_mwh": {
+          "title": "Total Active Loss Mwh",
+          "type": "number"
+        },
+        "minimum_power_factor": {
+          "title": "Minimum Power Factor",
+          "type": "number"
+        },
+        "minimum_voltage_pu": {
+          "title": "Minimum Voltage Pu",
+          "type": "number"
+        },
+        "maximum_voltage_pu": {
+          "title": "Maximum Voltage Pu",
+          "type": "number"
+        }
+      },
+      "required": [
+        "overall_passed",
+        "headline",
+        "economic_improvement_percent",
+        "baseline_economic_cost_cny",
+        "optimized_economic_cost_cny",
+        "optimized_peak_import_mw",
+        "total_active_loss_mwh",
+        "minimum_power_factor",
+        "minimum_voltage_pu",
+        "maximum_voltage_pu"
+      ],
+      "title": "ExecutiveSummary",
+      "type": "object"
+    },
+    "GroupControlEventRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "scenario": {
+          "title": "Scenario",
+          "type": "string"
+        },
+        "time_minute": {
+          "title": "Time Minute",
+          "type": "number"
+        },
+        "event_type": {
+          "title": "Event Type",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "previous_state": {
+          "title": "Previous State",
+          "type": "string"
+        },
+        "new_state": {
+          "title": "New State",
+          "type": "string"
+        },
+        "requested_power_mw": {
+          "title": "Requested Power Mw",
+          "type": "number"
+        },
+        "achieved_power_mw": {
+          "title": "Achieved Power Mw",
+          "type": "number"
+        }
+      },
+      "required": [
+        "scenario",
+        "time_minute",
+        "event_type",
+        "reason",
+        "previous_state",
+        "new_state",
+        "requested_power_mw",
+        "achieved_power_mw"
+      ],
+      "title": "GroupControlEventRecord",
+      "type": "object"
+    },
+    "GroupControlRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "scenario": {
+          "title": "Scenario",
+          "type": "string"
+        },
+        "time_minute": {
+          "title": "Time Minute",
+          "type": "number"
+        },
+        "pcc_power_mw": {
+          "title": "Pcc Power Mw",
+          "type": "number"
+        },
+        "risk_limit_mw": {
+          "title": "Risk Limit Mw",
+          "type": "number"
+        },
+        "safety_threshold_mw": {
+          "title": "Safety Threshold Mw",
+          "type": "number"
+        },
+        "restore_threshold_mw": {
+          "title": "Restore Threshold Mw",
+          "type": "number"
+        },
+        "risk_index": {
+          "title": "Risk Index",
+          "type": "number"
+        },
+        "state": {
+          "title": "State",
+          "type": "string"
+        },
+        "action": {
+          "title": "Action",
+          "type": "string"
+        },
+        "trigger_reason": {
+          "title": "Trigger Reason",
+          "type": "string"
+        },
+        "requested_curtailment_mw": {
+          "title": "Requested Curtailment Mw",
+          "type": "number"
+        },
+        "requested_restoration_mw": {
+          "title": "Requested Restoration Mw",
+          "type": "number"
+        },
+        "remaining_curtailment_mw": {
+          "title": "Remaining Curtailment Mw",
+          "type": "number"
+        }
+      },
+      "required": [
+        "scenario",
+        "time_minute",
+        "pcc_power_mw",
+        "risk_limit_mw",
+        "safety_threshold_mw",
+        "restore_threshold_mw",
+        "risk_index",
+        "state",
+        "action",
+        "trigger_reason",
+        "requested_curtailment_mw",
+        "requested_restoration_mw",
+        "remaining_curtailment_mw"
+      ],
+      "title": "GroupControlRecord",
+      "type": "object"
+    },
+    "GroupControlSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "all_passed": {
+          "title": "All Passed",
+          "type": "boolean"
+        },
+        "scenario_count": {
+          "title": "Scenario Count",
+          "type": "integer"
+        },
+        "scenario_checks": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "type": "object"
+          },
+          "title": "Scenario Checks",
+          "type": "object"
+        },
+        "records": {
+          "items": {
+            "$ref": "#/$defs/GroupControlRecord"
+          },
+          "title": "Records",
+          "type": "array"
+        },
+        "events": {
+          "items": {
+            "$ref": "#/$defs/GroupControlEventRecord"
+          },
+          "title": "Events",
+          "type": "array"
+        }
+      },
+      "required": [
+        "all_passed",
+        "scenario_count",
+        "scenario_checks",
+        "records",
+        "events"
+      ],
+      "title": "GroupControlSummary",
+      "type": "object"
+    },
+    "ReferenceEconomics": {
+      "description": "Aggregate reference accounting, explicitly NOT regional AC realization.",
+      "properties": {
+        "reference": {
+          "$ref": "#/$defs/EconomicCost"
+        },
+        "centralized_economic_cost_cny": {
+          "title": "Centralized Economic Cost Cny",
+          "type": "number"
+        },
+        "surrogate_objective_cny": {
+          "title": "Surrogate Objective Cny",
+          "type": "number"
+        },
+        "gap_percent": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Gap Percent"
+        },
+        "comparison_status": {
+          "enum": [
+            "comparable",
+            "not_converged",
+            "nonpositive_baseline"
+          ],
+          "title": "Comparison Status",
+          "type": "string"
+        },
+        "accounting_version": {
+          "const": "dispatch-economics-v2",
+          "default": "dispatch-economics-v2",
+          "title": "Accounting Version",
+          "type": "string"
+        },
+        "scope": {
+          "const": "aggregate_reference_with_calibrated_losses",
+          "default": "aggregate_reference_with_calibrated_losses",
+          "title": "Scope",
+          "type": "string"
+        },
+        "realized_regional_economic_cost_cny": {
+          "default": null,
+          "title": "Realized Regional Economic Cost Cny",
+          "type": "null"
+        },
+        "realization_status": {
+          "const": "not_computed",
+          "default": "not_computed",
+          "title": "Realization Status",
+          "type": "string"
+        },
+        "formal_ten_percent_requirement_certified": {
+          "const": false,
+          "default": false,
+          "title": "Formal Ten Percent Requirement Certified",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "reference",
+        "centralized_economic_cost_cny",
+        "surrogate_objective_cny",
+        "gap_percent",
+        "comparison_status"
+      ],
+      "title": "ReferenceEconomics",
+      "type": "object"
+    },
+    "RegionalPlanSnapshot": {
+      "description": "Owned immutable values of the local solve used in an ADMM update.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "p_grid_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "P Grid Mw",
+          "type": "array"
+        },
+        "q_grid_mvar": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Q Grid Mvar",
+          "type": "array"
+        },
+        "renewable_used_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Renewable Used Mw",
+          "type": "array"
+        },
+        "storage_charge_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Storage Charge Mw",
+          "type": "array"
+        },
+        "storage_discharge_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Storage Discharge Mw",
+          "type": "array"
+        },
+        "storage_energy_mwh": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Storage Energy Mwh",
+          "type": "array"
+        },
+        "q_support_mvar": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Q Support Mvar",
+          "type": "array"
+        },
+        "local_objective_cny": {
+          "title": "Local Objective Cny",
+          "type": "number"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "signal_iteration": {
+          "title": "Signal Iteration",
+          "type": "integer"
+        },
+        "used_fallback": {
+          "title": "Used Fallback",
+          "type": "boolean"
+        },
+        "economic_cost": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EconomicCost"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "renewable_accounting": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RenewableAccounting"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "p_grid_mw",
+        "q_grid_mvar",
+        "renewable_used_mw",
+        "storage_charge_mw",
+        "storage_discharge_mw",
+        "storage_energy_mwh",
+        "q_support_mvar",
+        "local_objective_cny",
+        "status",
+        "signal_iteration",
+        "used_fallback",
+        "economic_cost",
+        "renewable_accounting"
+      ],
+      "title": "RegionalPlanSnapshot",
+      "type": "object"
+    },
+    "RenewableAccounting": {
+      "description": "Chronological interval MW. Availability is AFTER the rated-MW bound.\n\nRaw predictions remain diagnostics. Excess above rated availability is not\ncontrollable curtailment. Tuples own their values and cannot mutate callers.",
+      "properties": {
+        "raw_available_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Raw Available Mw",
+          "type": "array"
+        },
+        "available_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Available Mw",
+          "type": "array"
+        },
+        "nameplate_excess_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Nameplate Excess Mw",
+          "type": "array"
+        },
+        "curtailed_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Curtailed Mw",
+          "type": "array"
+        }
+      },
+      "required": [
+        "raw_available_mw",
+        "available_mw",
+        "nameplate_excess_mw",
+        "curtailed_mw"
+      ],
+      "title": "RenewableAccounting",
+      "type": "object"
+    },
+    "ScenarioEventRecord": {
+      "additionalProperties": false,
+      "description": "Stored event description; reading evidence does not authorize execution.",
+      "properties": {
+        "event_id": {
+          "maxLength": 48,
+          "minLength": 1,
+          "title": "Event Id",
+          "type": "string"
+        },
+        "event_type": {
+          "$ref": "#/$defs/EventType"
+        },
+        "target": {
+          "enum": [
+            "SC",
+            "YA_B",
+            "YA_C"
+          ],
+          "title": "Target",
+          "type": "string"
+        },
+        "time_axis": {
+          "$ref": "#/$defs/EventTimeAxis"
+        },
+        "start": {
+          "minimum": 0.0,
+          "title": "Start",
+          "type": "number"
+        },
+        "end": {
+          "exclusiveMinimum": 0.0,
+          "title": "End",
+          "type": "number"
+        },
+        "magnitude": {
+          "default": 1.0,
+          "exclusiveMinimum": 0.0,
+          "maximum": 5.0,
+          "title": "Magnitude",
+          "type": "number"
+        },
+        "label": {
+          "default": "场景事件",
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "event_id",
+        "event_type",
+        "target",
+        "time_axis",
+        "start",
+        "end"
+      ],
+      "title": "ScenarioEventRecord",
+      "type": "object"
+    },
+    "ScenarioType": {
+      "enum": [
+        "single_microgrid",
+        "cluster_coordination",
+        "communication_fault",
+        "group_control"
+      ],
+      "title": "ScenarioType",
+      "type": "string"
+    },
+    "SimulationMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "default": "1.3.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "generated_at": {
+          "title": "Generated At",
+          "type": "string"
+        },
+        "data_source": {
+          "const": "parameterized_simulation",
+          "default": "parameterized_simulation",
+          "title": "Data Source",
+          "type": "string"
+        },
+        "data_notice": {
+          "default": "全部网络与运行数据均为参数化模拟数据，不代表实际油田数据。",
+          "title": "Data Notice",
+          "type": "string"
+        },
+        "scenario_type": {
+          "$ref": "#/$defs/ScenarioType"
+        },
+        "region": {
+          "title": "Region",
+          "type": "string"
+        },
+        "steps": {
+          "title": "Steps",
+          "type": "integer"
+        },
+        "dt_hours": {
+          "title": "Dt Hours",
+          "type": "number"
+        },
+        "formulation": {
+          "$ref": "#/$defs/SolverFormulation"
+        }
+      },
+      "required": [
+        "generated_at",
+        "scenario_type",
+        "region",
+        "steps",
+        "dt_hours",
+        "formulation"
+      ],
+      "title": "SimulationMetadata",
+      "type": "object"
+    },
+    "SimulationRequestRecord": {
+      "additionalProperties": false,
+      "description": "Recorded inputs, including historical combinations no longer executable.",
+      "properties": {
+        "name": {
+          "default": "单微网快速仿真",
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "scenario_type": {
+          "$ref": "#/$defs/ScenarioType",
+          "default": "single_microgrid"
+        },
+        "region": {
+          "default": "SC",
+          "enum": [
+            "SC",
+            "YA_B",
+            "YA_C"
+          ],
+          "title": "Region",
+          "type": "string"
+        },
+        "steps": {
+          "default": 8,
+          "maximum": 288,
+          "minimum": 1,
+          "title": "Steps",
+          "type": "integer"
+        },
+        "storage_enabled": {
+          "default": true,
+          "title": "Storage Enabled",
+          "type": "boolean"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverOptions"
+        },
+        "admm_max_iterations": {
+          "default": 220,
+          "maximum": 1000,
+          "minimum": 4,
+          "title": "Admm Max Iterations",
+          "type": "integer"
+        },
+        "communication_loss_probability": {
+          "default": 0.05,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Communication Loss Probability",
+          "type": "number"
+        },
+        "communication_max_delay_iterations": {
+          "default": 2,
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Communication Max Delay Iterations",
+          "type": "integer"
+        },
+        "communication_outage_region": {
+          "default": "YA_B",
+          "enum": [
+            "SC",
+            "YA_B",
+            "YA_C"
+          ],
+          "title": "Communication Outage Region",
+          "type": "string"
+        },
+        "communication_outage_start_iteration": {
+          "default": 12,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Communication Outage Start Iteration",
+          "type": "integer"
+        },
+        "communication_outage_end_iteration": {
+          "default": 22,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Communication Outage End Iteration",
+          "type": "integer"
+        },
+        "events": {
+          "items": {
+            "$ref": "#/$defs/ScenarioEventRecord"
+          },
+          "maxItems": 20,
+          "title": "Events",
+          "type": "array"
+        }
+      },
+      "title": "SimulationRequestRecord",
+      "type": "object"
+    },
+    "SolverFormulation": {
+      "enum": [
+        "misocp",
+        "legacy_milp"
+      ],
+      "title": "SolverFormulation",
+      "type": "string"
+    },
+    "SolverOptions": {
+      "additionalProperties": false,
+      "properties": {
+        "formulation": {
+          "$ref": "#/$defs/SolverFormulation",
+          "default": "misocp"
+        },
+        "time_limit_seconds": {
+          "default": 60.0,
+          "exclusiveMinimum": 0.0,
+          "maximum": 1800.0,
+          "title": "Time Limit Seconds",
+          "type": "number"
+        }
+      },
+      "title": "SolverOptions",
+      "type": "object"
+    },
+    "TimeSeriesPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "time_hour": {
+          "title": "Time Hour",
+          "type": "number"
+        },
+        "price_cny_per_mwh": {
+          "title": "Price Cny Per Mwh",
+          "type": "number"
+        },
+        "load_mw": {
+          "title": "Load Mw",
+          "type": "number"
+        },
+        "load_mvar": {
+          "title": "Load Mvar",
+          "type": "number"
+        },
+        "p_grid_baseline_mw": {
+          "title": "P Grid Baseline Mw",
+          "type": "number"
+        },
+        "p_grid_optimized_mw": {
+          "title": "P Grid Optimized Mw",
+          "type": "number"
+        },
+        "q_grid_optimized_mvar": {
+          "title": "Q Grid Optimized Mvar",
+          "type": "number"
+        },
+        "power_factor": {
+          "title": "Power Factor",
+          "type": "number"
+        },
+        "wind_available_mw": {
+          "title": "Wind Available Mw",
+          "type": "number"
+        },
+        "wind_used_mw": {
+          "title": "Wind Used Mw",
+          "type": "number"
+        },
+        "pv_available_mw": {
+          "title": "Pv Available Mw",
+          "type": "number"
+        },
+        "pv_used_mw": {
+          "title": "Pv Used Mw",
+          "type": "number"
+        },
+        "storage_charge_mw": {
+          "title": "Storage Charge Mw",
+          "type": "number"
+        },
+        "storage_discharge_mw": {
+          "title": "Storage Discharge Mw",
+          "type": "number"
+        },
+        "storage_energy_mwh": {
+          "title": "Storage Energy Mwh",
+          "type": "number"
+        },
+        "svg_q_mvar": {
+          "title": "Svg Q Mvar",
+          "type": "number"
+        },
+        "minimum_voltage_pu": {
+          "title": "Minimum Voltage Pu",
+          "type": "number"
+        },
+        "maximum_voltage_pu": {
+          "title": "Maximum Voltage Pu",
+          "type": "number"
+        },
+        "maximum_line_loading_pu": {
+          "title": "Maximum Line Loading Pu",
+          "type": "number"
+        },
+        "active_loss_mw": {
+          "title": "Active Loss Mw",
+          "type": "number"
+        },
+        "p_grid_security_floor_mw": {
+          "title": "P Grid Security Floor Mw",
+          "type": "number"
+        },
+        "p_grid_security_headroom_mw": {
+          "title": "P Grid Security Headroom Mw",
+          "type": "number"
+        }
+      },
+      "required": [
+        "time_hour",
+        "price_cny_per_mwh",
+        "load_mw",
+        "load_mvar",
+        "p_grid_baseline_mw",
+        "p_grid_optimized_mw",
+        "q_grid_optimized_mvar",
+        "power_factor",
+        "wind_available_mw",
+        "wind_used_mw",
+        "pv_available_mw",
+        "pv_used_mw",
+        "storage_charge_mw",
+        "storage_discharge_mw",
+        "storage_energy_mwh",
+        "svg_q_mvar",
+        "minimum_voltage_pu",
+        "maximum_voltage_pu",
+        "maximum_line_loading_pu",
+        "active_loss_mw",
+        "p_grid_security_floor_mw",
+        "p_grid_security_headroom_mw"
+      ],
+      "title": "TimeSeriesPoint",
+      "type": "object"
+    },
+    "TopologyEdge": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "target": {
+          "title": "Target",
+          "type": "string"
+        },
+        "resistance_pu": {
+          "title": "Resistance Pu",
+          "type": "number"
+        },
+        "reactance_pu": {
+          "title": "Reactance Pu",
+          "type": "number"
+        },
+        "capacity_mva": {
+          "title": "Capacity Mva",
+          "type": "number"
+        },
+        "branch_kind": {
+          "default": "line",
+          "enum": [
+            "line",
+            "transformer"
+          ],
+          "title": "Branch Kind",
+          "type": "string"
+        },
+        "tap_ratio": {
+          "default": 1.0,
+          "title": "Tap Ratio",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "source",
+        "target",
+        "resistance_pu",
+        "reactance_pu",
+        "capacity_mva"
+      ],
+      "title": "TopologyEdge",
+      "type": "object"
+    },
+    "TopologyNode": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "pcc",
+            "main",
+            "wind",
+            "pv",
+            "flex"
+          ],
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "kind"
+      ],
+      "title": "TopologyNode",
+      "type": "object"
+    },
+    "ValidationItem": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "actual": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actual"
+        },
+        "limit": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Limit"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "scope": {
+          "title": "Scope",
+          "type": "string"
+        },
+        "explanation": {
+          "title": "Explanation",
+          "type": "string"
+        },
+        "validation_basis": {
+          "anyOf": [
+            {
+              "enum": [
+                "centralized_reference",
+                "admm_reference"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validation Basis"
+        }
+      },
+      "required": [
+        "code",
+        "label",
+        "passed",
+        "scope",
+        "explanation"
+      ],
+      "title": "ValidationItem",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "metadata": {
+      "$ref": "#/$defs/SimulationMetadata"
+    },
+    "request": {
+      "$ref": "#/$defs/SimulationRequestRecord"
+    },
+    "executive_summary": {
+      "$ref": "#/$defs/ExecutiveSummary"
+    },
+    "topology_nodes": {
+      "items": {
+        "$ref": "#/$defs/TopologyNode"
+      },
+      "title": "Topology Nodes",
+      "type": "array"
+    },
+    "topology_edges": {
+      "items": {
+        "$ref": "#/$defs/TopologyEdge"
+      },
+      "title": "Topology Edges",
+      "type": "array"
+    },
+    "validation_items": {
+      "items": {
+        "$ref": "#/$defs/ValidationItem"
+      },
+      "title": "Validation Items",
+      "type": "array"
+    },
+    "comparison": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Comparison",
+      "type": "object"
+    },
+    "solver": {
+      "additionalProperties": true,
+      "title": "Solver",
+      "type": "object"
+    },
+    "timeseries": {
+      "items": {
+        "$ref": "#/$defs/TimeSeriesPoint"
+      },
+      "title": "Timeseries",
+      "type": "array"
+    },
+    "cluster_timeseries": {
+      "items": {
+        "$ref": "#/$defs/ClusterTimeSeriesPoint"
+      },
+      "title": "Cluster Timeseries",
+      "type": "array"
+    },
+    "admm_history": {
+      "items": {
+        "$ref": "#/$defs/ADMMHistoryPoint"
+      },
+      "title": "Admm History",
+      "type": "array"
+    },
+    "communication": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CommunicationSummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "group_control": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GroupControlSummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "economic_accounting_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Economic Accounting Version"
+    },
+    "reference_economics": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ReferenceEconomics"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "cluster_validation": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ClusterValidation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "coordination_snapshot": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CoordinationSnapshot"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "metadata",
+    "request",
+    "executive_summary",
+    "topology_nodes",
+    "topology_edges",
+    "validation_items",
+    "comparison",
+    "solver",
+    "timeseries"
+  ],
+  "title": "SimulationResult",
+  "type": "object"
+}

@@ -1,0 +1,25 @@
+{
+  "schema_version": "field-document-v1",
+  "dataset_id": "synthetic-shancheng-example",
+  "version": "1",
+  "synthetic": true,
+  "role": "operating_modes",
+  "payload": {
+    "network_id": "synthetic-field-snapshot-demo",
+    "operating_modes": [
+      {
+        "mode_id": "normal",
+        "description": "合成示例固定运行方式"
+      }
+    ],
+    "default_operating_mode_id": "normal",
+    "selections": [
+      {
+        "mode_id": "normal",
+        "source": "Synthetic fixed switch/tap state for this example",
+        "valid_from": "2026-09-13T00:00:00+08:00",
+        "valid_until": "2026-09-14T00:00:00+08:00"
+      }
+    ]
+  }
+}

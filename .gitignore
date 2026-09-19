@@ -1,0 +1,126 @@
+# Python bytecode and interpreter caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python tooling and test output
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright/
+.hypothesis/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Python packaging output
+build/
+dist/
+site/
+*.egg-info/
+*.egg
+*.whl
+
+# Node and frontend dependencies
+node_modules/
+.pnp
+.pnp.*
+.yarn/cache/
+.yarn/install-state.gz
+
+# Next.js, Vinext, Vite and deployment output
+.next/
+.vinext/
+.vite/
+.turbo/
+.wrangler/
+.vercel/
+out/
+outputs/
+work/
+*.tsbuildinfo
+next-env.d.ts
+
+# Package-manager debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local environment and secret material
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+.secrets/
+secrets/
+credentials/
+
+# Runtime logs, process files and temporary editor files
+*.log
+*.pid
+*.pid.lock
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+~$*
+
+# Local databases and journals
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+
+# IDE and local assistant configuration
+.idea/
+.vscode/
+.fleet/
+.claude/
+.codex/
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Generated studies, reports, screenshots and scratch work
+/artifacts/
+/results/
+/tmp/
+/network_scenario_hierarchical_regression/
+/network_scenario_verification_results/
+/network_v2_fixed_equipment_verification_results/
+/network_v2_transformer_verification_results/
+/network_v2_verification_results/
+
+# Local documentation and task notes
+/docs3/
+/todo/
+
+# Local field/customer source material. Keep synthetic public examples in
+# docs/examples, examples and tests/fixtures under version control.
+/母线容量、阻抗.xlsx
+/线路负荷统计0901.xlsx
+/西交大-资料提供.doc
+/西交大.rar
+/山城微电网控制策略逻辑.pdf
+/群调群控调控策略.docx

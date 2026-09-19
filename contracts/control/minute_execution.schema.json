@@ -1,0 +1,170 @@
+{
+  "$defs": {
+    "MinuteExecutionRecord": {
+      "description": "Versioned sidecar projection; absent historical evidence stays absent.",
+      "properties": {
+        "version": {
+          "anyOf": [
+            {
+              "const": "minute-execution-v2",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Version"
+        },
+        "time_minutes": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Time Minutes",
+          "type": "array"
+        },
+        "wind_resource_actual_mw": {
+          "items": {
+            "$ref": "#/$defs/ResourcePowerSeries"
+          },
+          "title": "Wind Resource Actual Mw",
+          "type": "array"
+        },
+        "wind_availability_limited_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Wind Availability Limited Mw",
+          "type": "array"
+        },
+        "pv_availability_limited_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Pv Availability Limited Mw",
+          "type": "array"
+        },
+        "restoration_evidence": {
+          "items": {
+            "$ref": "#/$defs/RestorationEvidence"
+          },
+          "title": "Restoration Evidence",
+          "type": "array"
+        }
+      },
+      "required": [
+        "version",
+        "time_minutes",
+        "wind_resource_actual_mw",
+        "wind_availability_limited_mw",
+        "pv_availability_limited_mw",
+        "restoration_evidence"
+      ],
+      "title": "MinuteExecutionRecord",
+      "type": "object"
+    },
+    "ResourcePowerSeries": {
+      "properties": {
+        "resource_id": {
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "actual_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Actual Mw",
+          "type": "array"
+        }
+      },
+      "required": [
+        "resource_id",
+        "actual_mw"
+      ],
+      "title": "ResourcePowerSeries",
+      "type": "object"
+    },
+    "RestorationEvidence": {
+      "description": "Command-specific feedback, not a safety verdict or an ACK of execution.",
+      "properties": {
+        "command_id": {
+          "title": "Command Id",
+          "type": "string"
+        },
+        "issued_at_minutes": {
+          "title": "Issued At Minutes",
+          "type": "number"
+        },
+        "observed_at_minutes": {
+          "title": "Observed At Minutes",
+          "type": "number"
+        },
+        "requested_mw": {
+          "title": "Requested Mw",
+          "type": "number"
+        },
+        "cap_released_mw": {
+          "title": "Cap Released Mw",
+          "type": "number"
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "observed",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "measured_delta_mw": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Measured Delta Mw"
+        },
+        "achieved_mw": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Achieved Mw"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "version": {
+          "const": "restoration-evidence-v1",
+          "default": "restoration-evidence-v1",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command_id",
+        "issued_at_minutes",
+        "observed_at_minutes",
+        "requested_mw",
+        "cap_released_mw",
+        "status",
+        "measured_delta_mw",
+        "achieved_mw",
+        "reason"
+      ],
+      "title": "RestorationEvidence",
+      "type": "object"
+    }
+  },
+  "additionalProperties": {
+    "$ref": "#/$defs/MinuteExecutionRecord"
+  },
+  "type": "object"
+}

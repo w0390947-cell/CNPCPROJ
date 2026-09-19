@@ -1,0 +1,83 @@
+{
+  "$defs": {
+    "BusSeries": {
+      "additionalProperties": false,
+      "properties": {
+        "bus_id": {
+          "minLength": 1,
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "values": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Values",
+          "type": "array"
+        }
+      },
+      "required": [
+        "bus_id",
+        "values"
+      ],
+      "title": "BusSeries",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "default": "synthetic-plant-v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "start": {
+      "format": "date-time",
+      "title": "Start",
+      "type": "string"
+    },
+    "step_minutes": {
+      "exclusiveMinimum": 0,
+      "title": "Step Minutes",
+      "type": "integer"
+    },
+    "load_p": {
+      "items": {
+        "$ref": "#/$defs/BusSeries"
+      },
+      "title": "Load P",
+      "type": "array"
+    },
+    "load_q": {
+      "items": {
+        "$ref": "#/$defs/BusSeries"
+      },
+      "title": "Load Q",
+      "type": "array"
+    },
+    "wind_available": {
+      "items": {
+        "$ref": "#/$defs/BusSeries"
+      },
+      "title": "Wind Available",
+      "type": "array"
+    },
+    "pv_available": {
+      "items": {
+        "$ref": "#/$defs/BusSeries"
+      },
+      "title": "Pv Available",
+      "type": "array"
+    }
+  },
+  "required": [
+    "start",
+    "step_minutes",
+    "load_p",
+    "load_q",
+    "wind_available",
+    "pv_available"
+  ],
+  "title": "PlantInputs",
+  "type": "object"
+}

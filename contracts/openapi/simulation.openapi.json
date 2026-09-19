@@ -1,0 +1,3191 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "油田微电网新能源协同控制仿真服务",
+    "description": "单机离线模拟数据服务；不连接真实 D5000、SCADA 或现场设备。",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Service Health",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/simulations/quick": {
+      "post": {
+        "summary": "Run Quick Simulation",
+        "description": "同步运行一个快速单微网算例，用于首个真实端到端闭环。",
+        "operationId": "run_quick_simulation_api_simulations_quick_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/simulations": {
+      "post": {
+        "summary": "Create Simulation",
+        "description": "创建独立进程仿真会话；同一时刻最多运行一个重型任务。",
+        "operationId": "create_simulation_api_simulations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
+                }
+              }
+            }
+          },
+          "507": {
+            "description": "任务存储已达容量上限或无法完整统计，暂不受理新任务"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/simulations/{simulation_id}": {
+      "get": {
+        "summary": "Get Simulation",
+        "operationId": "get_simulation_api_simulations__simulation_id__get",
+        "parameters": [
+          {
+            "name": "simulation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Simulation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/simulations/{simulation_id}/cancel": {
+      "post": {
+        "summary": "Cancel Simulation",
+        "operationId": "cancel_simulation_api_simulations__simulation_id__cancel_post",
+        "parameters": [
+          {
+            "name": "simulation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Simulation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/simulations/{simulation_id}/result": {
+      "get": {
+        "summary": "Get Simulation Result",
+        "operationId": "get_simulation_result_api_simulations__simulation_id__result_get",
+        "parameters": [
+          {
+            "name": "simulation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Simulation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/demo/catalog": {
+      "get": {
+        "summary": "Catalog",
+        "operationId": "catalog_api_demo_catalog_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Catalog"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/demo/telemetry": {
+      "get": {
+        "summary": "Telemetry",
+        "operationId": "telemetry_api_demo_telemetry_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Frame"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/demo/availability": {
+      "get": {
+        "summary": "Availability",
+        "operationId": "availability_api_demo_availability_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceAvailability"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/demo/commands": {
+      "post": {
+        "summary": "Command",
+        "operationId": "command_api_demo_commands_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Command"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Receipt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/demo/fault": {
+      "post": {
+        "summary": "Fault",
+        "operationId": "fault_api_demo_fault_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FaultRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Frame"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/demo/rearm": {
+      "post": {
+        "summary": "Rearm",
+        "operationId": "rearm_api_demo_rearm_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "type": "object",
+                  "title": "Response Rearm Api Demo Rearm Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ADMMHistoryPoint": {
+        "properties": {
+          "iteration": {
+            "type": "integer",
+            "title": "Iteration"
+          },
+          "primal_residual": {
+            "type": "number",
+            "title": "Primal Residual"
+          },
+          "dual_residual": {
+            "type": "number",
+            "title": "Dual Residual"
+          },
+          "primal_tolerance": {
+            "type": "number",
+            "title": "Primal Tolerance"
+          },
+          "dual_tolerance": {
+            "type": "number",
+            "title": "Dual Tolerance"
+          },
+          "fresh_region_count": {
+            "type": "integer",
+            "title": "Fresh Region Count"
+          },
+          "convergence_streak": {
+            "type": "integer",
+            "title": "Convergence Streak"
+          },
+          "fallback_regions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Fallback Regions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "iteration",
+          "primal_residual",
+          "dual_residual",
+          "primal_tolerance",
+          "dual_tolerance",
+          "fresh_region_count",
+          "convergence_streak",
+          "fallback_regions"
+        ],
+        "title": "ADMMHistoryPoint"
+      },
+      "AvailabilityPoint": {
+        "properties": {
+          "minute_of_day": {
+            "type": "integer",
+            "exclusiveMaximum": 1440.0,
+            "minimum": 0.0,
+            "title": "Minute Of Day"
+          },
+          "p_available_mw": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "P Available Mw"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "minute_of_day",
+          "p_available_mw"
+        ],
+        "title": "AvailabilityPoint"
+      },
+      "Catalog": {
+        "properties": {
+          "dataset_id": {
+            "type": "string",
+            "title": "Dataset Id"
+          },
+          "synthetic": {
+            "type": "boolean",
+            "const": true,
+            "title": "Synthetic",
+            "default": true
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "presets": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Presets"
+          },
+          "devices": {
+            "items": {
+              "$ref": "#/components/schemas/DeviceSpec"
+            },
+            "type": "array",
+            "title": "Devices"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dataset_id",
+          "source",
+          "presets",
+          "devices"
+        ],
+        "title": "Catalog"
+      },
+      "ClusterImportAssessment": {
+        "properties": {
+          "stage": {
+            "type": "string",
+            "enum": [
+              "centralized_reference",
+              "admm_reference",
+              "day_ahead",
+              "intraday",
+              "minute"
+            ],
+            "title": "Stage"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "violated",
+              "unknown",
+              "not_computed"
+            ],
+            "title": "Status"
+          },
+          "limit_mw": {
+            "type": "number",
+            "title": "Limit Mw"
+          },
+          "tolerance_mw": {
+            "type": "number",
+            "title": "Tolerance Mw"
+          },
+          "peak_import_mw": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peak Import Mw"
+          },
+          "violation_steps": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Violation Steps"
+          },
+          "sample_count": {
+            "type": "integer",
+            "title": "Sample Count"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stage",
+          "status",
+          "limit_mw",
+          "tolerance_mw",
+          "peak_import_mw",
+          "violation_steps",
+          "sample_count",
+          "reason"
+        ],
+        "title": "ClusterImportAssessment"
+      },
+      "ClusterTimeSeriesPoint": {
+        "properties": {
+          "time_hour": {
+            "type": "number",
+            "title": "Time Hour"
+          },
+          "aggregate_load_mw": {
+            "type": "number",
+            "title": "Aggregate Load Mw"
+          },
+          "aggregate_renewable_mw": {
+            "type": "number",
+            "title": "Aggregate Renewable Mw"
+          },
+          "aggregate_import_mw": {
+            "type": "number",
+            "title": "Aggregate Import Mw"
+          },
+          "aggregate_q_mvar": {
+            "type": "number",
+            "title": "Aggregate Q Mvar"
+          },
+          "import_limit_mw": {
+            "type": "number",
+            "title": "Import Limit Mw"
+          },
+          "regional_import_mw": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Regional Import Mw"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "time_hour",
+          "aggregate_load_mw",
+          "aggregate_renewable_mw",
+          "aggregate_import_mw",
+          "aggregate_q_mvar",
+          "import_limit_mw",
+          "regional_import_mw"
+        ],
+        "title": "ClusterTimeSeriesPoint"
+      },
+      "ClusterValidation": {
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": [
+              "reference_only",
+              "hierarchical_execution"
+            ],
+            "title": "Scope"
+          },
+          "assessed_scope_status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "violated",
+              "unknown",
+              "not_computed"
+            ],
+            "title": "Assessed Scope Status"
+          },
+          "execution_status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "violated",
+              "unknown",
+              "not_computed"
+            ],
+            "title": "Execution Status"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/ClusterImportAssessment"
+            },
+            "type": "array",
+            "title": "Stages"
+          },
+          "version": {
+            "type": "string",
+            "const": "cluster-validation-v1",
+            "title": "Version",
+            "default": "cluster-validation-v1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scope",
+          "assessed_scope_status",
+          "execution_status",
+          "stages"
+        ],
+        "title": "ClusterValidation",
+        "description": "A reference-only pass never certifies uncomputed execution stages."
+      },
+      "Command": {
+        "properties": {
+          "command_id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+            "title": "Command Id"
+          },
+          "epoch": {
+            "type": "string",
+            "title": "Epoch"
+          },
+          "device_id": {
+            "type": "string",
+            "title": "Device Id"
+          },
+          "p_mw": {
+            "type": "number",
+            "title": "P Mw"
+          },
+          "q_mvar": {
+            "type": "number",
+            "title": "Q Mvar"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "epoch",
+          "device_id",
+          "p_mw",
+          "q_mvar",
+          "expires_at"
+        ],
+        "title": "Command"
+      },
+      "CommunicationEventExecution": {
+        "properties": {
+          "window": {
+            "$ref": "#/components/schemas/CommunicationFaultWindow"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "executed",
+              "partially_executed",
+              "not_reached"
+            ],
+            "title": "Status"
+          },
+          "observed_ticks": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Observed Ticks"
+          },
+          "matched_messages": {
+            "type": "integer",
+            "title": "Matched Messages"
+          },
+          "dropped_while_active": {
+            "type": "integer",
+            "title": "Dropped While Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "window",
+          "status",
+          "observed_ticks",
+          "matched_messages",
+          "dropped_while_active"
+        ],
+        "title": "CommunicationEventExecution",
+        "description": "Observed coverage, not a claim that one event alone caused each drop."
+      },
+      "CommunicationFaultWindow": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "outage",
+              "packet_loss"
+            ],
+            "title": "Kind"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "region",
+              "global"
+            ],
+            "title": "Scope"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
+          "start": {
+            "type": "integer",
+            "title": "Start"
+          },
+          "end": {
+            "type": "integer",
+            "title": "End"
+          },
+          "probability": {
+            "type": "number",
+            "title": "Probability"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_id",
+          "kind",
+          "scope",
+          "target",
+          "start",
+          "end",
+          "probability"
+        ],
+        "title": "CommunicationFaultWindow",
+        "description": "Inclusive iteration window; packet loss retains explicit global semantics."
+      },
+      "CommunicationSummary": {
+        "properties": {
+          "sent": {
+            "type": "integer",
+            "title": "Sent"
+          },
+          "delivered": {
+            "type": "integer",
+            "title": "Delivered"
+          },
+          "dropped": {
+            "type": "integer",
+            "title": "Dropped"
+          },
+          "delayed": {
+            "type": "integer",
+            "title": "Delayed"
+          },
+          "outage_dropped": {
+            "type": "integer",
+            "title": "Outage Dropped"
+          },
+          "stale_uses": {
+            "type": "integer",
+            "title": "Stale Uses"
+          },
+          "fallback_uses": {
+            "type": "integer",
+            "title": "Fallback Uses"
+          },
+          "loss_probability": {
+            "type": "number",
+            "title": "Loss Probability"
+          },
+          "loss_start_iteration": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loss Start Iteration"
+          },
+          "loss_end_iteration": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loss End Iteration"
+          },
+          "outage_region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outage Region"
+          },
+          "outage_start_iteration": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outage Start Iteration"
+          },
+          "outage_end_iteration": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outage End Iteration"
+          },
+          "event_executions": {
+            "items": {
+              "$ref": "#/components/schemas/CommunicationEventExecution"
+            },
+            "type": "array",
+            "title": "Event Executions",
+            "default": []
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sent",
+          "delivered",
+          "dropped",
+          "delayed",
+          "outage_dropped",
+          "stale_uses",
+          "fallback_uses",
+          "loss_probability"
+        ],
+        "title": "CommunicationSummary"
+      },
+      "CoordinationResiduals": {
+        "properties": {
+          "primal": {
+            "type": "number",
+            "title": "Primal"
+          },
+          "dual": {
+            "type": "number",
+            "title": "Dual"
+          },
+          "primal_tolerance": {
+            "type": "number",
+            "title": "Primal Tolerance"
+          },
+          "dual_tolerance": {
+            "type": "number",
+            "title": "Dual Tolerance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "primal",
+          "dual",
+          "primal_tolerance",
+          "dual_tolerance"
+        ],
+        "title": "CoordinationResiduals"
+      },
+      "CoordinationSnapshot": {
+        "properties": {
+          "epoch": {
+            "type": "integer",
+            "title": "Epoch"
+          },
+          "communication_tick": {
+            "type": "integer",
+            "title": "Communication Tick"
+          },
+          "converged": {
+            "type": "boolean",
+            "title": "Converged"
+          },
+          "capabilities": {
+            "$ref": "#/components/schemas/DispatchCapabilities"
+          },
+          "regions": {
+            "items": {
+              "$ref": "#/components/schemas/RegionalPlanSnapshot"
+            },
+            "type": "array",
+            "title": "Regions"
+          },
+          "p_references_mw": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "P References Mw"
+          },
+          "q_references_mvar": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Q References Mvar"
+          },
+          "previous_p_references_mw": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Previous P References Mw"
+          },
+          "previous_q_references_mvar": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Previous Q References Mvar"
+          },
+          "dual_p": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Dual P"
+          },
+          "dual_q": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Dual Q"
+          },
+          "rho": {
+            "type": "number",
+            "title": "Rho"
+          },
+          "residuals": {
+            "$ref": "#/components/schemas/CoordinationResiduals"
+          },
+          "version": {
+            "type": "string",
+            "const": "coordination-snapshot-v1",
+            "title": "Version",
+            "default": "coordination-snapshot-v1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "epoch",
+          "communication_tick",
+          "converged",
+          "capabilities",
+          "regions",
+          "p_references_mw",
+          "q_references_mvar",
+          "previous_p_references_mw",
+          "previous_q_references_mvar",
+          "dual_p",
+          "dual_q",
+          "rho",
+          "residuals"
+        ],
+        "title": "CoordinationSnapshot",
+        "description": "One completed barrier update; row order is the order of `regions`.\n\nThe local plans consumed epoch k, and the new references/duals are for k+1.\n`converged` certifies the aggregate convex problem only, never execution."
+      },
+      "DeviceAvailabilitySeries": {
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Device Id"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "wind",
+              "pv"
+            ],
+            "title": "Kind"
+          },
+          "resolution_minutes": {
+            "type": "integer",
+            "const": 15,
+            "title": "Resolution Minutes",
+            "default": 15
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/AvailabilityPoint"
+            },
+            "type": "array",
+            "maxItems": 96,
+            "minItems": 96,
+            "title": "Points"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "device_id",
+          "region",
+          "kind",
+          "points"
+        ],
+        "title": "DeviceAvailabilitySeries"
+      },
+      "DeviceSpec": {
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Device Id"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region"
+          },
+          "bus_id": {
+            "type": "string",
+            "title": "Bus Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "wind",
+              "pv",
+              "storage",
+              "svg"
+            ],
+            "title": "Kind"
+          },
+          "p_min_mw": {
+            "type": "number",
+            "title": "P Min Mw"
+          },
+          "p_max_mw": {
+            "type": "number",
+            "title": "P Max Mw"
+          },
+          "q_max_mvar": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Q Max Mvar"
+          },
+          "s_max_mva": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "S Max Mva"
+          },
+          "ramp_mw_per_minute": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Ramp Mw Per Minute"
+          },
+          "energy_mwh": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Energy Mwh",
+            "default": 0
+          },
+          "minimum_mwh": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Minimum Mwh",
+            "default": 0
+          },
+          "initial_mwh": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Initial Mwh",
+            "default": 0
+          },
+          "eta_charge": {
+            "type": "number",
+            "maximum": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Eta Charge",
+            "default": 0.95
+          },
+          "eta_discharge": {
+            "type": "number",
+            "maximum": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Eta Discharge",
+            "default": 0.95
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "device_id",
+          "region",
+          "bus_id",
+          "kind",
+          "p_min_mw",
+          "p_max_mw",
+          "q_max_mvar",
+          "s_max_mva",
+          "ramp_mw_per_minute"
+        ],
+        "title": "DeviceSpec"
+      },
+      "DispatchCapabilities": {
+        "properties": {
+          "storage_enabled": {
+            "type": "boolean",
+            "title": "Storage Enabled",
+            "default": true
+          },
+          "version": {
+            "type": "string",
+            "const": "dispatch-capabilities-v1",
+            "title": "Version",
+            "default": "dispatch-capabilities-v1"
+          }
+        },
+        "type": "object",
+        "title": "DispatchCapabilities",
+        "description": "One dispatch request's device participation, not physical nameplate data.\n\nDisabled storage provides neither active nor reactive support, matching\nexisting central solvers. Its initial energy is held fixed."
+      },
+      "EconomicCost": {
+        "properties": {
+          "import_cost_cny": {
+            "type": "number",
+            "title": "Import Cost Cny"
+          },
+          "curtailment_cost_cny": {
+            "type": "number",
+            "title": "Curtailment Cost Cny"
+          },
+          "storage_degradation_cost_cny": {
+            "type": "number",
+            "title": "Storage Degradation Cost Cny"
+          },
+          "loss_cost_cny": {
+            "type": "number",
+            "title": "Loss Cost Cny"
+          },
+          "economic_cost_cny": {
+            "type": "number",
+            "title": "Economic Cost Cny"
+          }
+        },
+        "type": "object",
+        "required": [
+          "import_cost_cny",
+          "curtailment_cost_cny",
+          "storage_degradation_cost_cny",
+          "loss_cost_cny",
+          "economic_cost_cny"
+        ],
+        "title": "EconomicCost"
+      },
+      "EventTimeAxis": {
+        "type": "string",
+        "enum": [
+          "clock_minute",
+          "coordination_iteration"
+        ],
+        "title": "EventTimeAxis"
+      },
+      "EventType": {
+        "type": "string",
+        "enum": [
+          "pv_surge",
+          "wind_surge",
+          "load_drop",
+          "load_surge",
+          "communication_packet_loss",
+          "communication_outage"
+        ],
+        "title": "EventType"
+      },
+      "ExecutiveSummary": {
+        "properties": {
+          "overall_passed": {
+            "type": "boolean",
+            "title": "Overall Passed"
+          },
+          "headline": {
+            "type": "string",
+            "title": "Headline"
+          },
+          "economic_improvement_percent": {
+            "type": "number",
+            "title": "Economic Improvement Percent"
+          },
+          "baseline_economic_cost_cny": {
+            "type": "number",
+            "title": "Baseline Economic Cost Cny"
+          },
+          "optimized_economic_cost_cny": {
+            "type": "number",
+            "title": "Optimized Economic Cost Cny"
+          },
+          "optimized_peak_import_mw": {
+            "type": "number",
+            "title": "Optimized Peak Import Mw"
+          },
+          "total_active_loss_mwh": {
+            "type": "number",
+            "title": "Total Active Loss Mwh"
+          },
+          "minimum_power_factor": {
+            "type": "number",
+            "title": "Minimum Power Factor"
+          },
+          "minimum_voltage_pu": {
+            "type": "number",
+            "title": "Minimum Voltage Pu"
+          },
+          "maximum_voltage_pu": {
+            "type": "number",
+            "title": "Maximum Voltage Pu"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "overall_passed",
+          "headline",
+          "economic_improvement_percent",
+          "baseline_economic_cost_cny",
+          "optimized_economic_cost_cny",
+          "optimized_peak_import_mw",
+          "total_active_loss_mwh",
+          "minimum_power_factor",
+          "minimum_voltage_pu",
+          "maximum_voltage_pu"
+        ],
+        "title": "ExecutiveSummary"
+      },
+      "FaultRequest": {
+        "properties": {
+          "fault": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "communication_loss",
+              "bad_quality",
+              "voltage_sag",
+              "ack_timeout",
+              "load_drop",
+              "wind_trip",
+              "nonconvergence"
+            ],
+            "title": "Fault"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fault"
+        ],
+        "title": "FaultRequest"
+      },
+      "Frame": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "oilfield-telemetry-v1",
+            "title": "Schema Version",
+            "default": "oilfield-telemetry-v1"
+          },
+          "synthetic": {
+            "type": "boolean",
+            "const": true,
+            "title": "Synthetic",
+            "default": true
+          },
+          "dataset_id": {
+            "type": "string",
+            "title": "Dataset Id"
+          },
+          "epoch": {
+            "type": "string",
+            "title": "Epoch"
+          },
+          "sequence": {
+            "type": "integer",
+            "title": "Sequence"
+          },
+          "simulated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Simulated At"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At"
+          },
+          "fault": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "communication_loss",
+              "bad_quality",
+              "voltage_sag",
+              "ack_timeout",
+              "load_drop",
+              "wind_trip",
+              "nonconvergence"
+            ],
+            "title": "Fault"
+          },
+          "quality_valid": {
+            "type": "boolean",
+            "title": "Quality Valid"
+          },
+          "recovery_blocked": {
+            "type": "boolean",
+            "title": "Recovery Blocked"
+          },
+          "safe_cycles": {
+            "type": "integer",
+            "title": "Safe Cycles"
+          },
+          "devices": {
+            "items": {
+              "$ref": "#/components/schemas/Reading"
+            },
+            "type": "array",
+            "title": "Devices"
+          },
+          "networks": {
+            "items": {
+              "$ref": "#/components/schemas/Safety"
+            },
+            "type": "array",
+            "title": "Networks"
+          },
+          "receipts": {
+            "items": {
+              "$ref": "#/components/schemas/Receipt"
+            },
+            "type": "array",
+            "title": "Receipts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dataset_id",
+          "epoch",
+          "sequence",
+          "simulated_at",
+          "observed_at",
+          "fault",
+          "quality_valid",
+          "recovery_blocked",
+          "safe_cycles",
+          "devices",
+          "networks",
+          "receipts"
+        ],
+        "title": "Frame"
+      },
+      "GroupControlEventRecord": {
+        "properties": {
+          "scenario": {
+            "type": "string",
+            "title": "Scenario"
+          },
+          "time_minute": {
+            "type": "number",
+            "title": "Time Minute"
+          },
+          "event_type": {
+            "type": "string",
+            "title": "Event Type"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "previous_state": {
+            "type": "string",
+            "title": "Previous State"
+          },
+          "new_state": {
+            "type": "string",
+            "title": "New State"
+          },
+          "requested_power_mw": {
+            "type": "number",
+            "title": "Requested Power Mw"
+          },
+          "achieved_power_mw": {
+            "type": "number",
+            "title": "Achieved Power Mw"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scenario",
+          "time_minute",
+          "event_type",
+          "reason",
+          "previous_state",
+          "new_state",
+          "requested_power_mw",
+          "achieved_power_mw"
+        ],
+        "title": "GroupControlEventRecord"
+      },
+      "GroupControlRecord": {
+        "properties": {
+          "scenario": {
+            "type": "string",
+            "title": "Scenario"
+          },
+          "time_minute": {
+            "type": "number",
+            "title": "Time Minute"
+          },
+          "pcc_power_mw": {
+            "type": "number",
+            "title": "Pcc Power Mw"
+          },
+          "risk_limit_mw": {
+            "type": "number",
+            "title": "Risk Limit Mw"
+          },
+          "safety_threshold_mw": {
+            "type": "number",
+            "title": "Safety Threshold Mw"
+          },
+          "restore_threshold_mw": {
+            "type": "number",
+            "title": "Restore Threshold Mw"
+          },
+          "risk_index": {
+            "type": "number",
+            "title": "Risk Index"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "trigger_reason": {
+            "type": "string",
+            "title": "Trigger Reason"
+          },
+          "requested_curtailment_mw": {
+            "type": "number",
+            "title": "Requested Curtailment Mw"
+          },
+          "requested_restoration_mw": {
+            "type": "number",
+            "title": "Requested Restoration Mw"
+          },
+          "remaining_curtailment_mw": {
+            "type": "number",
+            "title": "Remaining Curtailment Mw"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scenario",
+          "time_minute",
+          "pcc_power_mw",
+          "risk_limit_mw",
+          "safety_threshold_mw",
+          "restore_threshold_mw",
+          "risk_index",
+          "state",
+          "action",
+          "trigger_reason",
+          "requested_curtailment_mw",
+          "requested_restoration_mw",
+          "remaining_curtailment_mw"
+        ],
+        "title": "GroupControlRecord"
+      },
+      "GroupControlSummary": {
+        "properties": {
+          "all_passed": {
+            "type": "boolean",
+            "title": "All Passed"
+          },
+          "scenario_count": {
+            "type": "integer",
+            "title": "Scenario Count"
+          },
+          "scenario_checks": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "type": "boolean"
+              },
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Scenario Checks"
+          },
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/GroupControlRecord"
+            },
+            "type": "array",
+            "title": "Records"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/GroupControlEventRecord"
+            },
+            "type": "array",
+            "title": "Events"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "all_passed",
+          "scenario_count",
+          "scenario_checks",
+          "records",
+          "events"
+        ],
+        "title": "GroupControlSummary"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "service": {
+            "type": "string",
+            "title": "Service"
+          },
+          "schema_version": {
+            "type": "string",
+            "title": "Schema Version"
+          },
+          "solvers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Solvers"
+          },
+          "packages": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Packages"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "service",
+          "schema_version",
+          "solvers",
+          "packages"
+        ],
+        "title": "HealthResponse"
+      },
+      "JobState": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "cancelled",
+          "interrupted"
+        ],
+        "title": "JobState"
+      },
+      "JobStatus": {
+        "properties": {
+          "simulation_id": {
+            "type": "string",
+            "title": "Simulation Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "state": {
+            "$ref": "#/components/schemas/JobState"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage"
+          },
+          "stage_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage Label"
+          },
+          "stage_sequence": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage Sequence"
+          },
+          "total_stages": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Total Stages",
+            "default": 6
+          },
+          "result_available": {
+            "type": "boolean",
+            "title": "Result Available",
+            "default": false
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "simulation_id",
+          "name",
+          "state",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "JobStatus"
+      },
+      "JsonValue": {},
+      "Reading": {
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "title": "Device Id"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region"
+          },
+          "bus_id": {
+            "type": "string",
+            "title": "Bus Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "p_mw": {
+            "type": "number",
+            "title": "P Mw"
+          },
+          "q_mvar": {
+            "type": "number",
+            "title": "Q Mvar"
+          },
+          "available_mw": {
+            "type": "number",
+            "title": "Available Mw"
+          },
+          "energy_mwh": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Energy Mwh"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "device_id",
+          "region",
+          "bus_id",
+          "kind",
+          "p_mw",
+          "q_mvar",
+          "available_mw",
+          "energy_mwh"
+        ],
+        "title": "Reading"
+      },
+      "Receipt": {
+        "properties": {
+          "command": {
+            "$ref": "#/components/schemas/Command"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "executing",
+              "executed",
+              "rejected",
+              "expired",
+              "timeout",
+              "superseded"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command",
+          "status",
+          "reason",
+          "updated_at"
+        ],
+        "title": "Receipt"
+      },
+      "ReferenceEconomics": {
+        "properties": {
+          "reference": {
+            "$ref": "#/components/schemas/EconomicCost"
+          },
+          "centralized_economic_cost_cny": {
+            "type": "number",
+            "title": "Centralized Economic Cost Cny"
+          },
+          "surrogate_objective_cny": {
+            "type": "number",
+            "title": "Surrogate Objective Cny"
+          },
+          "gap_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gap Percent"
+          },
+          "comparison_status": {
+            "type": "string",
+            "enum": [
+              "comparable",
+              "not_converged",
+              "nonpositive_baseline"
+            ],
+            "title": "Comparison Status"
+          },
+          "accounting_version": {
+            "type": "string",
+            "const": "dispatch-economics-v2",
+            "title": "Accounting Version",
+            "default": "dispatch-economics-v2"
+          },
+          "scope": {
+            "type": "string",
+            "const": "aggregate_reference_with_calibrated_losses",
+            "title": "Scope",
+            "default": "aggregate_reference_with_calibrated_losses"
+          },
+          "realized_regional_economic_cost_cny": {
+            "type": "null",
+            "title": "Realized Regional Economic Cost Cny"
+          },
+          "realization_status": {
+            "type": "string",
+            "const": "not_computed",
+            "title": "Realization Status",
+            "default": "not_computed"
+          },
+          "formal_ten_percent_requirement_certified": {
+            "type": "boolean",
+            "const": false,
+            "title": "Formal Ten Percent Requirement Certified",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "reference",
+          "centralized_economic_cost_cny",
+          "surrogate_objective_cny",
+          "gap_percent",
+          "comparison_status"
+        ],
+        "title": "ReferenceEconomics",
+        "description": "Aggregate reference accounting, explicitly NOT regional AC realization."
+      },
+      "RegionalPlanSnapshot": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "p_grid_mw": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "P Grid Mw"
+          },
+          "q_grid_mvar": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Q Grid Mvar"
+          },
+          "renewable_used_mw": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Renewable Used Mw"
+          },
+          "storage_charge_mw": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Storage Charge Mw"
+          },
+          "storage_discharge_mw": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Storage Discharge Mw"
+          },
+          "storage_energy_mwh": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Storage Energy Mwh"
+          },
+          "q_support_mvar": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Q Support Mvar"
+          },
+          "local_objective_cny": {
+            "type": "number",
+            "title": "Local Objective Cny"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "signal_iteration": {
+            "type": "integer",
+            "title": "Signal Iteration"
+          },
+          "used_fallback": {
+            "type": "boolean",
+            "title": "Used Fallback"
+          },
+          "economic_cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EconomicCost"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "renewable_accounting": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RenewableAccounting"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "p_grid_mw",
+          "q_grid_mvar",
+          "renewable_used_mw",
+          "storage_charge_mw",
+          "storage_discharge_mw",
+          "storage_energy_mwh",
+          "q_support_mvar",
+          "local_objective_cny",
+          "status",
+          "signal_iteration",
+          "used_fallback",
+          "economic_cost",
+          "renewable_accounting"
+        ],
+        "title": "RegionalPlanSnapshot",
+        "description": "Owned immutable values of the local solve used in an ADMM update."
+      },
+      "RenewableAccounting": {
+        "properties": {
+          "raw_available_mw": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Raw Available Mw"
+          },
+          "available_mw": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Available Mw"
+          },
+          "nameplate_excess_mw": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Nameplate Excess Mw"
+          },
+          "curtailed_mw": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Curtailed Mw"
+          }
+        },
+        "type": "object",
+        "required": [
+          "raw_available_mw",
+          "available_mw",
+          "nameplate_excess_mw",
+          "curtailed_mw"
+        ],
+        "title": "RenewableAccounting",
+        "description": "Chronological interval MW. Availability is AFTER the rated-MW bound.\n\nRaw predictions remain diagnostics. Excess above rated availability is not\ncontrollable curtailment. Tuples own their values and cannot mutate callers."
+      },
+      "ResourceAvailability": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "oilfield-resource-availability-v1",
+            "title": "Schema Version",
+            "default": "oilfield-resource-availability-v1"
+          },
+          "synthetic": {
+            "type": "boolean",
+            "const": true,
+            "title": "Synthetic",
+            "default": true
+          },
+          "source": {
+            "type": "string",
+            "const": "synthetic_bundle_profile",
+            "title": "Source",
+            "default": "synthetic_bundle_profile"
+          },
+          "dataset_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Dataset Id"
+          },
+          "period_minutes": {
+            "type": "integer",
+            "const": 1440,
+            "title": "Period Minutes",
+            "default": 1440
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/DeviceAvailabilitySeries"
+            },
+            "type": "array",
+            "title": "Series"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dataset_id",
+          "series"
+        ],
+        "title": "ResourceAvailability",
+        "description": "Read-only, per-device renewable capability from the fixed demo bundle."
+      },
+      "Safety": {
+        "properties": {
+          "region": {
+            "type": "string",
+            "title": "Region"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "valid": {
+            "type": "boolean",
+            "title": "Valid"
+          },
+          "recovery_safe": {
+            "type": "boolean",
+            "title": "Recovery Safe"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "pcc_import_mw": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pcc Import Mw"
+          },
+          "pcc_q_mvar": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pcc Q Mvar"
+          },
+          "loss_mw": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loss Mw"
+          },
+          "voltage_min_pu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voltage Min Pu"
+          },
+          "voltage_max_pu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voltage Max Pu"
+          },
+          "max_loading_pu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Loading Pu"
+          },
+          "power_factor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Power Factor"
+          },
+          "flow": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flow"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "region",
+          "status",
+          "valid",
+          "recovery_safe",
+          "reasons"
+        ],
+        "title": "Safety"
+      },
+      "ScenarioEvent": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "maxLength": 48,
+            "minLength": 1,
+            "title": "Event Id"
+          },
+          "event_type": {
+            "$ref": "#/components/schemas/EventType"
+          },
+          "target": {
+            "type": "string",
+            "enum": [
+              "SC",
+              "YA_B",
+              "YA_C"
+            ],
+            "title": "Target"
+          },
+          "time_axis": {
+            "$ref": "#/components/schemas/EventTimeAxis"
+          },
+          "start": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Start"
+          },
+          "end": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "End"
+          },
+          "magnitude": {
+            "type": "number",
+            "maximum": 5.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Magnitude",
+            "default": 1.0
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Label",
+            "default": "场景事件"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event_id",
+          "event_type",
+          "target",
+          "time_axis",
+          "start",
+          "end"
+        ],
+        "title": "ScenarioEvent",
+        "description": "Executable event with current iteration semantics."
+      },
+      "ScenarioEventRecord": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "maxLength": 48,
+            "minLength": 1,
+            "title": "Event Id"
+          },
+          "event_type": {
+            "$ref": "#/components/schemas/EventType"
+          },
+          "target": {
+            "type": "string",
+            "enum": [
+              "SC",
+              "YA_B",
+              "YA_C"
+            ],
+            "title": "Target"
+          },
+          "time_axis": {
+            "$ref": "#/components/schemas/EventTimeAxis"
+          },
+          "start": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Start"
+          },
+          "end": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "End"
+          },
+          "magnitude": {
+            "type": "number",
+            "maximum": 5.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Magnitude",
+            "default": 1.0
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Label",
+            "default": "场景事件"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event_id",
+          "event_type",
+          "target",
+          "time_axis",
+          "start",
+          "end"
+        ],
+        "title": "ScenarioEventRecord",
+        "description": "Stored event description; reading evidence does not authorize execution."
+      },
+      "ScenarioType": {
+        "type": "string",
+        "enum": [
+          "single_microgrid",
+          "cluster_coordination",
+          "communication_fault",
+          "group_control"
+        ],
+        "title": "ScenarioType"
+      },
+      "SimulationMetadata": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "title": "Schema Version",
+            "default": "1.3.0"
+          },
+          "generated_at": {
+            "type": "string",
+            "title": "Generated At"
+          },
+          "data_source": {
+            "type": "string",
+            "const": "parameterized_simulation",
+            "title": "Data Source",
+            "default": "parameterized_simulation"
+          },
+          "data_notice": {
+            "type": "string",
+            "title": "Data Notice",
+            "default": "全部网络与运行数据均为参数化模拟数据，不代表实际油田数据。"
+          },
+          "scenario_type": {
+            "$ref": "#/components/schemas/ScenarioType"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region"
+          },
+          "steps": {
+            "type": "integer",
+            "title": "Steps"
+          },
+          "dt_hours": {
+            "type": "number",
+            "title": "Dt Hours"
+          },
+          "formulation": {
+            "$ref": "#/components/schemas/SolverFormulation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "generated_at",
+          "scenario_type",
+          "region",
+          "steps",
+          "dt_hours",
+          "formulation"
+        ],
+        "title": "SimulationMetadata"
+      },
+      "SimulationRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "default": "单微网快速仿真"
+          },
+          "scenario_type": {
+            "$ref": "#/components/schemas/ScenarioType",
+            "default": "single_microgrid"
+          },
+          "region": {
+            "type": "string",
+            "enum": [
+              "SC",
+              "YA_B",
+              "YA_C"
+            ],
+            "title": "Region",
+            "default": "SC"
+          },
+          "steps": {
+            "type": "integer",
+            "maximum": 288.0,
+            "minimum": 1.0,
+            "title": "Steps",
+            "default": 8
+          },
+          "storage_enabled": {
+            "type": "boolean",
+            "title": "Storage Enabled",
+            "default": true
+          },
+          "solver": {
+            "$ref": "#/components/schemas/SolverOptions"
+          },
+          "admm_max_iterations": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 4.0,
+            "title": "Admm Max Iterations",
+            "default": 220
+          },
+          "communication_loss_probability": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Communication Loss Probability",
+            "default": 0.05
+          },
+          "communication_max_delay_iterations": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Communication Max Delay Iterations",
+            "default": 2
+          },
+          "communication_outage_region": {
+            "type": "string",
+            "enum": [
+              "SC",
+              "YA_B",
+              "YA_C"
+            ],
+            "title": "Communication Outage Region",
+            "default": "YA_B"
+          },
+          "communication_outage_start_iteration": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Communication Outage Start Iteration",
+            "default": 12
+          },
+          "communication_outage_end_iteration": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Communication Outage End Iteration",
+            "default": 22
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioEvent"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Events"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SimulationRequest",
+        "description": "Executable request; validated separately from stored historical evidence."
+      },
+      "SimulationRequestRecord": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "default": "单微网快速仿真"
+          },
+          "scenario_type": {
+            "$ref": "#/components/schemas/ScenarioType",
+            "default": "single_microgrid"
+          },
+          "region": {
+            "type": "string",
+            "enum": [
+              "SC",
+              "YA_B",
+              "YA_C"
+            ],
+            "title": "Region",
+            "default": "SC"
+          },
+          "steps": {
+            "type": "integer",
+            "maximum": 288.0,
+            "minimum": 1.0,
+            "title": "Steps",
+            "default": 8
+          },
+          "storage_enabled": {
+            "type": "boolean",
+            "title": "Storage Enabled",
+            "default": true
+          },
+          "solver": {
+            "$ref": "#/components/schemas/SolverOptions"
+          },
+          "admm_max_iterations": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 4.0,
+            "title": "Admm Max Iterations",
+            "default": 220
+          },
+          "communication_loss_probability": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Communication Loss Probability",
+            "default": 0.05
+          },
+          "communication_max_delay_iterations": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Communication Max Delay Iterations",
+            "default": 2
+          },
+          "communication_outage_region": {
+            "type": "string",
+            "enum": [
+              "SC",
+              "YA_B",
+              "YA_C"
+            ],
+            "title": "Communication Outage Region",
+            "default": "YA_B"
+          },
+          "communication_outage_start_iteration": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Communication Outage Start Iteration",
+            "default": 12
+          },
+          "communication_outage_end_iteration": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Communication Outage End Iteration",
+            "default": 22
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioEventRecord"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Events"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SimulationRequestRecord",
+        "description": "Recorded inputs, including historical combinations no longer executable."
+      },
+      "SimulationResult": {
+        "properties": {
+          "metadata": {
+            "$ref": "#/components/schemas/SimulationMetadata"
+          },
+          "request": {
+            "$ref": "#/components/schemas/SimulationRequestRecord"
+          },
+          "executive_summary": {
+            "$ref": "#/components/schemas/ExecutiveSummary"
+          },
+          "topology_nodes": {
+            "items": {
+              "$ref": "#/components/schemas/TopologyNode"
+            },
+            "type": "array",
+            "title": "Topology Nodes"
+          },
+          "topology_edges": {
+            "items": {
+              "$ref": "#/components/schemas/TopologyEdge"
+            },
+            "type": "array",
+            "title": "Topology Edges"
+          },
+          "validation_items": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationItem"
+            },
+            "type": "array",
+            "title": "Validation Items"
+          },
+          "comparison": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Comparison"
+          },
+          "solver": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Solver"
+          },
+          "timeseries": {
+            "items": {
+              "$ref": "#/components/schemas/TimeSeriesPoint"
+            },
+            "type": "array",
+            "title": "Timeseries"
+          },
+          "cluster_timeseries": {
+            "items": {
+              "$ref": "#/components/schemas/ClusterTimeSeriesPoint"
+            },
+            "type": "array",
+            "title": "Cluster Timeseries"
+          },
+          "admm_history": {
+            "items": {
+              "$ref": "#/components/schemas/ADMMHistoryPoint"
+            },
+            "type": "array",
+            "title": "Admm History"
+          },
+          "communication": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CommunicationSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "group_control": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GroupControlSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "economic_accounting_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Economic Accounting Version"
+          },
+          "reference_economics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReferenceEconomics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cluster_validation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClusterValidation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "coordination_snapshot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CoordinationSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "metadata",
+          "request",
+          "executive_summary",
+          "topology_nodes",
+          "topology_edges",
+          "validation_items",
+          "comparison",
+          "solver",
+          "timeseries"
+        ],
+        "title": "SimulationResult"
+      },
+      "SolverFormulation": {
+        "type": "string",
+        "enum": [
+          "misocp",
+          "legacy_milp"
+        ],
+        "title": "SolverFormulation"
+      },
+      "SolverOptions": {
+        "properties": {
+          "formulation": {
+            "$ref": "#/components/schemas/SolverFormulation",
+            "default": "misocp"
+          },
+          "time_limit_seconds": {
+            "type": "number",
+            "maximum": 1800.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Time Limit Seconds",
+            "default": 60.0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SolverOptions"
+      },
+      "TimeSeriesPoint": {
+        "properties": {
+          "time_hour": {
+            "type": "number",
+            "title": "Time Hour"
+          },
+          "price_cny_per_mwh": {
+            "type": "number",
+            "title": "Price Cny Per Mwh"
+          },
+          "load_mw": {
+            "type": "number",
+            "title": "Load Mw"
+          },
+          "load_mvar": {
+            "type": "number",
+            "title": "Load Mvar"
+          },
+          "p_grid_baseline_mw": {
+            "type": "number",
+            "title": "P Grid Baseline Mw"
+          },
+          "p_grid_optimized_mw": {
+            "type": "number",
+            "title": "P Grid Optimized Mw"
+          },
+          "q_grid_optimized_mvar": {
+            "type": "number",
+            "title": "Q Grid Optimized Mvar"
+          },
+          "power_factor": {
+            "type": "number",
+            "title": "Power Factor"
+          },
+          "wind_available_mw": {
+            "type": "number",
+            "title": "Wind Available Mw"
+          },
+          "wind_used_mw": {
+            "type": "number",
+            "title": "Wind Used Mw"
+          },
+          "pv_available_mw": {
+            "type": "number",
+            "title": "Pv Available Mw"
+          },
+          "pv_used_mw": {
+            "type": "number",
+            "title": "Pv Used Mw"
+          },
+          "storage_charge_mw": {
+            "type": "number",
+            "title": "Storage Charge Mw"
+          },
+          "storage_discharge_mw": {
+            "type": "number",
+            "title": "Storage Discharge Mw"
+          },
+          "storage_energy_mwh": {
+            "type": "number",
+            "title": "Storage Energy Mwh"
+          },
+          "svg_q_mvar": {
+            "type": "number",
+            "title": "Svg Q Mvar"
+          },
+          "minimum_voltage_pu": {
+            "type": "number",
+            "title": "Minimum Voltage Pu"
+          },
+          "maximum_voltage_pu": {
+            "type": "number",
+            "title": "Maximum Voltage Pu"
+          },
+          "maximum_line_loading_pu": {
+            "type": "number",
+            "title": "Maximum Line Loading Pu"
+          },
+          "active_loss_mw": {
+            "type": "number",
+            "title": "Active Loss Mw"
+          },
+          "p_grid_security_floor_mw": {
+            "type": "number",
+            "title": "P Grid Security Floor Mw"
+          },
+          "p_grid_security_headroom_mw": {
+            "type": "number",
+            "title": "P Grid Security Headroom Mw"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "time_hour",
+          "price_cny_per_mwh",
+          "load_mw",
+          "load_mvar",
+          "p_grid_baseline_mw",
+          "p_grid_optimized_mw",
+          "q_grid_optimized_mvar",
+          "power_factor",
+          "wind_available_mw",
+          "wind_used_mw",
+          "pv_available_mw",
+          "pv_used_mw",
+          "storage_charge_mw",
+          "storage_discharge_mw",
+          "storage_energy_mwh",
+          "svg_q_mvar",
+          "minimum_voltage_pu",
+          "maximum_voltage_pu",
+          "maximum_line_loading_pu",
+          "active_loss_mw",
+          "p_grid_security_floor_mw",
+          "p_grid_security_headroom_mw"
+        ],
+        "title": "TimeSeriesPoint"
+      },
+      "TopologyEdge": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target"
+          },
+          "resistance_pu": {
+            "type": "number",
+            "title": "Resistance Pu"
+          },
+          "reactance_pu": {
+            "type": "number",
+            "title": "Reactance Pu"
+          },
+          "capacity_mva": {
+            "type": "number",
+            "title": "Capacity Mva"
+          },
+          "branch_kind": {
+            "type": "string",
+            "enum": [
+              "line",
+              "transformer"
+            ],
+            "title": "Branch Kind",
+            "default": "line"
+          },
+          "tap_ratio": {
+            "type": "number",
+            "title": "Tap Ratio",
+            "default": 1.0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "source",
+          "target",
+          "resistance_pu",
+          "reactance_pu",
+          "capacity_mva"
+        ],
+        "title": "TopologyEdge"
+      },
+      "TopologyNode": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "pcc",
+              "main",
+              "wind",
+              "pv",
+              "flex"
+            ],
+            "title": "Kind"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "kind"
+        ],
+        "title": "TopologyNode"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "ValidationItem": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          },
+          "actual": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          },
+          "validation_basis": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "centralized_reference",
+                  "admm_reference"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validation Basis"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "label",
+          "passed",
+          "scope",
+          "explanation"
+        ],
+        "title": "ValidationItem"
+      }
+    }
+  }
+}

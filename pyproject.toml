@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oilfield-energy-optimization"
+version = "0.1.0"
+description = "油田单微电网与多微电网源网荷储协同优化模型"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=2.0",
+  "scipy>=1.13",
+  "matplotlib>=3.8",
+  "cvxpy>=1.7",
+  "osqp>=1.0",
+  "pyscipopt>=6.2",
+  "pydantic>=2.10,<3",
+  "fastapi>=0.115,<1",
+  "uvicorn>=0.34,<1",
+  "websockets>=15,<16",
+]
+
+[project.optional-dependencies]
+field-dev = [
+  "pytest==8.4.2",
+  "ruff==0.13.2",
+  "pyright==1.1.405",
+  "tomli==2.2.1; python_version < '3.11'",
+]
+
+[project.scripts]
+oilfield-opt = "oilfield_energy.cli:main"
+oilfield-web = "oilfield_energy.web_api:main"
+oilfield-field = "oilfield_energy.entrypoints.field_dataset:main"
+oilfield-sim = "oilfield_energy.entrypoints.shancheng_simulation:main"
+oilfield-demo = "oilfield_energy.entrypoints.demo:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.data-files]
+"share/oilfield-energy-optimization/system-demo" = [
+  "examples/system_demo/bundle.json",
+  "examples/system_demo/bundle.sha256",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

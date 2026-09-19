@@ -1,0 +1,13 @@
+{
+  "include": [
+    "../../src/oilfield_energy/modules",
+    "../../src/oilfield_energy/workflows",
+    "../../src/oilfield_energy/bootstrap",
+    "../../src/oilfield_energy/runtime",
+    "../../src/oilfield_energy/entrypoints",
+    "../../src/oilfield_energy/__init__.py"
+  ],
+  "typeCheckingMode": "strict",
+  "extraPaths": ["../../src"],
+  "pythonVersion": "3.10"
+}

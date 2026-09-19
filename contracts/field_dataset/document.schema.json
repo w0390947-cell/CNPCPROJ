@@ -1,0 +1,55 @@
+{
+  "$defs": {
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "field-document-v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "dataset_id": {
+      "title": "Dataset Id",
+      "type": "string"
+    },
+    "version": {
+      "title": "Version",
+      "type": "string"
+    },
+    "synthetic": {
+      "title": "Synthetic",
+      "type": "boolean"
+    },
+    "role": {
+      "enum": [
+        "network",
+        "devices",
+        "point_mapping",
+        "operating_modes",
+        "settings",
+        "measurements",
+        "attachment"
+      ],
+      "title": "Role",
+      "type": "string"
+    },
+    "payload": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Payload",
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema_version",
+    "dataset_id",
+    "version",
+    "synthetic",
+    "role",
+    "payload"
+  ],
+  "title": "DocumentEnvelope",
+  "type": "object"
+}

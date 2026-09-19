@@ -1,0 +1,102 @@
+{
+  "$defs": {
+    "FileReference": {
+      "additionalProperties": false,
+      "properties": {
+        "file_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+          "title": "File Id",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "network",
+            "devices",
+            "point_mapping",
+            "operating_modes",
+            "settings",
+            "measurements",
+            "attachment"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "path": {
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        }
+      },
+      "required": [
+        "file_id",
+        "role",
+        "path",
+        "version"
+      ],
+      "title": "FileReference",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "field-dataset-v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "dataset_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$",
+      "title": "Dataset Id",
+      "type": "string"
+    },
+    "revision": {
+      "minLength": 1,
+      "title": "Revision",
+      "type": "string"
+    },
+    "source": {
+      "minLength": 1,
+      "title": "Source",
+      "type": "string"
+    },
+    "synthetic": {
+      "title": "Synthetic",
+      "type": "boolean"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/FileReference"
+      },
+      "title": "Files",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "dataset_id",
+    "revision",
+    "source",
+    "synthetic",
+    "files"
+  ],
+  "title": "DatasetManifest",
+  "type": "object"
+}

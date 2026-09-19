@@ -1,0 +1,103 @@
+{
+  "$defs": {
+    "StorageDynamicsRecord": {
+      "description": "One SIL interval, including ordinary intent and final protection outcome.",
+      "properties": {
+        "time_minutes": {
+          "title": "Time Minutes",
+          "type": "number"
+        },
+        "previous_mw": {
+          "title": "Previous Mw",
+          "type": "number"
+        },
+        "requested_mw": {
+          "title": "Requested Mw",
+          "type": "number"
+        },
+        "ordinary_mw": {
+          "title": "Ordinary Mw",
+          "type": "number"
+        },
+        "actual_mw": {
+          "title": "Actual Mw",
+          "type": "number"
+        },
+        "maximum_change_mw": {
+          "title": "Maximum Change Mw",
+          "type": "number"
+        },
+        "ordinary_unserved_mw": {
+          "title": "Ordinary Unserved Mw",
+          "type": "number"
+        },
+        "physical_override": {
+          "title": "Physical Override",
+          "type": "boolean"
+        },
+        "hard_override": {
+          "title": "Hard Override",
+          "type": "boolean"
+        },
+        "ramp_compliant": {
+          "readOnly": true,
+          "title": "Ramp Compliant",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "time_minutes",
+        "previous_mw",
+        "requested_mw",
+        "ordinary_mw",
+        "actual_mw",
+        "maximum_change_mw",
+        "ordinary_unserved_mw",
+        "physical_override",
+        "hard_override",
+        "ramp_compliant"
+      ],
+      "title": "StorageDynamicsRecord",
+      "type": "object"
+    },
+    "StorageDynamicsTrajectory": {
+      "description": "Missing historical evidence remains unassessed, never inferred as passed.",
+      "properties": {
+        "version": {
+          "anyOf": [
+            {
+              "const": "storage-dynamics-v1",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Version"
+        },
+        "complete": {
+          "title": "Complete",
+          "type": "boolean"
+        },
+        "records": {
+          "items": {
+            "$ref": "#/$defs/StorageDynamicsRecord"
+          },
+          "title": "Records",
+          "type": "array"
+        }
+      },
+      "required": [
+        "version",
+        "complete",
+        "records"
+      ],
+      "title": "StorageDynamicsTrajectory",
+      "type": "object"
+    }
+  },
+  "additionalProperties": {
+    "$ref": "#/$defs/StorageDynamicsTrajectory"
+  },
+  "type": "object"
+}

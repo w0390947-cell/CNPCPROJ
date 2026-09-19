@@ -1,0 +1,245 @@
+{
+  "schema_version": "field-document-v1",
+  "dataset_id": "synthetic-shancheng-example",
+  "version": "1",
+  "synthetic": true,
+  "role": "point_mapping",
+  "payload": {
+    "sources": [
+      {
+        "source_id": "telemetry",
+        "format": "csv",
+        "point_column": "point",
+        "time_column": "time",
+        "value_column": "value",
+        "quality_column": "quality",
+        "good_quality": "GOOD",
+        "timestamp_format": "iso8601",
+        "utc_offset_minutes": 480,
+        "file_id": "telemetry"
+      }
+    ],
+    "points": [
+      {
+        "point_id": "WT1.p",
+        "source_id": "telemetry",
+        "target_kind": "device",
+        "target_id": "WT1",
+        "quantity": "p",
+        "unit": "kW",
+        "multiplier": 10.0,
+        "positive_direction": "injection",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "WT1.q",
+        "source_id": "telemetry",
+        "target_kind": "device",
+        "target_id": "WT1",
+        "quantity": "q",
+        "unit": "kvar",
+        "multiplier": 1.0,
+        "positive_direction": "injection",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "WT1.in_service",
+        "source_id": "telemetry",
+        "target_kind": "device",
+        "target_id": "WT1",
+        "quantity": "in_service",
+        "unit": "bool",
+        "multiplier": 1.0,
+        "positive_direction": "on",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "WT2.p",
+        "source_id": "telemetry",
+        "target_kind": "device",
+        "target_id": "WT2",
+        "quantity": "p",
+        "unit": "kW",
+        "multiplier": 10.0,
+        "positive_direction": "injection",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "WT2.q",
+        "source_id": "telemetry",
+        "target_kind": "device",
+        "target_id": "WT2",
+        "quantity": "q",
+        "unit": "kvar",
+        "multiplier": 1.0,
+        "positive_direction": "injection",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "WT2.in_service",
+        "source_id": "telemetry",
+        "target_kind": "device",
+        "target_id": "WT2",
+        "quantity": "in_service",
+        "unit": "bool",
+        "multiplier": 1.0,
+        "positive_direction": "on",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "PV1.p",
+        "source_id": "telemetry",
+        "target_kind": "device",
+        "target_id": "PV1",
+        "quantity": "p",
+        "unit": "kW",
+        "multiplier": 10.0,
+        "positive_direction": "injection",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "PV1.q",
+        "source_id": "telemetry",
+        "target_kind": "device",
+        "target_id": "PV1",
+        "quantity": "q",
+        "unit": "kvar",
+        "multiplier": 1.0,
+        "positive_direction": "injection",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "PV1.in_service",
+        "source_id": "telemetry",
+        "target_kind": "device",
+        "target_id": "PV1",
+        "quantity": "in_service",
+        "unit": "bool",
+        "multiplier": 1.0,
+        "positive_direction": "on",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "ESS1.p",
+        "source_id": "telemetry",
+        "target_kind": "device",
+        "target_id": "ESS1",
+        "quantity": "p",
+        "unit": "kW",
+        "multiplier": 10.0,
+        "positive_direction": "withdrawal",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "ESS1.q",
+        "source_id": "telemetry",
+        "target_kind": "device",
+        "target_id": "ESS1",
+        "quantity": "q",
+        "unit": "kvar",
+        "multiplier": 1.0,
+        "positive_direction": "injection",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "ESS1.in_service",
+        "source_id": "telemetry",
+        "target_kind": "device",
+        "target_id": "ESS1",
+        "quantity": "in_service",
+        "unit": "bool",
+        "multiplier": 1.0,
+        "positive_direction": "on",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "SVG1.p",
+        "source_id": "telemetry",
+        "target_kind": "device",
+        "target_id": "SVG1",
+        "quantity": "p",
+        "unit": "kW",
+        "multiplier": 10.0,
+        "positive_direction": "injection",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "SVG1.q",
+        "source_id": "telemetry",
+        "target_kind": "device",
+        "target_id": "SVG1",
+        "quantity": "q",
+        "unit": "kvar",
+        "multiplier": 1.0,
+        "positive_direction": "injection",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "SVG1.in_service",
+        "source_id": "telemetry",
+        "target_kind": "device",
+        "target_id": "SVG1",
+        "quantity": "in_service",
+        "unit": "bool",
+        "multiplier": 1.0,
+        "positive_direction": "on",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "LOAD_MAIN.p",
+        "source_id": "telemetry",
+        "target_kind": "load",
+        "target_id": "LOAD_MAIN",
+        "quantity": "p",
+        "unit": "kW",
+        "multiplier": 1.0,
+        "positive_direction": "consumption",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "LOAD_MAIN.q",
+        "source_id": "telemetry",
+        "target_kind": "load",
+        "target_id": "LOAD_MAIN",
+        "quantity": "q",
+        "unit": "kvar",
+        "multiplier": 1.0,
+        "positive_direction": "consumption",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "LOAD_WIND.p",
+        "source_id": "telemetry",
+        "target_kind": "load",
+        "target_id": "LOAD_WIND",
+        "quantity": "p",
+        "unit": "kW",
+        "multiplier": 1.0,
+        "positive_direction": "consumption",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "LOAD_WIND.q",
+        "source_id": "telemetry",
+        "target_kind": "load",
+        "target_id": "LOAD_WIND",
+        "quantity": "q",
+        "unit": "kvar",
+        "multiplier": 1.0,
+        "positive_direction": "consumption",
+        "sample_kind": "instantaneous"
+      },
+      {
+        "point_id": "PCC.voltage",
+        "source_id": "telemetry",
+        "target_kind": "boundary",
+        "target_id": "PCC",
+        "quantity": "voltage",
+        "unit": "kV",
+        "multiplier": 1.0,
+        "positive_direction": "magnitude",
+        "sample_kind": "instantaneous"
+      }
+    ]
+  }
+}

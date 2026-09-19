@@ -1,0 +1,10 @@
+{
+  "schema_version": "synthetic-audit-v1",
+  "synthetic": true,
+  "source": "Deterministic engineering assumptions; no client source files",
+  "sha256": {
+    "line-load-continuous-synthetic.xlsx": "5350f3fd74cadd732d57939350082b47acb6d9cde6baa40a7e32724aba4ef6b3",
+    "line-load-invalid-synthetic.xlsx": "bb13c822c16e641f0b0f4b9e94eebe77dfed2f4cd5f123e4009e09a386dba1ee",
+    "short-circuit-synthetic.xlsx": "fddbdf621695fbd846379bfbb2ffb23b999713161effb131ceb16842c1ac38a4"
+  }
+}
