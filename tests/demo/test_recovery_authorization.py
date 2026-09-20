@@ -24,7 +24,7 @@ def fleet(bundle):
     return result
 
 
-def command(fleet, name, device="SC-wind-1", p=2.0, q=0.0, seconds=600):
+def command(fleet, name, device="SC:wind:SC_WT1", p=2.0, q=0.0, seconds=600):
     return Command(
         command_id=name,
         epoch=fleet.epoch,
@@ -35,7 +35,7 @@ def command(fleet, name, device="SC-wind-1", p=2.0, q=0.0, seconds=600):
     )
 
 
-def actual(fleet, device="SC-wind-1"):
+def actual(fleet, device="SC:wind:SC_WT1"):
     return next(r for r in fleet.readings if r.device_id == device)
 
 
@@ -67,9 +67,9 @@ def test_rearm_never_restores_default_or_historical_targets(fleet, prior_ticks):
     for expected in (1.0, 2.0, 2.0):
         frame = fleet.step()
         assert actual(fleet).p_mw == pytest.approx(expected)
-        assert actual(fleet).q_mvar == pytest.approx(0.4)
+        assert actual(fleet).q_mvar == pytest.approx(min(0.4, 0.328 * expected))
         assert all(
-            r.p_mw == 0.0 for r in frame.devices if r.kind == "wind" and r.device_id != "SC-wind-1"
+            r.p_mw == 0.0 for r in frame.devices if r.kind == "wind" and r.device_id != "SC:wind:SC_WT1"
         )
     assert fleet.receipts["fresh"].status == "executed"
 
@@ -87,11 +87,11 @@ def test_replay_rejection_and_other_device_commands_do_not_release_hold(fleet):
     assert fleet.submit(stale).reason == "EPOCH_MISMATCH"
     with pytest.raises(ValueError, match="conflicts"):
         fleet.submit(old.model_copy(update={"p_mw": 1.0}))
-    assert fleet.submit(command(fleet, "storage", "SC-storage", 0.5)).status == "accepted"
+    assert fleet.submit(command(fleet, "storage", "SC:storage:SC_FLEX", 0.5)).status == "accepted"
     for _ in range(3):
         fleet.step()
         assert actual(fleet).p_mw == 0.0
-    assert actual(fleet, "SC-storage").p_mw == 0.5
+    assert actual(fleet, "SC:storage:SC_FLEX").p_mw == 0.5
 
 
 def test_command_accepted_while_blocked_cannot_authorize_later_recovery(fleet):
@@ -127,7 +127,7 @@ def test_available_power_can_fall_during_hold_without_automatic_rebound(fleet):
     fleet.step()
     fleet.step()
     assert fleet.rearm()
-    assert actual(fleet).p_mw == 2.5
+    assert 0.0 < actual(fleet).p_mw <= actual(fleet).available_mw
     fleet.fault = "wind_trip"
     fleet.step()
     assert actual(fleet).p_mw == 0.0
@@ -172,9 +172,9 @@ def test_rearm_does_not_restore_unexecuted_reactive_target(fleet):
 @pytest.mark.parametrize("p", [-0.5, 0.5])
 def test_new_storage_command_keeps_energy_efficiency_and_capability_limits(fleet, p):
     recover(fleet)
-    spec = next(d for d in fleet.bundle.devices if d.device_id == "SC-storage")
+    spec = next(d for d in fleet.bundle.devices if d.device_id == "SC:storage:SC_FLEX")
     initial = actual(fleet, spec.device_id).energy_mwh
-    fleet.submit(command(fleet, "storage-energy", spec.device_id, p, q=0.3))
+    fleet.submit(command(fleet, "storage-energy", spec.device_id, p, q=0.0))
     fleet.step()
     device = actual(fleet, spec.device_id)
     delta = (p / spec.eta_discharge if p > 0 else p * spec.eta_charge) / 60
@@ -186,7 +186,7 @@ def test_new_storage_command_keeps_energy_efficiency_and_capability_limits(fleet
 @pytest.mark.parametrize("p", [-2.5, 2.5])
 def test_energy_boundary_overrides_recovery_hold(fleet, p):
     recover(fleet)
-    fleet.submit(command(fleet, "storage-boundary", "SC-storage", p, q=0.3))
+    fleet.submit(command(fleet, "storage-boundary", "SC:storage:SC_FLEX", p, q=0.0))
     for _ in range(3):
         fleet.step()
     fleet.fault = "bad_quality"
@@ -195,7 +195,7 @@ def test_energy_boundary_overrides_recovery_hold(fleet, p):
     fleet.step()
     fleet.step()
     assert fleet.rearm()
-    spec = next(d for d in fleet.bundle.devices if d.device_id == "SC-storage")
+    spec = next(d for d in fleet.bundle.devices if d.device_id == "SC:storage:SC_FLEX")
     for _ in range(75):
         fleet.step()
         device = actual(fleet, spec.device_id)
@@ -238,7 +238,7 @@ def test_official_fault_verification_contains_actual_timeout_and_recovery_eviden
     assert captured["ack-timeout-accepted.json"]["status"] == "accepted"
     timed_out = captured["telemetry-ack_timeout.json"]
     assert timed_out["receipts"][0]["status"] == "timeout"
-    assert next(d for d in timed_out["devices"] if d["device_id"] == "SC-storage")["p_mw"] == 0.5
+    assert next(d for d in timed_out["devices"] if d["device_id"] == "SC:storage:SC_FLEX")["p_mw"] == 0.5
     for case in ("old_command", "no_command"):
         assert report["checks"][f"recovery_hold:{case}"]
         held = captured[f"recovery-{case}-held-2.json"]

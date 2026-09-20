@@ -1,5 +1,7 @@
 # 装配根
 
+`adapters/project_dataset.py` 通过包资源读取统一三区域台账，经 `UnifiedDataset` 校验后投影为数值输入。设备包、Web/CLI 与山城专项共用该来源；`materialize_default_bundle()` 为默认 Web 保存内容寻址的捕获副本，不依赖 examples 或当前工作目录。见 [统一数据决策](../../../docs3/architecture/decisions/0012-unified-synthetic-dataset.md)。
+
 新增 `shancheng_simulation.create_simulation()` 装配完整模拟研究端口，`generate_simulation()` 装配文件生成与发布。模拟用例的存量数值接线及其导入范围见 [ADR-0002](../../../docs/architecture/decisions/0002-shancheng-simulation.md)。
 
 维护负责人：项目技术负责人；替代评审：现场数据接入维护负责人。

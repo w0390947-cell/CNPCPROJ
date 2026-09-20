@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from oilfield_energy.data import build_synthetic_case
+from tests.legacy_case_fixture import build_synthetic_case
 from oilfield_energy.job_manager import SimulationJobManager
 from oilfield_energy.model import solve_case
 from oilfield_energy.service import SimulationRequest, SimulationResult, run_simulation

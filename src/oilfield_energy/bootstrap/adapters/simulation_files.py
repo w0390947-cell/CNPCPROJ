@@ -36,8 +36,12 @@ def validate_json(raw: bytes) -> bytes:
     return raw
 
 
-def generate_dataset(config: Path, output: Path, store: ResultStore) -> None:
-    raw = validate_json(config.read_bytes())
+def generate_dataset(config: Path | StudySpec, output: Path, store: ResultStore) -> None:
+    raw = (
+        config.model_dump_json(indent=2).encode()
+        if isinstance(config, StudySpec)
+        else validate_json(config.read_bytes())
+    )
     spec = StudySpec.model_validate_json(raw, strict=True)
     day, intraday, plant = generate_inputs(spec)
     documents: dict[str, object] = {}
@@ -87,7 +91,7 @@ def generate_dataset(config: Path, output: Path, store: ResultStore) -> None:
         limits=dict(
             voltage_min_pu=spec.voltage_min_pu,
             voltage_max_pu=spec.voltage_max_pu,
-            pcc_import_min_mw=0.0,
+            pcc_import_min_mw=spec.pcc_min_mw,
             pcc_import_max_mw=spec.pcc_max_mw,
             power_factor_min=spec.pf_min,
         ),
@@ -122,7 +126,7 @@ def generate_dataset(config: Path, output: Path, store: ResultStore) -> None:
     available = {s.bus_id: s.values for s in (*plant.wind_available, *plant.pv_available)}
     for r in spec.resources:
         p = available[r.bus_id] if r.kind in ("wind", "pv") else (0.0,) * plant.steps
-        q = (2.0,) * plant.steps if r.kind == "svg" else (0.0,) * plant.steps
+        q = (min(2.0, r.q_max_mvar),) * plant.steps if r.kind == "svg" else (0.0,) * plant.steps
         point(r.resource_id, "device", "p", "MW", "injection", p)
         point(r.resource_id, "device", "q", "Mvar", "injection", q)
         point(r.resource_id, "device", "in_service", "bool", "on", (1.0,) * plant.steps)

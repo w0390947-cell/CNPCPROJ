@@ -23,7 +23,7 @@ from oilfield_energy.modules.demo_simulation.contracts import Bundle, JobsPort
 from oilfield_energy.runtime.journal import RotatingJournal
 from oilfield_energy.runtime.periodic import PeriodicWorker
 
-from .adapters.demo_case import DemoNetwork, generate_bundle, load_bundle
+from .adapters.demo_case import DemoNetwork, build_bundle, generate_bundle, load_bundle
 from .adapters.demo_jobs import DemoJobs, run_demo_session
 
 
@@ -62,6 +62,23 @@ class LiveDemo:
 
 
 JobFactory = Callable[[Path, bytes], JobsPort]
+
+
+def materialize_default_bundle(output: Path) -> Path:
+    """Capture a content-addressed derivative of the packaged authority."""
+    raw = build_bundle().model_dump_json(indent=2).encode("utf-8")
+    digest = hashlib.sha256(raw).hexdigest()
+    folder = output / "inputs" / digest
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / "bundle.json"
+    if path.exists():
+        _, captured = load_bundle(path)
+        if captured != raw:
+            raise ValueError("captured default input differs from its content address")
+    else:
+        path.write_bytes(raw)
+        path.with_suffix(".sha256").write_text(digest + "\n", encoding="ascii")
+    return path
 
 
 def demo_device_router() -> APIRouter:

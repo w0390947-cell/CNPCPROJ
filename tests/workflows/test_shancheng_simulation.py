@@ -1,5 +1,6 @@
 import hashlib
 import json
+from oilfield_energy.bootstrap.adapters.project_dataset import study_recipe
 from pathlib import Path
 from unittest.mock import patch
 
@@ -22,14 +23,14 @@ def read(path):
 @pytest.fixture(scope="module")
 def run(tmp_path_factory):
     folder = tmp_path_factory.mktemp("SC-complete")
-    recipe = read(ROOT / "examples/shancheng_simulation/recipe.json")
+    recipe = json.loads(study_recipe().model_dump_json())
     recipe.update(intervals=4, start="2026-09-15T12:00:00+08:00", rolling_horizon_intervals=4)
     config = folder / "recipe.json"
     config.write_text(json.dumps(recipe), encoding="utf-8")
     dataset = folder / "inputs"
     generate_simulation(config, dataset)
     with patch(
-        "oilfield_energy.data.build_synthetic_case", side_effect=AssertionError("fallback called")
+        "oilfield_energy.bootstrap.adapters.project_dataset.build_synthetic_case", side_effect=AssertionError("fallback called")
     ):
         result = create_simulation().execute(dataset / "manifest.json", folder / "results")
     assert result.exit_code == 0, read(result.output / "study_summary.json")

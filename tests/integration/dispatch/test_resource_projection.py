@@ -5,7 +5,7 @@ from dataclasses import replace
 import pytest
 
 from oilfield_energy.ac_consistency import solve_case_ac_consistent
-from oilfield_energy.data import build_synthetic_case
+from tests.legacy_case_fixture import build_synthetic_case
 from oilfield_energy.model import solve_case
 from oilfield_energy.modules.resources.contracts import ResourceIdentity
 

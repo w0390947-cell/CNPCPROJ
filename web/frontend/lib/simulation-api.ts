@@ -1,6 +1,16 @@
 import type { ReferenceEconomics } from '../shared/api/generated/economics';
-import type { ClusterValidation, CoordinationSnapshot } from '../shared/api/generated/cluster';
-import type { CommunicationEventExecution, ScenarioEvent } from '../shared/api/generated/study-events';
+import type {
+  ClusterValidation,
+  CoordinationSnapshot,
+} from '../shared/api/generated/cluster';
+import type {
+  ADMMHistoryPoint,
+  ClusterTimeSeriesPoint,
+} from '../shared/api/generated/coordination';
+import type {
+  CommunicationEventExecution,
+  ScenarioEvent,
+} from '../shared/api/generated/study-events';
 export type { ScenarioEvent } from '../shared/api/generated/study-events';
 
 export type SimulationPoint = {
@@ -21,6 +31,10 @@ export type SimulationResult = {
   cluster_validation?: ClusterValidation | null;
   coordination_snapshot?: CoordinationSnapshot | null;
   metadata: {
+    dataset_id?: string | null;
+    dataset_revision?: string | null;
+    dataset_sha256?: string | null;
+    profile_kind?: string | null;
     schema_version: string;
     scenario_type: ScenarioType;
     region: string;
@@ -31,7 +45,9 @@ export type SimulationResult = {
     dt_hours: number;
   };
   request: {
-    region: SimulationConfiguration['region']; steps: number; storage_enabled: boolean;
+    region: SimulationConfiguration['region'];
+    steps: number;
+    storage_enabled: boolean;
     solver: { time_limit_seconds: number };
     admm_max_iterations: number;
     communication_loss_probability: number;
@@ -52,30 +68,18 @@ export type SimulationResult = {
   topology_nodes: Array<{ id: string; label: string; kind: string }>;
   topology_edges: Array<{ id: string; source: string; target: string }>;
   validation_items: Array<{
-    code: string; label: string; passed: boolean; explanation: string;
-    actual?: number | string | boolean | null; limit?: number | string | boolean | null; scope?: string;
+    code: string;
+    label: string;
+    passed: boolean;
+    explanation: string;
+    actual?: number | string | boolean | null;
+    limit?: number | string | boolean | null;
+    scope?: string;
     validation_basis?: 'centralized_reference' | 'admm_reference' | null;
   }>;
   timeseries: SimulationPoint[];
-  cluster_timeseries: Array<{
-    time_hour: number;
-    aggregate_load_mw: number;
-    aggregate_renewable_mw: number;
-    aggregate_import_mw: number;
-    aggregate_q_mvar: number;
-    import_limit_mw: number;
-    regional_import_mw: Record<string, number>;
-  }>;
-  admm_history: Array<{
-    iteration: number;
-    primal_residual: number;
-    dual_residual: number;
-    primal_tolerance: number;
-    dual_tolerance: number;
-    fresh_region_count: number;
-    convergence_streak: number;
-    fallback_regions: string[];
-  }>;
+  cluster_timeseries: ClusterTimeSeriesPoint[];
+  admm_history: ADMMHistoryPoint[];
   communication: {
     event_executions?: CommunicationEventExecution[];
     sent: number;
@@ -173,7 +177,8 @@ export class SimulationCancelledError extends Error {
   }
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000';
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000';
 
 export type HealthResponse = {
   status: string;
@@ -190,14 +195,23 @@ function websocketUrl(simulationId: string): string {
 }
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, { signal: AbortSignal.timeout(15000), ...init });
+  const response = await fetch(`${API_BASE}${path}`, {
+    signal: AbortSignal.timeout(15000),
+    ...init,
+  });
   if (!response.ok) {
     const raw = await response.text();
     let detail = raw || response.statusText;
     try {
       const body = JSON.parse(raw) as { detail?: unknown };
-      if (body.detail != null) detail = typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
-    } catch { /* 非JSON错误也保留正文；响应流只读取一次。 */ }
+      if (body.detail != null)
+        detail =
+          typeof body.detail === 'string'
+            ? body.detail
+            : JSON.stringify(body.detail);
+    } catch {
+      /* 非JSON错误也保留正文；响应流只读取一次。 */
+    }
     throw new Error(`仿真服务返回 ${response.status}: ${detail}`);
   }
   return response.json() as Promise<T>;
@@ -221,11 +235,17 @@ function simulationPayload(
     events,
     admm_max_iterations: configuration.admmMaxIterations,
     communication_loss_probability: configuration.communicationLossProbability,
-    communication_max_delay_iterations: configuration.communicationMaxDelayIterations,
+    communication_max_delay_iterations:
+      configuration.communicationMaxDelayIterations,
     communication_outage_region: configuration.communicationOutageRegion,
-    communication_outage_start_iteration: configuration.communicationOutageStartIteration,
-    communication_outage_end_iteration: configuration.communicationOutageEndIteration,
-    solver: { formulation: 'misocp', time_limit_seconds: configuration.timeLimitSeconds },
+    communication_outage_start_iteration:
+      configuration.communicationOutageStartIteration,
+    communication_outage_end_iteration:
+      configuration.communicationOutageEndIteration,
+    solver: {
+      formulation: 'misocp',
+      time_limit_seconds: configuration.timeLimitSeconds,
+    },
   };
 }
 
@@ -237,7 +257,9 @@ export function createSimulation(
   return apiRequest<JobStatus>('/api/simulations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(simulationPayload(scenarioType, configuration, events)),
+    body: JSON.stringify(
+      simulationPayload(scenarioType, configuration, events),
+    ),
   });
 }
 
@@ -246,11 +268,17 @@ export function getSimulation(simulationId: string): Promise<JobStatus> {
 }
 
 export function cancelSimulation(simulationId: string): Promise<JobStatus> {
-  return apiRequest<JobStatus>(`/api/simulations/${simulationId}/cancel`, { method: 'POST' });
+  return apiRequest<JobStatus>(`/api/simulations/${simulationId}/cancel`, {
+    method: 'POST',
+  });
 }
 
-export function getSimulationResult(simulationId: string): Promise<SimulationResult> {
-  return apiRequest<SimulationResult>(`/api/simulations/${simulationId}/result`);
+export function getSimulationResult(
+  simulationId: string,
+): Promise<SimulationResult> {
+  return apiRequest<SimulationResult>(
+    `/api/simulations/${simulationId}/result`,
+  );
 }
 
 export async function waitForSimulation(
@@ -264,7 +292,8 @@ export async function waitForSimulation(
 
   signal?.throwIfAborted();
   try {
-    if (!['queued', 'running'].includes(status.state)) throw new Error('Already terminal');
+    if (!['queued', 'running'].includes(status.state))
+      throw new Error('Already terminal');
     status = await new Promise<JobStatus>((resolve, reject) => {
       const socket = new WebSocket(websocketUrl(initial.simulation_id));
       let settled = false;
@@ -289,10 +318,25 @@ export async function waitForSimulation(
       armWatchdog();
       socket.onmessage = (event) => {
         let update: JobStatus;
-        try { update = JSON.parse(String(event.data)) as JobStatus; }
-        catch { fail('Invalid status message'); return; }
-        if (update.simulation_id !== initial.simulation_id || !['queued', 'running', 'succeeded', 'failed', 'cancelled', 'interrupted'].includes(update.state)) {
-          fail('Mismatched status message'); return;
+        try {
+          update = JSON.parse(String(event.data)) as JobStatus;
+        } catch {
+          fail('Invalid status message');
+          return;
+        }
+        if (
+          update.simulation_id !== initial.simulation_id ||
+          ![
+            'queued',
+            'running',
+            'succeeded',
+            'failed',
+            'cancelled',
+            'interrupted',
+          ].includes(update.state)
+        ) {
+          fail('Mismatched status message');
+          return;
         }
         status = update;
         armWatchdog();
@@ -311,7 +355,9 @@ export async function waitForSimulation(
   } catch {
     signal?.throwIfAborted();
     while (status.state === 'queued' || status.state === 'running') {
-      await new Promise((resolve) => globalThis.setTimeout(resolve, pollingIntervalMs));
+      await new Promise((resolve) =>
+        globalThis.setTimeout(resolve, pollingIntervalMs),
+      );
       signal?.throwIfAborted();
       status = await getSimulation(status.simulation_id);
       signal?.throwIfAborted();
@@ -327,5 +373,7 @@ export async function waitForSimulation(
   if (status.state === 'cancelled') {
     throw new SimulationCancelledError();
   }
-  throw new Error(status.error_message ?? `仿真任务以 ${status.state} 状态结束`);
+  throw new Error(
+    status.error_message ?? `仿真任务以 ${status.state} 状态结束`,
+  );
 }

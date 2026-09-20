@@ -2,6 +2,7 @@
 
 import json
 from dataclasses import replace
+from oilfield_energy.bootstrap.adapters.project_dataset import study_recipe
 from pathlib import Path
 
 import pytest
@@ -25,7 +26,7 @@ def read(path):
 @pytest.fixture(scope="module", params=["renamed", "s_binding", "q_binding"])
 def study(request, tmp_path_factory):
     folder = tmp_path_factory.mktemp(request.param)
-    recipe = read(ROOT / "examples/shancheng_simulation/recipe.json")
+    recipe = json.loads(study_recipe().model_dump_json())
     recipe.update(intervals=8, start="2026-09-15T12:00:00+08:00", rolling_horizon_intervals=4)
     for index, resource in enumerate(recipe["resources"]):
         if request.param == "renamed":
@@ -95,7 +96,7 @@ def test_svg_plan_execution_and_safety_evidence_obey_both_limits(study):
 
 
 def test_device_overcapacity_blocks_recovery_even_when_ac_converges():
-    request = read_comparison_request(ROOT / "docs/examples/fixed_device_comparison.json")
+    request = read_comparison_request(ROOT / "tests/fixtures/field_dataset/fixed_device_comparison.json")
     devices = tuple(
         replace(d, s_max_mva=0.1) if d.resource_type.value == "svg" else d
         for d in request.snapshot.devices

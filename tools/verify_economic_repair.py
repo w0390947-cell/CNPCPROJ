@@ -13,7 +13,7 @@ import numpy as np
 
 from oilfield_energy.ac_consistency import solve_case_ac_consistent
 from oilfield_energy.analysis import compare_results
-from oilfield_energy.data import build_synthetic_case
+from oilfield_energy.bootstrap.adapters.project_dataset import build_synthetic_case
 from oilfield_energy.service import ScenarioType, SimulationRequest, run_simulation
 
 

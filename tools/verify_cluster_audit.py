@@ -17,7 +17,7 @@ from unittest.mock import patch
 import numpy as np
 
 from oilfield_energy import admm, service
-from oilfield_energy.data import build_synthetic_case
+from oilfield_energy.bootstrap.adapters.project_dataset import build_synthetic_case, plant_inputs_by_region
 from oilfield_energy.hierarchical import run_hierarchical_control
 from oilfield_energy.hierarchy_types import ADMMConfig, CommunicationConfig
 
@@ -44,7 +44,9 @@ def hierarchy(output: Path, steps: int, cap: float | None) -> dict[str, Any]:
     if cap is not None:
         case = replace(case, cluster_import_limit_mw=cap)
     result = run_hierarchical_control(
-        case, admm_config=ADMMConfig(max_iterations=220), time_limit_seconds=60
+        case,
+        intraday_input_case=build_synthetic_case(steps, profile_kind="intraday"),
+        plant_inputs=plant_inputs_by_region(), admm_config=ADMMConfig(max_iterations=220), time_limit_seconds=60
     )
     names = [mg.name for mg in case.microgrids]
     series = {

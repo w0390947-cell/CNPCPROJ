@@ -12,6 +12,7 @@ import numpy as np
 
 from .modules.control.contracts import RestorationEvidence, StorageDynamicsRecord
 from .modules.dispatch.contracts import (
+    CoordinationIterationTrace,
     CoordinationSnapshot,
     DispatchCapabilities,
     EconomicCost,
@@ -528,6 +529,7 @@ class ADMMIteration:
     fresh_region_count: int
     convergence_streak: int = 0
     fallback_regions: List[str] = field(default_factory=list)
+    coordination: CoordinationIterationTrace | None = None
 
 
 @dataclass

@@ -43,6 +43,19 @@ The ADMM orchestrator alone applies the consecutive-update convergence rule.
 A convex snapshot does not certify AC realization or device execution.
 Service 1.2 publishes this evidence and explicitly scoped cluster validation.
 
+ADR 0014 adds immutable `CoordinationIterationTrace` / `RegionalCoordinationTrace`
+for service 1.4 replay. They preserve the coordinator's latest accepted P/Q
+proposal, response epoch/send tick, post-update reference, effective outage,
+local fallback and barrier eligibility, with a separate chronological hour axis.
+Missing proposals are null, never initial autonomous estimates. This diagnostic
+evidence does not change convergence or certify execution. Historical history
+without traces remains readable; new strictly validated traces reject nonfinite,
+misaligned, duplicate-region and future/mixed-epoch data. Arrays are copied to
+tuples, accepting both JSON and parsed JSON at the boundary.
+See [ADR 0014](../../../../docs/architecture/decisions/0014-coordination-replay.md).
+Additional tests: `tests/unit/dispatch/test_coordination_trace.py`,
+`tests/integration/dispatch/test_coordination_replay.py`.
+
 ADR 0011 adds `adopted-schedule-v1`: explicit timestamps, immutable per-resource
 commands and per-interval source windows, with no borrowed optimizer certificate.
 `api.adopt_first_steps`, `api.slice_adopted_schedule` and `api.read_adopted_schedule`

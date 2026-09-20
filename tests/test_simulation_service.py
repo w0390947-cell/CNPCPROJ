@@ -37,14 +37,14 @@ class SimulationServiceTests(unittest.TestCase):
         payload = self.result.model_dump(mode="json")
         encoded = json.dumps(payload, ensure_ascii=False, allow_nan=False)
         self.assertIn("参数化模拟数据", encoded)
-        self.assertEqual(payload["metadata"]["schema_version"], "1.3.0")
+        self.assertEqual(payload["metadata"]["schema_version"], "1.4.0")
         self.assertEqual(payload["metadata"]["steps"], 8)
 
     def test_true_solver_result_contains_complete_display_contract(self) -> None:
         self.assertTrue(self.result.executive_summary.overall_passed)
         self.assertEqual(len(self.result.timeseries), 8)
-        self.assertEqual(len(self.result.topology_nodes), 5)
-        self.assertEqual(len(self.result.topology_edges), 4)
+        self.assertEqual(len(self.result.topology_nodes), 7)
+        self.assertEqual(len(self.result.topology_edges), 6)
         self.assertTrue(all(item.passed for item in self.result.validation_items))
         self.assertIn("SCIP status", self.result.solver["message"])
 
@@ -109,7 +109,7 @@ class MultiScenarioServiceTests(unittest.TestCase):
 
     def test_cluster_coordination_contains_real_admm_and_three_regions(self) -> None:
         self.assertTrue(self.cluster.executive_summary.overall_passed)
-        self.assertEqual(len(self.cluster.topology_nodes), 15)
+        self.assertEqual(len(self.cluster.topology_nodes), 17)
         self.assertEqual(len(self.cluster.cluster_timeseries), 4)
         self.assertGreater(len(self.cluster.admm_history), 3)
         self.assertTrue(self.cluster.solver["success"])

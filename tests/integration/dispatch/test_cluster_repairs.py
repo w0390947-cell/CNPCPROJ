@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from oilfield_energy import admm, cli, service
-from oilfield_energy.data import build_synthetic_case
+from tests.legacy_case_fixture import build_synthetic_case
 from oilfield_energy.hierarchical import run_hierarchical_control
 from oilfield_energy.hierarchy_types import ADMMConfig, CommunicationConfig
 

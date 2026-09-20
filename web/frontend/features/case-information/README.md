@@ -1,5 +1,7 @@
 # 算例与数据说明
 
+容量与版本字段来自生成文件 `shared/api/generated/dataset-facts.json`。修改统一台账后运行 `python tools/export_unified_dataset.py`，使用 `--check` 检测漂移；不要在 content.ts 另行维护区域容量。
+
 负责人：前端维护负责人；涉及模型口径时由建模维护负责人评审。
 
 公开入口为 `index.ts`，由 `app/case-information/page.tsx` 装配。该功能集中呈现
@@ -11,7 +13,7 @@ Web 合成算例的数据身份、区域代码映射、研究参数、时间尺�
 
 ## 页面组织与兼容
 
-- `ui.tsx` 组合公共平台外壳、数据提示、章节目录和阅读主栏。
+- `ui.tsx` 组合公共平台外壳、页面标题与数据标签、章节目录和阅读主栏。
 - `case-sections.tsx` 呈现数据身份、区域资产及算例构造；`study-sections.tsx`
   呈现研究参数、时间尺度、校核边界及术语。`reference-section.tsx` 统一本功能的章节样式。
 - `content.ts` 保存说明页数据与章节元信息；目录和标题共享元信息，保留全部既有章节锚点。

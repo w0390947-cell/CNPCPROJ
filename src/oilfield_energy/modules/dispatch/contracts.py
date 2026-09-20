@@ -1,7 +1,7 @@
 """Immutable MW/MWh/CNY values; no solver or transport dependencies."""
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import (
     AwareDatetime,
@@ -132,7 +132,110 @@ class CoordinationSnapshot:
 
 
 class ScheduleValue(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True, strict=True, allow_inf_nan=False)
+    model_config = ConfigDict(
+        extra="forbid", frozen=True, strict=True, allow_inf_nan=False
+    )
+
+
+ReplayPowerSeries = Annotated[tuple[float, ...], Field(strict=False)]
+
+
+class RegionalCoordinationTrace(ScheduleValue):
+    """Coordinator's latest accepted proposal, never a device measurement.
+
+    Positive P/Q mean PCC import. Missing proposals remain None. Fresh means
+    eligible for this barrier epoch, including an unexpired buffered response.
+    Outage and local fallback are independent observations, not inferred from P.
+    """
+
+    region: str = Field(min_length=1)
+    response_epoch: int | None = Field(ge=0)
+    response_sent_tick: int | None = Field(ge=1)
+    fresh: bool
+    outage: bool
+    fallback: bool
+    proposal_p_mw: ReplayPowerSeries | None
+    proposal_q_mvar: ReplayPowerSeries | None
+    reference_p_mw: ReplayPowerSeries
+    reference_q_mvar: ReplayPowerSeries
+
+    @model_validator(mode="after")
+    def aligned(self) -> "RegionalCoordinationTrace":
+        count = len(self.reference_p_mw)
+        if not count or len(self.reference_q_mvar) != count:
+            raise ValueError("reference P/Q horizons must align")
+        evidence = (
+            self.response_epoch,
+            self.response_sent_tick,
+            self.proposal_p_mw,
+            self.proposal_q_mvar,
+        )
+        if any(value is None for value in evidence):
+            if not all(value is None for value in evidence) or self.fresh:
+                raise ValueError(
+                    "missing proposal must have no response provenance or freshness"
+                )
+        elif any(
+            len(values) != count
+            for values in (
+                self.proposal_p_mw,
+                self.proposal_q_mvar,
+            )
+            if values is not None
+        ):
+            raise ValueError("proposal and reference horizons must align")
+        return self
+
+
+class CoordinationIterationTrace(ScheduleValue):
+    """Lightweight immutable replay evidence for one communication tick.
+
+    Epoch identifies the barrier being collected. References are AFTER this
+    tick's projection (unchanged if global_updated is false). Time is a separate
+    planning axis in hours, never a conversion of communication_tick.
+    """
+
+    version: Literal["coordination-trace-v1"] = "coordination-trace-v1"
+    communication_tick: int = Field(ge=1)
+    coordination_epoch: int = Field(ge=0)
+    global_updated: bool
+    time_hours: tuple[float, ...] = Field(strict=False)
+    regions: tuple[RegionalCoordinationTrace, ...] = Field(strict=False)
+
+    @model_validator(mode="after")
+    def aligned(self) -> "CoordinationIterationTrace":
+        if (
+            not self.time_hours
+            or any(
+                right <= left
+                for left, right in zip(self.time_hours, self.time_hours[1:])
+            )
+            or self.time_hours[0] < 0
+        ):
+            raise ValueError(
+                "planning time must be nonnegative and strictly increasing"
+            )
+        names = [region.region for region in self.regions]
+        if not names or len(set(names)) != len(names):
+            raise ValueError("trace requires unique region IDs")
+        for region in self.regions:
+            if len(region.reference_p_mw) != len(self.time_hours):
+                raise ValueError("regional horizons must match planning time")
+            if (
+                region.response_sent_tick is not None
+                and region.response_sent_tick > self.communication_tick
+            ):
+                raise ValueError("response cannot come from a future tick")
+            if (
+                region.response_epoch is not None
+                and region.response_epoch > self.coordination_epoch
+            ):
+                raise ValueError("response cannot come from a future epoch")
+            if region.fresh and region.response_epoch != self.coordination_epoch:
+                raise ValueError("fresh response must belong to the collected epoch")
+        if self.global_updated and not all(region.fresh for region in self.regions):
+            raise ValueError("barrier update requires all fresh regions")
+        return self
 
 
 class ResourceTrajectory(ScheduleValue):
@@ -144,7 +247,9 @@ class ResourceTrajectory(ScheduleValue):
 
     @model_validator(mode="after")
     def aligned(self) -> "ResourceTrajectory":
-        if not self.active_power_mw or len(self.active_power_mw) != len(self.reactive_power_mvar):
+        if not self.active_power_mw or len(self.active_power_mw) != len(
+            self.reactive_power_mvar
+        ):
             raise ValueError("resource P/Q trajectories must have equal nonzero length")
         return self
 
@@ -177,7 +282,9 @@ class AdoptedSchedule(ScheduleValue):
     wind_available_mw: tuple[float, ...]
     resource_schedules: tuple[ResourceTrajectory, ...]
     origins: tuple[AdoptedOrigin, ...]
-    scope: Literal["adopted_commands_not_measurements"] = "adopted_commands_not_measurements"
+    scope: Literal["adopted_commands_not_measurements"] = (
+        "adopted_commands_not_measurements"
+    )
     optimality_status: Literal["not_assessed_for_adopted_horizon"] = (
         "not_assessed_for_adopted_horizon"
     )
@@ -190,7 +297,8 @@ class AdoptedSchedule(ScheduleValue):
     def aligned(self) -> "AdoptedSchedule":
         count = len(self.p_grid_mw)
         if not count or any(
-            len(v) != count for v in (self.q_grid_mvar, self.wind_available_mw, self.origins)
+            len(v) != count
+            for v in (self.q_grid_mvar, self.wind_available_mw, self.origins)
         ):
             raise ValueError("adopted PCC/availability/provenance horizons must align")
         ids = [s.resource_id for s in self.resource_schedules]
@@ -221,7 +329,9 @@ class FirstStepDecision(ScheduleValue):
             or len(ids) != len(set(ids))
             or any(len(s.active_power_mw) != 1 for s in self.resources)
         ):
-            raise ValueError("first-step decision requires one slot per unique resource")
+            raise ValueError(
+                "first-step decision requires one slot per unique resource"
+            )
         return self
 
 

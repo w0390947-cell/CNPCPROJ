@@ -43,7 +43,7 @@ export function DemoLab() {
   const [connectionError, setConnectionError] = useState('');
   const [notice, setNotice] = useState<Notice | null>(null);
   const [busy, setBusy] = useState(false);
-  const [device, setDevice] = useState('SC-storage');
+  const [device, setDevice] = useState('');
   const [p, setP] = useState('0.5');
   const [q, setQ] = useState('0');
   const [job, setJob] = useState<DemoJob | null>(null);
@@ -62,7 +62,11 @@ export function DemoLab() {
             setDevice((current) =>
               value.devices.some((item) => item.device_id === current)
                 ? current
-                : (value.devices[0]?.device_id ?? ''),
+                : (value.devices.find(
+                    (item) => item.region === 'SC' && item.kind === 'storage',
+                  )?.device_id ??
+                  value.devices[0]?.device_id ??
+                  ''),
             );
           }
           catalogLoaded = true;

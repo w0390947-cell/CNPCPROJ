@@ -91,7 +91,7 @@ _EXPORTS: dict[str, tuple[str, str]] = {
     "ThresholdSnapshot": ("hierarchy_types", "ThresholdSnapshot"),
     "WindSetpoint": ("shancheng_control", "WindSetpoint"),
     "WindTurbineTelemetry": ("shancheng_control", "WindTurbineTelemetry"),
-    "build_synthetic_case": ("data", "build_synthetic_case"),
+    "build_synthetic_case": ("bootstrap.adapters.project_dataset", "build_synthetic_case"),
     "audit_line_load_workbook": ("field_data", "audit_line_load_workbook"),
     "build_project_asset_registry": ("field_data", "build_project_asset_registry"),
     "allocate_pv_curtailment": ("group_control", "allocate_pv_curtailment"),

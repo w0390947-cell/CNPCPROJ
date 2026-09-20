@@ -57,34 +57,10 @@
   font-size: 0.875rem;
 }
 
-.notice {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 18px 22px;
-  border: 1px solid #554a32;
-  border-radius: 10px;
-  background: #211f1b;
-}
-
-.notice > svg {
-  flex: 0 0 auto;
-  margin-top: 2px;
-  color: #e2bf77;
-}
-
-.notice strong,
 .boundaryNote > strong {
   color: #ead09d;
   font-size: 0.9375rem;
   font-weight: 600;
-}
-
-.notice p {
-  margin: 5px 0 0;
-  color: #cabb9f;
-  font-size: 0.9375rem;
-  line-height: 1.8;
 }
 
 .readingLayout {
@@ -92,7 +68,6 @@
   grid-template-columns: minmax(0, 1fr) 172px;
   align-items: start;
   gap: 32px;
-  margin-top: 28px;
   padding-bottom: 24px;
 }
 
@@ -574,10 +549,6 @@
     padding: 22px 18px;
   }
   .sectionHeading {
-    gap: 10px;
-  }
-  .notice {
-    padding: 16px;
     gap: 10px;
   }
 

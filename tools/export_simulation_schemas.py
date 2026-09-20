@@ -6,7 +6,7 @@ from pathlib import Path
 
 from oilfield_energy.modules.control.contracts import PlantInputs
 from oilfield_energy.modules.dispatch.contracts import AdoptedSchedule
-from oilfield_energy.modules.studies.contracts import ScenarioCatalog, StudySpec
+from oilfield_energy.modules.studies.contracts import ScenarioCatalog, StudySpec, UnifiedDataset
 
 
 def main() -> None:
@@ -16,6 +16,7 @@ def main() -> None:
     args.output.mkdir(parents=True, exist_ok=True)
     for name, model in (
         ("recipe", StudySpec),
+        ("unified_dataset", UnifiedDataset),
         ("plant", PlantInputs),
         ("scenarios", ScenarioCatalog),
         ("adopted_schedule", AdoptedSchedule),

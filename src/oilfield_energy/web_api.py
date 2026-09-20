@@ -8,7 +8,6 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, nullcontext
 from importlib import metadata
 from pathlib import Path
-from sysconfig import get_path
 from typing import Annotated, cast
 
 import cvxpy as cp
@@ -18,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict
 from starlette.requests import HTTPConnection
 
-from .bootstrap.demo import DemoConfig, demo_device_router, live_demo
+from .bootstrap.demo import DemoConfig, demo_device_router, live_demo, materialize_default_bundle
 from .job_manager import JobStatus, SimulationJobManager
 from .runtime.periodic import PeriodicWorker
 from .runtime.retention import RetentionCapacityError, RetentionPolicy
@@ -210,22 +209,6 @@ def create_app(
 app = create_app()
 
 
-def _default_demo_bundle() -> Path:
-    """Resolve the versioned source asset or its wheel-installed data-file copy."""
-
-    project_root = Path(__file__).resolve().parents[2]
-    source_bundle = project_root / "examples/system_demo/bundle.json"
-    if source_bundle.is_file():
-        return source_bundle
-    installed_bundle = (
-        Path(get_path("data")) / "share/oilfield-energy-optimization/system-demo/bundle.json"
-    )
-    if installed_bundle.is_file():
-        return installed_bundle
-    raise FileNotFoundError(
-        "default demo bundle is unavailable; pass --demo-bundle and --demo-output"
-    )
-
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the unified local simulation Web API")
@@ -241,7 +224,7 @@ def main() -> None:
     )
     parser.add_argument("--demo-tick-seconds", type=float, default=1.0)
     args = parser.parse_args()
-    bundle = args.demo_bundle if args.demo_bundle is not None else _default_demo_bundle()
+    bundle = args.demo_bundle if args.demo_bundle is not None else materialize_default_bundle(args.demo_output)
     demo = DemoConfig(bundle, args.demo_output, args.demo_tick_seconds)
     uvicorn.run(create_app(demo=demo), host="127.0.0.1", port=8000, reload=False)
 

@@ -15,9 +15,7 @@ from pydantic import (
 
 
 class Model(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid", frozen=True, strict=True, allow_inf_nan=False
-    )
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True, allow_inf_nan=False)
 
 
 Fault = Literal[
@@ -42,6 +40,7 @@ class DeviceSpec(Model):
     q_max_mvar: float = Field(ge=0)
     s_max_mva: float = Field(gt=0)
     ramp_mw_per_minute: float = Field(gt=0)
+    q_abs_over_p_max: float | None = Field(default=None, ge=0)
     energy_mwh: float = Field(default=0, ge=0)
     minimum_mwh: float = Field(default=0, ge=0)
     initial_mwh: float = Field(default=0, ge=0)
@@ -52,10 +51,7 @@ class DeviceSpec(Model):
     def limits(self) -> "DeviceSpec":
         if self.p_min_mw > self.p_max_mw:
             raise ValueError("inverted P bounds")
-        if (
-            max(abs(self.p_min_mw), abs(self.p_max_mw), self.q_max_mvar)
-            > self.s_max_mva
-        ):
+        if max(abs(self.p_min_mw), abs(self.p_max_mw), self.q_max_mvar) > self.s_max_mva:
             raise ValueError("P/Q capability exceeds apparent power rating")
         if self.kind in {"wind", "pv"} and self.p_min_mw != 0:
             raise ValueError("renewable P lower bound must be zero")
@@ -77,12 +73,11 @@ class Bundle(Model):
     case: dict[str, JsonValue]
     devices: tuple[DeviceSpec, ...]
     presets: dict[str, dict[str, JsonValue]]
+    plant_profiles: dict[str, JsonValue] | None = None
 
     @model_validator(mode="after")
     def unique_devices(self) -> "Bundle":
-        if not self.devices or len({d.device_id for d in self.devices}) != len(
-            self.devices
-        ):
+        if not self.devices or len({d.device_id for d in self.devices}) != len(self.devices):
             raise ValueError("devices must be nonempty and unique")
         return self
 

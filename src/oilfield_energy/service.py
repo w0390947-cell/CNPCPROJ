@@ -18,13 +18,15 @@ from .ac_consistency import solve_case_ac_consistent
 from .ac_power_flow import validate_ac_dispatch
 from .admm import run_admm_coordination
 from .analysis import compare_results, validate_result
-from .data import MicrogridData, ProjectCase, build_synthetic_case
-from .group_control_scenarios import run_group_control_scenarios
+from .data import MicrogridData, ProjectCase
+from .bootstrap.adapters.project_dataset import build_synthetic_case
+from .group_control_scenarios import run_group_control_scenarios, scenario_basis
 from .hierarchy_types import ADMMConfig, CommunicationConfig
 from .model import OptimizationResult, solve_case
 from .modules.dispatch.api import assess_reference_economics
 from .modules.dispatch.contracts import (
     ACCOUNTING_VERSION,
+    CoordinationIterationTrace,
     CoordinationSnapshot,
     DispatchCapabilities,
     ReferenceEconomics,
@@ -36,7 +38,7 @@ from .modules.studies.contracts import CommunicationEventExecution, ScenarioEven
 from .network_model import validate_legacy_network_alignment
 from .scenario_events import EventType, ScenarioEvent, apply_physical_events
 
-SCHEMA_VERSION = "1.3.0"
+SCHEMA_VERSION = "1.4.0"
 SIMULATED_DATA_NOTICE = "全部网络与运行数据均为参数化模拟数据，不代表实际油田数据。"
 
 
@@ -191,6 +193,7 @@ class ADMMHistoryPoint(ContractModel):
     fresh_region_count: int
     convergence_streak: int
     fallback_regions: list[str]
+    coordination: CoordinationIterationTrace | None = None
 
 
 class CommunicationSummary(ContractModel):
@@ -255,6 +258,10 @@ class SimulationMetadata(ContractModel):
     steps: int
     dt_hours: float
     formulation: SolverFormulation
+    dataset_id: str | None = None
+    dataset_revision: str | None = None
+    dataset_sha256: str | None = None
+    profile_kind: str | None = None
 
 
 class ExecutiveSummary(ContractModel):
@@ -351,17 +358,22 @@ def _require_success(label: str, result: OptimizationResult) -> None:
         )
 
 
-def _node_kind(bus: str) -> Literal["pcc", "main", "wind", "pv", "flex"]:
-    suffix = bus.rsplit("_", 1)[-1].lower()
-    if suffix in {"pcc", "main", "wind", "pv", "flex"}:
-        return suffix  # type: ignore[return-value]
-    raise ValueError(f"unsupported synthetic bus kind: {bus}")
+def _node_kind(bus: str, microgrid: MicrogridData) -> Literal["pcc", "main", "wind", "pv", "flex"]:
+    if bus == microgrid.pcc_bus:
+        return "pcc"
+    if bus in microgrid.wind_capacity_mw:
+        return "wind"
+    if bus in microgrid.pv_capacity_mw:
+        return "pv"
+    if bus in {microgrid.storage.bus, microgrid.svg_bus}:
+        return "flex"
+    return "main"
 
 
 def _topology(microgrid: MicrogridData) -> tuple[list[TopologyNode], list[TopologyEdge]]:
     lines = validate_legacy_network_alignment(microgrid).branches
     nodes = [
-        TopologyNode(id=bus, label=bus.rsplit("_", 1)[-1], kind=_node_kind(bus))
+        TopologyNode(id=bus, label=bus.rsplit("_", 1)[-1], kind=_node_kind(bus, microgrid))
         for bus in microgrid.buses
     ]
     edges = [
@@ -514,6 +526,10 @@ def _run_single_microgrid(
     result = SimulationResult(
         economic_accounting_version=ACCOUNTING_VERSION,
         metadata=SimulationMetadata(
+            dataset_id=case.dataset_id,
+            dataset_revision=case.dataset_revision,
+            dataset_sha256=case.dataset_sha256,
+            profile_kind=case.profile_kind,
             generated_at=datetime.now(timezone.utc).isoformat(),
             scenario_type=request.scenario_type,
             region=request.region,
@@ -611,6 +627,7 @@ def _admm_history(result: Any) -> list[ADMMHistoryPoint]:
             fresh_region_count=item.fresh_region_count,
             convergence_streak=item.convergence_streak,
             fallback_regions=list(item.fallback_regions),
+            coordination=item.coordination,
         )
         for item in result.history
     ]
@@ -873,6 +890,10 @@ def _run_cluster(
         coordination_snapshot=admm.coordination_snapshot,
         economic_accounting_version=ACCOUNTING_VERSION,
         metadata=SimulationMetadata(
+            dataset_id=case.dataset_id,
+            dataset_revision=case.dataset_revision,
+            dataset_sha256=case.dataset_sha256,
+            profile_kind=case.profile_kind,
             generated_at=datetime.now(timezone.utc).isoformat(),
             scenario_type=request.scenario_type,
             region="SC,YA_B,YA_C",
@@ -941,7 +962,7 @@ def _run_group_control(
     lookup = {microgrid.name: microgrid for microgrid in case.microgrids}
     _emit(progress_callback, SimulationStage.SOLVING_BASELINE, "装载八类确定性控制场景", 2)
     _emit(progress_callback, SimulationStage.SOLVING_OPTIMIZED, "执行真实群控监督器状态转换", 3)
-    scenarios = run_group_control_scenarios()
+    scenarios = run_group_control_scenarios(basis=scenario_basis(lookup["SC"]))
 
     _emit(progress_callback, SimulationStage.VALIDATING, "核验触发、防抖、限发与恢复动作", 4)
     all_passed = all(scenario.passed for scenario in scenarios.values())
@@ -995,6 +1016,10 @@ def _run_group_control(
     nodes, edges = _topology(lookup[request.region])
     result = SimulationResult(
         metadata=SimulationMetadata(
+            dataset_id=case.dataset_id,
+            dataset_revision=case.dataset_revision,
+            dataset_sha256=case.dataset_sha256,
+            profile_kind=case.profile_kind,
             generated_at=datetime.now(timezone.utc).isoformat(),
             scenario_type=request.scenario_type,
             region=request.region,

@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from oilfield_energy.ac_consistency import solve_case_ac_consistent
-from oilfield_energy.data import build_synthetic_case
+from tests.legacy_case_fixture import build_synthetic_case
 from oilfield_energy.device_control import simulate_device_tracking
 from oilfield_energy.group_control import GroupControlSupervisor
 from oilfield_energy.hierarchy_reporting import (

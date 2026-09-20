@@ -125,6 +125,16 @@
       "title": "Schema Version",
       "type": "string"
     },
+    "region_id": {
+      "default": "SC",
+      "enum": [
+        "SC",
+        "YA_B",
+        "YA_C"
+      ],
+      "title": "Region Id",
+      "type": "string"
+    },
     "dataset_id": {
       "title": "Dataset Id",
       "type": "string"

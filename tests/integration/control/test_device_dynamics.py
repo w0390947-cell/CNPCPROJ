@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from oilfield_energy.ac_consistency import solve_case_ac_consistent
-from oilfield_energy.data import build_synthetic_case
+from tests.legacy_case_fixture import build_synthetic_case
 from oilfield_energy.device_control import simulate_device_tracking
 from oilfield_energy.hierarchical import run_hierarchical_control
 from oilfield_energy.hierarchy_reporting import write_minute_network_outputs

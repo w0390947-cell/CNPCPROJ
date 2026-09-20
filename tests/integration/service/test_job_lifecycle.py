@@ -80,10 +80,10 @@ def test_unified_web_service_exposes_demo_devices_and_existing_api(tmp_path):
     )
     with server(tmp_path / "jobs", demo) as (http, _app):
         assert http("/api/health")["service"] == "oilfield-energy-simulation"
-        assert http("/api/demo/catalog")["dataset_id"] == "three-region-demo-2026-v1"
+        assert http("/api/demo/catalog")["dataset_id"] == "oilfield-unified-synthetic"
         frame = http("/api/demo/telemetry")
         assert frame["synthetic"] is True
-        assert len(frame["devices"]) == 13
+        assert len(frame["devices"]) == 14
     assert list((tmp_path / "demo-runs").glob("*/telemetry-and-receipts.jsonl"))
 
 

@@ -1,7 +1,6 @@
-import {
-  REGION_DEFINITIONS,
-  type RegionCode,
-} from '@/shared/lib/region-presentation';
+import { REGION_DEFINITIONS } from '@/shared/lib/region-presentation';
+
+import datasetFacts from '@/shared/api/generated/dataset-facts.json';
 
 /** Keep chapter navigation, headings and existing deep links aligned. */
 export const CASE_SECTIONS = {
@@ -49,33 +48,8 @@ export const CASE_SECTIONS = {
   },
 } as const;
 
-type RegionCaseProfile = {
-  loadScaleMw: number;
-  pvMw: number;
-  storage: string;
-  windMw: number;
-};
-
-const REGION_CASE_PROFILES: Readonly<Record<RegionCode, RegionCaseProfile>> = {
-  SC: {
-    loadScaleMw: 9.8,
-    windMw: 10,
-    pvMw: 4.2,
-    storage: '2.5 MW / 5 MWh',
-  },
-  YA_B: {
-    loadScaleMw: 8,
-    windMw: 7,
-    pvMw: 3.2,
-    storage: '2 MW / 4 MWh',
-  },
-  YA_C: {
-    loadScaleMw: 7.2,
-    windMw: 6,
-    pvMw: 3.8,
-    storage: '1.8 MW / 3.6 MWh',
-  },
-};
+const REGION_CASE_PROFILES = datasetFacts.regions;
+export const DATASET_IDENTITY = datasetFacts;
 
 export const REGION_CASE_ROWS = REGION_DEFINITIONS.map((region) => ({
   ...region,

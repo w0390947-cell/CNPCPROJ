@@ -8,7 +8,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from oilfield_energy.data import build_synthetic_case
+from tests.legacy_case_fixture import build_synthetic_case
 from oilfield_energy.hierarchy_types import GroupControlConfig
 from oilfield_energy.planning_security import (
     build_planning_security_trajectories,

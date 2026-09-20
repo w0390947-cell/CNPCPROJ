@@ -60,6 +60,13 @@ class SimulatedCommunicationChannel:
             raise ValueError("loss window end cannot precede start")
         return c.loss_start_iteration <= iteration <= c.loss_end_iteration
 
+    def region_outage_at(self, region: str, iteration: int) -> bool:
+        """Read the same effective outage rule as send, without advancing RNG."""
+        effect = communication_event_effect(self.config.events, "coordinator", region, iteration)
+        return effect.outage if effect.outage is not None else self._is_outage(
+            "coordinator", region, iteration
+        )
+
     def send(self, sender: str, receiver: str, payload: Any, iteration: int) -> bool:
         self.metrics.sent += 1
         effect = communication_event_effect(self.config.events, sender, receiver, iteration)

@@ -24,7 +24,7 @@ from oilfield_energy.field_data.snapshot_power_flow import (
 )
 from oilfield_energy.power_flow_comparison import read_comparison_request, compare_fixed_states
 
-EXAMPLE = ROOT / "docs/examples/field_snapshot_request.json"
+EXAMPLE = ROOT / "tests/fixtures/field_dataset/field_snapshot_request.json"
 
 
 class FieldSnapshotTests(unittest.TestCase):
@@ -59,7 +59,7 @@ class FieldSnapshotTests(unittest.TestCase):
         original = asdict(self.request)
         with patch("oilfield_energy.model.solve_case", side_effect=AssertionError("optimizer")), \
              patch("oilfield_energy.ac_consistency.solve_case_ac_consistent", side_effect=AssertionError("redispatch")), \
-             patch("oilfield_energy.data.build_synthetic_case", side_effect=AssertionError("fallback")):
+             patch("oilfield_energy.bootstrap.adapters.project_dataset.build_synthetic_case", side_effect=AssertionError("fallback")):
             report = self.result()
         self.assertEqual(report["status"], "secure", report)
         self.assertEqual(original, asdict(self.request))

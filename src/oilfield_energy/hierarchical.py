@@ -11,6 +11,7 @@ from .ac_power_flow import validate_ac_dispatch
 from .admm import run_admm_coordination
 from .data import ProjectCase
 from .device_control import simulate_device_tracking
+from .modules.control.contracts import PlantInputs
 from .hierarchy_types import (
     ADMMConfig,
     CommunicationConfig,
@@ -83,6 +84,8 @@ def run_hierarchical_control(
     time_scale_config: TimeScaleConfig | None = None,
     group_control_config: GroupControlConfig | None = None,
     time_limit_seconds: float = 180.0,
+    intraday_input_case: ProjectCase | None = None,
+    plant_inputs: dict[str, PlantInputs] | None = None,
 ) -> HierarchicalResult:
     """运行完整三层仿真。
 
@@ -162,7 +165,13 @@ def run_hierarchical_control(
         day_ahead_floors,
     )
 
-    intraday_case = build_intraday_updated_case(case)
+    if case.dataset_id is not None and (intraday_input_case is None or plant_inputs is None):
+        raise ValueError("versioned dataset requires explicit intraday and plant inputs")
+    intraday_case = intraday_input_case if intraday_input_case is not None else build_intraday_updated_case(case)
+    if len(intraday_case.time_hours) != len(case.time_hours) or intraday_case.dataset_sha256 != case.dataset_sha256:
+        raise ValueError("intraday input time axis or dataset identity mismatch")
+    if plant_inputs is not None and set(plant_inputs) != set(names):
+        raise ValueError("plant inputs must cover requested regions")
     intraday_security = build_planning_security_trajectories(
         intraday_case,
         names,
@@ -190,6 +199,7 @@ def run_hierarchical_control(
             group_control_config=cfg_group,
             reverse_flow_probability_15=(intraday_security[name].reverse_flow_probability),
             seed=20260901 + idx,
+            plant_inputs=plant_inputs[name] if plant_inputs is not None else None,
         )
 
     centralized_cost = float(centralized.cluster["economic_cost_cny"])

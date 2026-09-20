@@ -10,7 +10,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="operation", required=True)
     generate = commands.add_parser("generate")
-    generate.add_argument("--config", type=Path, required=True)
+    generate.add_argument("--config", type=Path, help="Explicit derived study recipe; defaults to the packaged unified SC dataset")
     generate.add_argument("--output", type=Path, required=True)
     run = commands.add_parser("run")
     run.add_argument("--manifest", type=Path, required=True)

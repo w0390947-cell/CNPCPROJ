@@ -13,7 +13,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from oilfield_energy.ac_consistency import solve_case_ac_consistent
 from oilfield_energy.ac_power_flow import backward_forward_sweep, validate_ac_dispatch
-from oilfield_energy.data import Line, Storage, build_synthetic_case
+from oilfield_energy.data import Line, Storage
+from tests.legacy_case_fixture import build_synthetic_case
 from oilfield_energy.hierarchy_types import ADMMConfig
 from oilfield_energy.misocp_model import solve_case_misocp
 from oilfield_energy.model import solve_case

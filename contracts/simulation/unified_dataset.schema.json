@@ -1,0 +1,303 @@
+{
+  "$defs": {
+    "JsonValue": {},
+    "LoadSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "bus_id": {
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "peak_mw": {
+          "exclusiveMinimum": 0,
+          "title": "Peak Mw",
+          "type": "number"
+        },
+        "power_factor": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Power Factor",
+          "type": "number"
+        }
+      },
+      "required": [
+        "bus_id",
+        "peak_mw",
+        "power_factor"
+      ],
+      "title": "LoadSpec",
+      "type": "object"
+    },
+    "ResourceSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "resource_id": {
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "bus_id": {
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "wind",
+            "pv",
+            "storage",
+            "svg"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "p_max_mw": {
+          "minimum": 0,
+          "title": "P Max Mw",
+          "type": "number"
+        },
+        "s_max_mva": {
+          "exclusiveMinimum": 0,
+          "title": "S Max Mva",
+          "type": "number"
+        },
+        "q_max_mvar": {
+          "minimum": 0,
+          "title": "Q Max Mvar",
+          "type": "number"
+        }
+      },
+      "required": [
+        "resource_id",
+        "bus_id",
+        "kind",
+        "p_max_mw",
+        "s_max_mva",
+        "q_max_mvar"
+      ],
+      "title": "ResourceSpec",
+      "type": "object"
+    },
+    "StorageSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "energy_mwh": {
+          "exclusiveMinimum": 0,
+          "title": "Energy Mwh",
+          "type": "number"
+        },
+        "minimum_mwh": {
+          "minimum": 0,
+          "title": "Minimum Mwh",
+          "type": "number"
+        },
+        "initial_mwh": {
+          "exclusiveMinimum": 0,
+          "title": "Initial Mwh",
+          "type": "number"
+        },
+        "eta_charge": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Eta Charge",
+          "type": "number"
+        },
+        "eta_discharge": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Eta Discharge",
+          "type": "number"
+        }
+      },
+      "required": [
+        "energy_mwh",
+        "minimum_mwh",
+        "initial_mwh",
+        "eta_charge",
+        "eta_discharge"
+      ],
+      "title": "StorageSpec",
+      "type": "object"
+    },
+    "StudySpec": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "shancheng-simulation-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "region_id": {
+          "default": "SC",
+          "enum": [
+            "SC",
+            "YA_B",
+            "YA_C"
+          ],
+          "title": "Region Id",
+          "type": "string"
+        },
+        "dataset_id": {
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "revision": {
+          "title": "Revision",
+          "type": "string"
+        },
+        "synthetic": {
+          "const": true,
+          "title": "Synthetic",
+          "type": "boolean"
+        },
+        "seed": {
+          "minimum": 0,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        },
+        "intervals": {
+          "maximum": 96,
+          "minimum": 4,
+          "title": "Intervals",
+          "type": "integer"
+        },
+        "interval_minutes": {
+          "const": 15,
+          "title": "Interval Minutes",
+          "type": "integer"
+        },
+        "network": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Network",
+          "type": "object"
+        },
+        "resources": {
+          "items": {
+            "$ref": "#/$defs/ResourceSpec"
+          },
+          "title": "Resources",
+          "type": "array"
+        },
+        "loads": {
+          "items": {
+            "$ref": "#/$defs/LoadSpec"
+          },
+          "title": "Loads",
+          "type": "array"
+        },
+        "storage": {
+          "$ref": "#/$defs/StorageSpec"
+        },
+        "pcc_min_mw": {
+          "exclusiveMinimum": 0,
+          "title": "Pcc Min Mw",
+          "type": "number"
+        },
+        "pcc_max_mw": {
+          "exclusiveMinimum": 0,
+          "title": "Pcc Max Mw",
+          "type": "number"
+        },
+        "pf_min": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Pf Min",
+          "type": "number"
+        },
+        "voltage_min_pu": {
+          "exclusiveMinimum": 0,
+          "title": "Voltage Min Pu",
+          "type": "number"
+        },
+        "voltage_max_pu": {
+          "exclusiveMinimum": 0,
+          "title": "Voltage Max Pu",
+          "type": "number"
+        },
+        "solver_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Solver Seconds",
+          "type": "number"
+        },
+        "rolling_horizon_intervals": {
+          "maximum": 16,
+          "minimum": 1,
+          "title": "Rolling Horizon Intervals",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schema_version",
+        "dataset_id",
+        "revision",
+        "synthetic",
+        "seed",
+        "start",
+        "intervals",
+        "interval_minutes",
+        "network",
+        "resources",
+        "loads",
+        "storage",
+        "pcc_min_mw",
+        "pcc_max_mw",
+        "pf_min",
+        "voltage_min_pu",
+        "voltage_max_pu",
+        "solver_seconds",
+        "rolling_horizon_intervals"
+      ],
+      "title": "StudySpec",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "One version owns all regional recipes; variants retain their lineage.",
+  "properties": {
+    "schema_version": {
+      "const": "oilfield-unified-dataset-v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "dataset_id": {
+      "title": "Dataset Id",
+      "type": "string"
+    },
+    "revision": {
+      "title": "Revision",
+      "type": "string"
+    },
+    "synthetic": {
+      "const": true,
+      "title": "Synthetic",
+      "type": "boolean"
+    },
+    "cluster_import_limit_mw": {
+      "exclusiveMinimum": 0,
+      "title": "Cluster Import Limit Mw",
+      "type": "number"
+    },
+    "regions": {
+      "items": {
+        "$ref": "#/$defs/StudySpec"
+      },
+      "title": "Regions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "dataset_id",
+    "revision",
+    "synthetic",
+    "cluster_import_limit_mw",
+    "regions"
+  ],
+  "title": "UnifiedDataset",
+  "type": "object"
+}

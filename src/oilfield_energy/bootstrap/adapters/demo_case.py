@@ -8,7 +8,7 @@ import hashlib
 import json
 from collections.abc import Mapping
 from dataclasses import fields, is_dataclass, replace
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, cast
@@ -22,9 +22,9 @@ from oilfield_energy.data import (
     ModelAssumptions,
     ProjectCase,
     Storage,
-    build_synthetic_case,
 )
 from oilfield_energy.minute_network import MinuteNetworkEvaluator
+from oilfield_energy.modules.control.contracts import PlantInputs
 from oilfield_energy.modules.demo_simulation.contracts import (
     Bundle,
     DeviceSpec,
@@ -32,6 +32,8 @@ from oilfield_energy.modules.demo_simulation.contracts import (
     Reading,
     Safety,
 )
+from oilfield_energy.modules.resources.contracts import ResourceIdentity, ResourceKind
+from oilfield_energy.modules.studies.api import generate_inputs
 from oilfield_energy.network_model import (
     NetworkContingency,
     NetworkModelV2,
@@ -45,6 +47,8 @@ from oilfield_energy.network_scenarios import (
 )
 from oilfield_energy.power_flow_comparison import BusLoadState, DeviceState, FixedStateSnapshot
 from oilfield_energy.resource_control_contracts import ResourceType
+
+from .project_dataset import build_synthetic_case, study_recipe
 
 
 def plain(value: Any) -> Any:
@@ -86,6 +90,29 @@ def decode_bundle(raw: bytes) -> Bundle:
     json.loads(raw, object_pairs_hook=reject_duplicates)
     bundle = Bundle.model_validate_json(raw)
     case = case_from_bundle(bundle, 96)
+    if case.dataset_id is not None and bundle.dataset_id != case.dataset_id:
+        raise ValueError("bundle and case identity differ")
+    if bundle.plant_profiles is not None:
+        if set(bundle.plant_profiles) != {m.name for m in case.microgrids}:
+            raise ValueError("plant region coverage mismatch")
+        for mg in case.microgrids:
+            profile = PlantInputs.model_validate_json(
+                encode(bundle.plant_profiles[mg.name]), strict=True
+            )
+            if profile.start != bundle.start or profile.steps != 1440 or profile.step_minutes != 1:
+                raise ValueError("plant time axis mismatch")
+            if {s.bus_id for s in profile.load_p} != set(mg.buses) or {
+                s.bus_id for s in profile.load_q
+            } != set(mg.buses):
+                raise ValueError("plant load coverage mismatch")
+            for series, capacities in (
+                (profile.wind_available, mg.wind_capacity_mw),
+                (profile.pv_available, mg.pv_capacity_mw),
+            ):
+                if {s.bus_id for s in series} != set(capacities) or any(
+                    v < 0 or v > capacities[s.bus_id] for s in series for v in s.values
+                ):
+                    raise ValueError("plant renewable coverage or capacity mismatch")
     device_pairs = {(d.region, d.bus_id) for d in bundle.devices}
     if any(d.region not in {m.name for m in case.microgrids} for d in bundle.devices):
         raise ValueError("unknown device region")
@@ -137,7 +164,8 @@ def case_from_bundle(bundle: Bundle, steps: int) -> ProjectCase:
     if not 1 <= steps <= 288:
         raise ValueError("steps must be in 1..288")
     data: dict[str, Any] = cast(dict[str, Any], bundle.case)
-    if set(data) != {f.name for f in fields(ProjectCase)}:
+    identity_fields = {"dataset_id", "dataset_revision", "dataset_sha256", "profile_kind"}
+    if set(data) - identity_fields != {f.name for f in fields(ProjectCase)} - identity_fields:
         raise ValueError("unexpected case fields")
     original = np.array(data["time_hours"], dtype=float)
     if len(original) != 96 or not np.allclose(original, np.arange(96) / 4):
@@ -163,6 +191,9 @@ def case_from_bundle(bundle: Bundle, steps: int) -> ProjectCase:
             }
         item["lines"] = [Line(**line) for line in item["lines"]]
         item["storage"] = Storage(**item["storage"])
+        item["resource_identities"] = tuple(
+            ResourceIdentity(**identity) for identity in item.get("resource_identities", [])
+        )
         item["network_model_v2"] = TypeAdapter(NetworkModelV2).validate_json(
             encode(item["network_model_v2"]), strict=True
         )
@@ -193,14 +224,17 @@ def case_from_bundle(bundle: Bundle, steps: int) -> ProjectCase:
         raise ValueError("exactly three unique demo regions are required")
     return ProjectCase(
         hours,
-        profile(data["price_cny_per_mwh"]),
+        np.asarray(data["price_cny_per_mwh"], dtype=float)[np.minimum((hours * 4).astype(int), 95)]
+        if data.get("dataset_id")
+        else profile(data["price_cny_per_mwh"]),
         grids,
         replace(ModelAssumptions(**data["assumptions"]), dt_hours=24.0 / steps),
         float(data["cluster_import_limit_mw"]),
+        **{key: data.get(key) for key in identity_fields},
     )
 
 
-def generate_bundle(output: Path) -> Bundle:
+def build_bundle() -> Bundle:
     case = build_synthetic_case(96)
     # Give all synthetic buses explicit voltage bases so current is calculable.
     grids: list[MicrogridData] = []
@@ -209,7 +243,6 @@ def generate_bundle(output: Path) -> Bundle:
         assert mg.network_model_v2 is not None
         network = replace(
             mg.network_model_v2,
-            buses=tuple(replace(b, nominal_voltage_kv=35.0) for b in mg.network_model_v2.buses),
             contingencies=tuple(
                 NetworkContingency(
                     f"N-1:{b.branch_id}",
@@ -226,33 +259,42 @@ def generate_bundle(output: Path) -> Bundle:
             ("pv", mg.pv_capacity_mw, mg.pv_capacity_mva),
         ):
             for bus, cap in caps.items():
-                count = 2 if mg.name == "SC" and kind == "wind" else 1
-                for i in range(count):
+                count = 1
+                for _ in range(count):
                     devices.append(
                         DeviceSpec.model_validate(
                             dict(
-                                device_id=f"{mg.name}-{kind}-{i + 1}",
+                                device_id=mg.resource_id(cast(ResourceKind, kind), bus),
                                 region=mg.name,
                                 bus_id=bus,
                                 kind=kind,
                                 p_min_mw=0.0,
                                 p_max_mw=cap / count,
-                                q_max_mvar=apparent[bus] / count,
+                                q_max_mvar=next(
+                                    r.q_max_mvar
+                                    for r in study_recipe(mg.name).resources
+                                    if r.bus_id == bus and r.kind == kind
+                                )
+                                if kind == "wind"
+                                else 0.0,
                                 s_max_mva=apparent[bus] / count,
                                 ramp_mw_per_minute=1.0,
+                                q_abs_over_p_max=mg.wind_q_over_p_limit(bus)
+                                if kind == "wind"
+                                else None,
                             )
                         )
                     )
         st = mg.storage
         devices.append(
             DeviceSpec(
-                device_id=f"{mg.name}-storage",
+                device_id=mg.resource_id("storage", st.bus),
                 region=mg.name,
                 bus_id=st.bus,
                 kind="storage",
                 p_min_mw=-st.p_max_mw,
                 p_max_mw=st.p_max_mw,
-                q_max_mvar=st.s_max_mva,
+                q_max_mvar=0.0,
                 s_max_mva=st.s_max_mva,
                 ramp_mw_per_minute=1.0,
                 energy_mwh=st.e_max_mwh,
@@ -264,7 +306,7 @@ def generate_bundle(output: Path) -> Bundle:
         )
         devices.append(
             DeviceSpec(
-                device_id=f"{mg.name}-svg",
+                device_id=mg.resource_id("svg", mg.svg_bus),
                 region=mg.name,
                 bus_id=mg.svg_bus,
                 kind="svg",
@@ -277,12 +319,16 @@ def generate_bundle(output: Path) -> Bundle:
         )
     bundle = Bundle(
         schema_version="oilfield-demo-v1",
-        dataset_id="three-region-demo-2026-v1",
+        dataset_id=case.dataset_id or "unknown",
         synthetic=True,
-        start=datetime(2026, 1, 15, tzinfo=timezone.utc),
+        start=study_recipe().start,
         source="Deterministic synthetic engineering assumptions; no client files",
         case=plain(replace(case, microgrids=grids)),
         devices=tuple(devices),
+        plant_profiles={
+            name: json.loads(generate_inputs(study_recipe(name))[2].model_dump_json())
+            for name in ("SC", "YA_B", "YA_C")
+        },
         presets={
             name: {"name": f"模拟演示：{name}", "scenario_type": name, "steps": 8}
             for name in (
@@ -295,13 +341,20 @@ def generate_bundle(output: Path) -> Bundle:
     )
     raw = bundle.model_dump_json(indent=2).encode("utf-8")
     decode_bundle(raw)
+    return bundle
+
+
+def generate_bundle(output: Path) -> Bundle:
+    bundle = build_bundle()
+    raw = bundle.model_dump_json(indent=2).encode("utf-8")
     output.mkdir(parents=True, exist_ok=False)
     (output / "bundle.json").write_bytes(raw)
     (output / "bundle.sha256").write_text(hashlib.sha256(raw).hexdigest() + "\n", encoding="ascii")
     (output / "README.md").write_text(
         "# 合成演示资料\n\n全部为模拟值，未读取甲方文件。\n"
-        "96 点覆盖完整一天；三区域相位不同。山城两台 5 MW 风机分别遥测，共用聚合接入母线。\n"
-        "修改 bundle.json 后须重新生成 bundle.sha256；正在运行的服务和作业仍使用已捕获的版本。\n",
+        "由安装包 unified_dataset.json 生成，禁止手工维护第二份台账。\n"
+        "山城七母线，两台 5 MW 风机独立接入；YA_B、YA_C 各五母线。\n"
+        "96 点日前预测覆盖完整一天；正在运行的服务和作业仍使用已捕获的版本。\n",
         encoding="utf-8",
     )
     return bundle
@@ -311,6 +364,10 @@ class DemoNetwork:
     def __init__(self, bundle: Bundle):
         self.bundle = bundle
         self.case = case_from_bundle(bundle, 96)
+        self.plant = {
+            region: PlantInputs.model_validate_json(encode(profile), strict=True)
+            for region, profile in (bundle.plant_profiles or {}).items()
+        }
 
     def screen_contingencies(self) -> dict[str, Any]:
         results: dict[str, Any] = {}
@@ -349,6 +406,10 @@ class DemoNetwork:
         profiles = mg.wind_available_mw if device.kind == "wind" else mg.pv_available_mw
         if device.kind not in {"wind", "pv"}:
             return device.p_max_mw
+        if device.region in self.plant:
+            plant = self.plant[device.region]
+            series = plant.wind_available if device.kind == "wind" else plant.pv_available
+            return next(s.values[minute % plant.steps] for s in series if s.bus_id == device.bus_id)
         capacities = mg.wind_capacity_mw if device.kind == "wind" else mg.pv_capacity_mw
         index = (minute % 1440) // 15
         return float(profiles[device.bus_id][index]) * device.p_max_mw / capacities[device.bus_id]
@@ -373,6 +434,14 @@ class DemoNetwork:
                 max_iterations=1 if fault == "nonconvergence" else 100,
             )
             index = (minute % 1440) // 15
+            plant = self.plant.get(mg.name)
+
+            def load(bus: str, reactive: bool = False) -> float:
+                if plant is not None:
+                    series = plant.load_q if reactive else plant.load_p
+                    return next(s.values[minute % plant.steps] for s in series if s.bus_id == bus)
+                return float((mg.load_q_mvar if reactive else mg.load_p_mw)[bus][index])
+
             snapshot = FixedStateSnapshot(
                 f"demo:{minute}:{mg.name}",
                 observed,
@@ -384,8 +453,8 @@ class DemoNetwork:
                 tuple(
                     BusLoadState(
                         bus,
-                        float(mg.load_p_mw[bus][index]) * (0.1 if fault == "load_drop" else 1),
-                        float(mg.load_q_mvar[bus][index]) * (0.1 if fault == "load_drop" else 1),
+                        load(bus) * (0.1 if fault == "load_drop" else 1),
+                        load(bus, True) * (0.1 if fault == "load_drop" else 1),
                     )
                     for bus in mg.buses
                 ),

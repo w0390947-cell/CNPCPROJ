@@ -25,7 +25,9 @@ def _verify_recovery_hold(
     request = Command(
         command_id="before-fault",
         epoch=fleet.epoch,
-        device_id="SC-wind-1",
+        device_id=next(
+            d.device_id for d in bundle.devices if d.region == "SC" and d.kind == "wind"
+        ),
         p_mw=2.0,
         q_mvar=0.0,
         expires_at=frame.simulated_at + timedelta(minutes=30),
@@ -92,20 +94,24 @@ def verify_demo(
     screening = network.screen_contingencies()
     save("network-contingencies.json", screening)
     outages: list[JsonValue] = []
+    expected_outages = 0
     for region in screening.values():
         if not isinstance(region, dict):
             continue
         rows = region.get("results")
         if not isinstance(rows, list):
             continue
+        expected_outages += len(rows) - 1
         for result in rows:
             if not isinstance(result, dict):
                 continue
             scenario = result.get("scenario")
             if isinstance(scenario, dict) and scenario.get("contingency_id") is not None:
                 outages.append(result.get("status"))
-    checks["radial_n_minus_one_reports_islanding"] = len(outages) == 12 and all(
-        v == "islanded" for v in outages
+    checks["radial_n_minus_one_reports_islanding"] = (
+        len(outages) == expected_outages
+        and expected_outages > 0
+        and all(v == "islanded" for v in outages)
     )
     for name, request in bundle.presets.items():
         progress(f"Running {name}")
@@ -148,7 +154,11 @@ def verify_demo(
                 Command(
                     command_id="verify-ack-timeout",
                     epoch=fleet.epoch,
-                    device_id="SC-storage",
+                    device_id=next(
+                        d.device_id
+                        for d in bundle.devices
+                        if d.region == "SC" and d.kind == "storage"
+                    ),
                     p_mw=0.5,
                     q_mvar=0.0,
                     expires_at=fleet.frame.simulated_at + timedelta(minutes=10),
@@ -167,7 +177,7 @@ def verify_demo(
         checks[f"fault:{fault}"] = failed.recovery_blocked == expected_block
         if ack_accepted is not None:
             receipt = fleet.receipts[ack_accepted.command.command_id]
-            actual = next(r for r in failed.devices if r.device_id == "SC-storage")
+            actual = next(r for r in failed.devices if r.region == "SC" and r.kind == "storage")
             checks["fault:ack_timeout"] = (
                 not failed.recovery_blocked
                 and ack_accepted.status == "accepted"
@@ -193,7 +203,9 @@ def verify_demo(
     request = Command(
         command_id="verify-command",
         epoch=fleet.epoch,
-        device_id="SC-storage",
+        device_id=next(
+            d.device_id for d in bundle.devices if d.region == "SC" and d.kind == "storage"
+        ),
         p_mw=0.5,
         q_mvar=0.0,
         expires_at=frame.simulated_at + timedelta(minutes=10),

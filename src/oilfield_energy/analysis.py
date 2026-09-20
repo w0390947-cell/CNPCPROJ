@@ -115,6 +115,10 @@ def write_case_data(path: Path, case: ProjectCase) -> None:
     """将程序化算例固化为可审阅、可替换的 JSON 输入快照。"""
     payload = {
         "notice": "SIMULATED RESEARCH DATA; NOT ACTUAL CNPC OR CHANGQING OILFIELD DATA.",
+        "dataset_id": case.dataset_id,
+        "dataset_revision": case.dataset_revision,
+        "dataset_sha256": case.dataset_sha256,
+        "profile_kind": case.profile_kind,
         "time_hours": case.time_hours,
         "price_cny_per_mwh": case.price_cny_per_mwh,
         "assumptions": asdict(case.assumptions),

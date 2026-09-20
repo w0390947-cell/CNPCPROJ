@@ -1,0 +1,230 @@
+schema_version = 1
+scope = "field dataset and synthetic Shancheng study increments; existing flat modules remain a migration baseline"
+adr = "decisions/0001-field-dataset-files.md"
+
+[[components]]
+name = "cluster_coordination_ui"
+path = "web/frontend/features/cluster-coordination"
+language = "typescript"
+owners = ["前端维护负责人"]
+reviewers = ["仿真研究维护负责人"]
+public_modules = ["index"]
+adr = "decisions/0014-coordination-replay.md"
+
+[[components]]
+name = "cluster_coordination_ui"
+path = "web/frontend/features/cluster-coordination"
+language = "typescript"
+owners = ["前端维护负责人"]
+reviewers = ["仿真研究维护负责人"]
+public_modules = ["index"]
+adr = "decisions/0014-coordination-replay.md"
+
+[[components]]
+name = "simulation_events_ui"
+path = "web/frontend/features/simulation-events"
+language = "typescript"
+owners = ["前端维护负责人"]
+reviewers = ["仿真研究维护负责人"]
+public_modules = ["index"]
+
+[[modules]]
+name = "resources"
+path = "src/oilfield_energy/modules/resources"
+owners = ["设备建模维护负责人"]
+reviewers = ["优化调度维护负责人", "设备控制维护负责人"]
+public_modules = ["contracts"]
+allow_contracts = []
+allow_apis = []
+adr = "decisions/0011-adopted-schedules.md"
+
+[[legacy_public_consumers]]
+paths = ["src/oilfield_energy/data.py"]
+imports = ["oilfield_energy.modules.resources.contracts"]
+owners = ["设备建模维护负责人"]
+reviewers = ["优化调度维护负责人"]
+
+[[legacy_public_consumers]]
+paths = ["src/oilfield_energy/device_control.py"]
+imports = ["oilfield_energy.modules.dispatch.contracts"]
+owners = ["设备控制维护负责人"]
+reviewers = ["优化调度维护负责人"]
+
+[[modules]]
+name = "dispatch"
+path = "src/oilfield_energy/modules/dispatch"
+owners = ["优化调度维护负责人"]
+reviewers = ["仿真研究维护负责人"]
+public_modules = ["api", "contracts"]
+allow_contracts = []
+allow_apis = []
+adr = "decisions/0005-cluster-evidence.md"
+
+[[modules]]
+name = "power_flow"
+path = "src/oilfield_energy/modules/power_flow"
+owners = ["潮流计算维护负责人"]
+reviewers = ["设备控制维护负责人"]
+public_modules = ["api", "contracts"]
+allow_contracts = []
+allow_apis = []
+adr = "decisions/0009-flow-validity.md"
+
+[[legacy_public_consumers]]
+paths = ["src/oilfield_energy/ac_power_flow.py", "src/oilfield_energy/network_scenarios.py"]
+imports = ["oilfield_energy.modules.power_flow.api", "oilfield_energy.modules.power_flow.contracts"]
+owners = ["潮流计算维护负责人"]
+reviewers = ["仿真研究维护负责人"]
+
+[[legacy_public_consumers]]
+paths = ["src/oilfield_energy/network_scenarios.py"]
+imports = ["oilfield_energy.modules.studies.contracts"]
+owners = ["仿真研究维护负责人"]
+reviewers = ["潮流计算维护负责人"]
+
+[[legacy_public_consumers]]
+paths = ["src/oilfield_energy/hierarchical.py", "src/oilfield_energy/service.py", "src/oilfield_energy/hierarchy_types.py"]
+imports = ["oilfield_energy.modules.power_flow.api", "oilfield_energy.modules.power_flow.contracts"]
+owners = ["仿真研究维护负责人"]
+reviewers = ["潮流计算维护负责人"]
+
+[[legacy_public_consumers]]
+paths = ["src/oilfield_energy/admm.py"]
+imports = ["oilfield_energy.modules.control.api", "oilfield_energy.modules.control.contracts", "oilfield_energy.modules.dispatch.api", "oilfield_energy.modules.dispatch.contracts"]
+owners = ["优化调度维护负责人"]
+reviewers = ["设备控制维护负责人"]
+
+# Existing solver/service files may consume the extracted public accounting API.
+# This does not permit new dispatch code to import any legacy module or SDK.
+[[legacy_public_consumers]]
+paths = ["src/oilfield_energy/model.py", "src/oilfield_energy/misocp_model.py", "src/oilfield_energy/regional_control.py", "src/oilfield_energy/service.py"]
+imports = ["oilfield_energy.modules.dispatch.api", "oilfield_energy.modules.dispatch.contracts"]
+owners = ["优化调度维护负责人"]
+reviewers = ["仿真研究维护负责人"]
+
+[[legacy_public_consumers]]
+paths = ["src/oilfield_energy/hierarchy_types.py"]
+imports = ["oilfield_energy.modules.dispatch.contracts"]
+owners = ["优化调度维护负责人"]
+reviewers = ["设备控制维护负责人"]
+
+[[modules]]
+name = "demo_simulation"
+path = "src/oilfield_energy/modules/demo_simulation"
+owners = ["仿真研究维护负责人"]
+reviewers = ["设备控制维护负责人"]
+public_modules = ["api", "contracts"]
+allow_contracts = []
+allow_apis = []
+adr = "decisions/0003-system-demo.md"
+
+[[components]]
+name = "runtime"
+path = "src/oilfield_energy/runtime"
+owners = ["项目技术负责人"]
+reviewers = ["设备控制维护负责人"]
+
+[[legacy_bridges]]
+path = "src/oilfield_energy/bootstrap/adapters/demo_case.py"
+imports = ["oilfield_energy.data", "oilfield_energy.minute_network", "oilfield_energy.network_model", "oilfield_energy.network_scenarios", "oilfield_energy.power_flow_comparison", "oilfield_energy.resource_control_contracts"]
+owners = ["仿真研究维护负责人"]
+review_by = "2026-10-15"
+exit_task = "Replace legacy numerical dataclass projection with grid/power-flow public APIs when migrated."
+
+[[legacy_bridges]]
+path = "src/oilfield_energy/bootstrap/adapters/demo_jobs.py"
+imports = ["oilfield_energy.job_manager", "oilfield_energy.service"]
+owners = ["仿真研究维护负责人"]
+review_by = "2026-10-15"
+exit_task = "Move installed subprocess job API into runtime and dispatch workflows without changing Web results."
+
+[[modules]]
+name = "measurements"
+path = "src/oilfield_energy/modules/measurements"
+owners = ["现场数据接入维护负责人"]
+reviewers = ["电网建模维护负责人"]
+public_modules = ["api", "contracts"]
+allow_contracts = []
+allow_apis = []
+
+[[components]]
+name = "field_dataset_workflow"
+path = "src/oilfield_energy/workflows/field_dataset"
+owners = ["现场数据接入维护负责人"]
+reviewers = ["潮流计算维护负责人"]
+allow_public = ["measurements.api", "measurements.contracts"]
+
+[[components]]
+name = "bootstrap"
+path = "src/oilfield_energy/bootstrap"
+owners = ["项目技术负责人"]
+reviewers = ["现场数据接入维护负责人"]
+
+[[components]]
+name = "entrypoints"
+path = "src/oilfield_energy/entrypoints"
+owners = ["项目技术负责人"]
+reviewers = ["现场数据接入维护负责人"]
+
+# Composition adapters implement workflow ports using existing public functions.
+# No business module/workflow may acquire these imports.
+[[legacy_bridges]]
+path = "src/oilfield_energy/bootstrap/adapters/legacy_snapshot.py"
+imports = ["oilfield_energy.field_data.snapshot_power_flow", "oilfield_energy.power_flow_comparison"]
+owners = ["现场数据接入维护负责人", "潮流计算维护负责人"]
+review_by = "2026-10-13"
+exit_task = "When migrating existing field snapshot and AC modules, replace this composition adapter with their new public APIs; keep request and numerical regression contracts."
+
+[[modules]]
+name = "control"
+path = "src/oilfield_energy/modules/control"
+owners = ["设备控制维护负责人"]
+reviewers = ["潮流计算维护负责人"]
+public_modules = ["api", "contracts"]
+allow_contracts = []
+allow_apis = []
+adr = "decisions/0008-device-dynamics.md"
+
+[[legacy_public_consumers]]
+paths = ["src/oilfield_energy/device_control.py", "src/oilfield_energy/hierarchy_types.py", "src/oilfield_energy/hierarchy_reporting.py", "src/oilfield_energy/shancheng_control.py", "src/oilfield_energy/hierarchical.py"]
+imports = ["oilfield_energy.modules.control.api", "oilfield_energy.modules.control.contracts"]
+owners = ["设备控制维护负责人"]
+reviewers = ["潮流计算维护负责人"]
+
+[[modules]]
+name = "studies"
+path = "src/oilfield_energy/modules/studies"
+owners = ["仿真研究维护负责人"]
+reviewers = ["设备控制维护负责人"]
+public_modules = ["api", "contracts"]
+allow_contracts = ["control"]
+allow_apis = []
+adr = "decisions/0010-study-events.md"
+
+[[legacy_public_consumers]]
+paths = ["src/oilfield_energy/service.py", "src/oilfield_energy/scenario_events.py", "src/oilfield_energy/communication.py", "src/oilfield_energy/hierarchy_types.py"]
+imports = ["oilfield_energy.modules.studies.api", "oilfield_energy.modules.studies.contracts"]
+owners = ["仿真研究维护负责人"]
+reviewers = ["设备控制维护负责人"]
+
+[[components]]
+name = "shancheng_simulation"
+path = "src/oilfield_energy/workflows/shancheng_simulation"
+owners = ["仿真研究维护负责人"]
+reviewers = ["潮流计算维护负责人"]
+allow_public = ["measurements.api", "measurements.contracts"]
+allow_workflows = ["field_dataset.api", "field_dataset.contracts"]
+
+[[legacy_bridges]]
+path = "src/oilfield_energy/bootstrap/adapters/simulation_case.py"
+imports = ["oilfield_energy.data", "oilfield_energy.model", "oilfield_energy.network_model", "oilfield_energy.resource_control_contracts"]
+owners = ["仿真研究维护负责人"]
+review_by = "2026-10-15"
+exit_task = "Replace legacy case/schedule projection when dispatch and resources move to their public modules."
+
+[[legacy_bridges]]
+path = "src/oilfield_energy/bootstrap/adapters/simulation_runner.py"
+imports = ["oilfield_energy.ac_consistency", "oilfield_energy.device_control", "oilfield_energy.field_data.snapshot_power_flow", "oilfield_energy.group_control_scenarios", "oilfield_energy.hierarchy_reporting", "oilfield_energy.planning_security", "oilfield_energy.power_flow_comparison"]
+owners = ["仿真研究维护负责人", "设备控制维护负责人"]
+review_by = "2026-10-15"
+exit_task = "Replace injected numerical implementation with migrated public dispatch, control and power-flow APIs; retain dataset and numerical contracts."

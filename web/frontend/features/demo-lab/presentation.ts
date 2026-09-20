@@ -5,7 +5,7 @@ export const algorithmDefinitions: Record<
   single_microgrid: { label: '单微网优化', route: '/single-microgrid' },
   cluster_coordination: { label: '三区域协同', route: '/cluster-coordination' },
   communication_fault: { label: '通信故障', route: '/communication-fault' },
-  group_control: { label: '群控与恢复', route: '/group-control' },
+  group_control: { label: '光伏群控策略验证', route: '/group-control' },
 };
 
 export const deviceKindLabels = {

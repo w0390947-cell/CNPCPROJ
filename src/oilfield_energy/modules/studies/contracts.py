@@ -78,6 +78,7 @@ class StorageSpec(StrictModel):
 
 class StudySpec(StrictModel):
     schema_version: Literal["shancheng-simulation-v1"]
+    region_id: Literal["SC", "YA_B", "YA_C"] = "SC"
     dataset_id: str
     revision: str
     synthetic: Literal[True]
@@ -112,9 +113,11 @@ class StudySpec(StrictModel):
             raise ValueError("invalid storage initial state")
         if len({r.resource_id for r in self.resources}) != len(self.resources):
             raise ValueError("duplicate resource ID")
-        for kind, count in (("wind", 2), ("storage", 1), ("svg", 1)):
+        for kind, count in (("storage", 1), ("svg", 1)):
             if sum(r.kind == kind for r in self.resources) != count:
                 raise ValueError(f"study requires {count} {kind} resources")
+        if not any(r.kind == "wind" for r in self.resources):
+            raise ValueError("study requires wind")
         if not any(r.kind == "pv" for r in self.resources):
             raise ValueError("study requires PV")
         if len({r.bus_id for r in self.resources if r.kind in ("wind", "pv")}) != sum(
@@ -138,6 +141,37 @@ class StudySpec(StrictModel):
         if not result or len(set(result)) != len(result):
             raise ValueError("empty or duplicate network buses")
         return tuple(result)
+
+
+class UnifiedDataset(StrictModel):
+    """One version owns all regional recipes; variants retain their lineage."""
+
+    schema_version: Literal["oilfield-unified-dataset-v1"]
+    dataset_id: str
+    revision: str
+    synthetic: Literal[True]
+    cluster_import_limit_mw: float = Field(gt=0)
+    regions: tuple[StudySpec, ...]
+
+    @model_validator(mode="after")
+    def validate_identity(self) -> "UnifiedDataset":
+        if len(self.regions) != 3 or {r.region_id for r in self.regions} != {"SC", "YA_B", "YA_C"}:
+            raise ValueError("unified dataset requires SC, YA_B and YA_C")
+        first = self.regions[0]
+        for region in self.regions:
+            if (region.dataset_id, region.revision) != (self.dataset_id, self.revision):
+                raise ValueError("regional dataset identity mismatch")
+            if (region.start, region.intervals, region.interval_minutes, region.pf_min) != (
+                first.start,
+                first.intervals,
+                first.interval_minutes,
+                first.pf_min,
+            ):
+                raise ValueError("regional time axis or common security limits differ")
+        ids = [r.resource_id for region in self.regions for r in region.resources]
+        if len(ids) != len(set(ids)):
+            raise ValueError("resource IDs must be globally unique")
+        return self
 
 
 class EventType(str, Enum):

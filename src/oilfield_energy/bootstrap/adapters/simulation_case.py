@@ -61,7 +61,7 @@ def make_case(
         }
 
     mg = MicrogridData(
-        name="SC",
+        name=spec.region_id,
         buses=list(spec.bus_ids),
         lines=[
             Line(b.branch_id, b.from_bus_id, b.to_bus_id, b.r_pu, b.x_pu, b.s_max_mva)

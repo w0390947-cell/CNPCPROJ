@@ -17,7 +17,7 @@ from pydantic import ValidationError
 import oilfield_energy
 from oilfield_energy import service
 from oilfield_energy.communication import SimulatedCommunicationChannel
-from oilfield_energy.data import build_synthetic_case
+from oilfield_energy.bootstrap.adapters.project_dataset import build_synthetic_case
 from oilfield_energy.scenario_events import ScenarioEvent, apply_physical_events
 from oilfield_energy.service import SimulationRequest, run_simulation
 

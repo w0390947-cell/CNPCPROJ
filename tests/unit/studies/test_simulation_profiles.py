@@ -1,5 +1,6 @@
 import json
 from datetime import timedelta
+from oilfield_energy.bootstrap.adapters.project_dataset import study_recipe
 from pathlib import Path
 
 import pytest
@@ -13,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def recipe():
     return json.loads(
-        (ROOT / "examples/shancheng_simulation/recipe.json").read_text(encoding="utf-8")
+        study_recipe().model_dump_json()
     )
 
 

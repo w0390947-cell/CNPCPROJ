@@ -16,6 +16,7 @@ from typing import Callable
 import numpy as np
 
 from .analysis import write_summary
+from .data import MicrogridData
 from .group_control import GroupControlSupervisor
 from .hierarchy_types import (
     GroupControlAction,
@@ -51,10 +52,30 @@ class GroupControlScenarioResult:
         return tuple(name for name, passed in self.checks.items() if not passed)
 
 
+@dataclass(frozen=True)
+class ScenarioBasis:
+    """Captured regional ratings and one declared operating point for perturbations."""
+    maximum_load_mw: float
+    pv_capacity_mw: float
+    p_grid_max_mw: float
+    net_load_mw: float
+    pv_actual_mw: float
+
+
+def scenario_basis(microgrid: MicrogridData) -> ScenarioBasis:
+    index = len(next(iter(microgrid.load_p_mw.values()))) // 2
+    load = sum(float(v[index]) for v in microgrid.load_p_mw.values())
+    wind = sum(float(v[index]) for v in microgrid.wind_available_mw.values())
+    pv = sum(float(v[index]) for v in microgrid.pv_available_mw.values())
+    return ScenarioBasis(microgrid.maximum_load_mw, sum(microgrid.pv_capacity_mw.values()),
+                         microgrid.p_grid_max_mw, max(load - wind - pv, 0.1), pv)
+
+
 class _ScenarioRecorder:
     """为场景构造连续时间戳并记录每次监督器调用。"""
 
-    def __init__(self, config: GroupControlConfig) -> None:
+    def __init__(self, config: GroupControlConfig, basis: ScenarioBasis) -> None:
+        self.basis = basis
         self.config = config
         self.supervisor = GroupControlSupervisor(config)
         self.records: list[GroupControlScenarioRecord] = []
@@ -72,6 +93,15 @@ class _ScenarioRecorder:
             "p_grid_max_mw": 18.0,
             "pv_actual_mw": 2.0,
         }
+        # Scenario numbers express ratios around the captured point. Device ratings
+        # are always taken from the authority; fault/ACK changes are explicit.
+        for name in ("current_net_load_mw", "previous_net_load_mw"):
+            values[name] = float(overrides.pop(name, values[name])) / 8.0 * self.basis.net_load_mw
+        values["pcc_power_mw"] = float(overrides.pop("pcc_power_mw", 1.0)) * max(1.0, self.basis.maximum_load_mw * 0.2)
+        values["maximum_load_mw"] = self.basis.maximum_load_mw
+        values["pv_capacity_mw"] = self.basis.pv_capacity_mw
+        values["p_grid_max_mw"] = self.basis.p_grid_max_mw
+        values["pv_actual_mw"] = self.basis.pv_actual_mw
         values.update(overrides)
         control_input = GroupControlInput(**values)  # type: ignore[arg-type]
         decision = self.supervisor.step(control_input)
@@ -99,8 +129,8 @@ def _result(
     )
 
 
-def _normal_scenario(config: GroupControlConfig) -> GroupControlScenarioResult:
-    recorder = _ScenarioRecorder(config)
+def _normal_scenario(config: GroupControlConfig, basis: ScenarioBasis) -> GroupControlScenarioResult:
+    recorder = _ScenarioRecorder(config, basis)
     decisions = [recorder.step() for _ in range(10)]
     return _result(
         "normal_operation",
@@ -118,8 +148,8 @@ def _normal_scenario(config: GroupControlConfig) -> GroupControlScenarioResult:
     )
 
 
-def _emergency_scenario(config: GroupControlConfig) -> GroupControlScenarioResult:
-    recorder = _ScenarioRecorder(config)
+def _emergency_scenario(config: GroupControlConfig, basis: ScenarioBasis) -> GroupControlScenarioResult:
+    recorder = _ScenarioRecorder(config, basis)
     decision = recorder.step(
         pcc_power_mw=0.0,
         current_net_load_mw=6.8,
@@ -138,8 +168,8 @@ def _emergency_scenario(config: GroupControlConfig) -> GroupControlScenarioResul
     )
 
 
-def _consecutive_scenario(config: GroupControlConfig) -> GroupControlScenarioResult:
-    recorder = _ScenarioRecorder(config)
+def _consecutive_scenario(config: GroupControlConfig, basis: ScenarioBasis) -> GroupControlScenarioResult:
+    recorder = _ScenarioRecorder(config, basis)
     decisions = [recorder.step(pcc_power_mw=0.0) for _ in range(3)]
     return _result(
         "consecutive_three_trigger",
@@ -156,8 +186,8 @@ def _consecutive_scenario(config: GroupControlConfig) -> GroupControlScenarioRes
     )
 
 
-def _three_in_five_scenario(config: GroupControlConfig) -> GroupControlScenarioResult:
-    recorder = _ScenarioRecorder(config)
+def _three_in_five_scenario(config: GroupControlConfig, basis: ScenarioBasis) -> GroupControlScenarioResult:
+    recorder = _ScenarioRecorder(config, basis)
     decisions = [
         recorder.step(pcc_power_mw=pcc)
         for pcc in (0.0, 1.0, 0.0, 1.0, 0.0)
@@ -177,8 +207,8 @@ def _three_in_five_scenario(config: GroupControlConfig) -> GroupControlScenarioR
     )
 
 
-def _secondary_scenario(config: GroupControlConfig) -> GroupControlScenarioResult:
-    recorder = _ScenarioRecorder(config)
+def _secondary_scenario(config: GroupControlConfig, basis: ScenarioBasis) -> GroupControlScenarioResult:
+    recorder = _ScenarioRecorder(config, basis)
     first = recorder.step(
         pcc_power_mw=0.0,
         current_net_load_mw=6.8,
@@ -215,8 +245,8 @@ def _enter_recovery(
     return remaining, restore
 
 
-def _successful_recovery_scenario(config: GroupControlConfig) -> GroupControlScenarioResult:
-    recorder = _ScenarioRecorder(config)
+def _successful_recovery_scenario(config: GroupControlConfig, basis: ScenarioBasis) -> GroupControlScenarioResult:
+    recorder = _ScenarioRecorder(config, basis)
     remaining, restore = _enter_recovery(recorder)
     restoration_commands = 0
     evaluations_passed = 0
@@ -264,8 +294,8 @@ def _successful_recovery_scenario(config: GroupControlConfig) -> GroupControlSce
     )
 
 
-def _recovery_failure_scenario(config: GroupControlConfig) -> GroupControlScenarioResult:
-    recorder = _ScenarioRecorder(config)
+def _recovery_failure_scenario(config: GroupControlConfig, basis: ScenarioBasis) -> GroupControlScenarioResult:
+    recorder = _ScenarioRecorder(config, basis)
     remaining, restore = _enter_recovery(recorder)
     requested = restore.requested_restoration_mw
     dwell_steps = config.recovery_pause_minutes // config.decision_interval_minutes
@@ -290,8 +320,8 @@ def _recovery_failure_scenario(config: GroupControlConfig) -> GroupControlScenar
     )
 
 
-def _communication_failure_scenario(config: GroupControlConfig) -> GroupControlScenarioResult:
-    recorder = _ScenarioRecorder(config)
+def _communication_failure_scenario(config: GroupControlConfig, basis: ScenarioBasis) -> GroupControlScenarioResult:
+    recorder = _ScenarioRecorder(config, basis)
     curtailed = recorder.step(
         pcc_power_mw=0.0,
         current_net_load_mw=6.8,
@@ -352,7 +382,7 @@ def _communication_failure_scenario(config: GroupControlConfig) -> GroupControlS
 
 
 _SCENARIOS: tuple[
-    Callable[[GroupControlConfig], GroupControlScenarioResult], ...
+    Callable[[GroupControlConfig, ScenarioBasis], GroupControlScenarioResult], ...
 ] = (
     _normal_scenario,
     _emergency_scenario,
@@ -367,11 +397,12 @@ _SCENARIOS: tuple[
 
 def run_group_control_scenarios(
     *,
+    basis: ScenarioBasis,
     config: GroupControlConfig | None = None,
 ) -> dict[str, GroupControlScenarioResult]:
     """运行全部确定性群控场景；返回顺序稳定的结果映射。"""
     cfg = config or GroupControlConfig()
-    results = [scenario(cfg) for scenario in _SCENARIOS]
+    results = [scenario(cfg, basis) for scenario in _SCENARIOS]
     return {result.name: result for result in results}
 
 

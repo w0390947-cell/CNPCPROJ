@@ -28,7 +28,7 @@ AT = datetime.fromisoformat("2026-09-13T12:00:00+08:00")
 @pytest.fixture
 def dataset(tmp_path):
     path = tmp_path / "source"
-    shutil.copytree(ROOT / "examples/shancheng_dataset", path)
+    shutil.copytree(ROOT / "tests/fixtures/field_dataset", path)
     return path
 
 
@@ -57,7 +57,7 @@ def test_single_manifest_reconstructs_fixed_state_without_optimization(dataset, 
     with (
         patch("oilfield_energy.model.solve_case", side_effect=AssertionError("optimizer called")),
         patch(
-            "oilfield_energy.data.build_synthetic_case",
+            "oilfield_energy.bootstrap.adapters.project_dataset.build_synthetic_case",
             side_effect=AssertionError("fallback called"),
         ),
     ):

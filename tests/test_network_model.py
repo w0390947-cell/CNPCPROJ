@@ -11,7 +11,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from oilfield_energy.ac_power_flow import backward_forward_sweep
-from oilfield_energy.data import build_synthetic_case
+from tests.legacy_case_fixture import build_synthetic_case
 from oilfield_energy.network_model import (
     BranchServiceState,
     NetworkBranchKind,

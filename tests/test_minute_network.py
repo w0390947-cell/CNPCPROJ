@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from oilfield_energy.actuation_arbiter import ActuationArbiter
 from oilfield_energy.ac_consistency import solve_case_ac_consistent
 from oilfield_energy.control_contracts import CapIntentAction, StationCapIntent
-from oilfield_energy.data import build_synthetic_case
+from tests.legacy_case_fixture import build_synthetic_case
 from oilfield_energy.device_control import simulate_device_tracking
 from oilfield_energy.hierarchy_reporting import write_minute_network_outputs
 from oilfield_energy.minute_network import MinuteNetworkConfig, MinuteNetworkEvaluator, NetworkRecoveryInterlock
@@ -29,7 +29,7 @@ from oilfield_energy.power_flow_comparison import read_comparison_request
 
 class MinuteNetworkTests(unittest.TestCase):
     def setUp(self):
-        self.request = read_comparison_request(ROOT / "docs/examples/fixed_device_comparison.json")
+        self.request = read_comparison_request(ROOT / "tests/fixtures/field_dataset/fixed_device_comparison.json")
         self.snapshot = self.request.snapshot
         self.evaluator = MinuteNetworkEvaluator(self.request.network, self.request.limits,
             {d.resource_id: d.bus_id for d in self.snapshot.devices})

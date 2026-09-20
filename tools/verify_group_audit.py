@@ -11,7 +11,7 @@ from unittest.mock import patch
 import numpy as np
 
 from oilfield_energy.ac_consistency import solve_case_ac_consistent
-from oilfield_energy.data import build_synthetic_case
+from oilfield_energy.bootstrap.adapters.project_dataset import build_synthetic_case
 from oilfield_energy.device_control import simulate_device_tracking
 from oilfield_energy.group_control import GroupControlSupervisor
 from oilfield_energy.hierarchy_types import TimeScaleConfig

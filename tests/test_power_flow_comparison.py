@@ -26,7 +26,7 @@ from oilfield_energy.power_flow_comparison import (
     write_comparison_outputs,
 )
 
-EXAMPLE = ROOT / "docs/examples/fixed_device_comparison.json"
+EXAMPLE = ROOT / "tests/fixtures/field_dataset/fixed_device_comparison.json"
 
 
 class FixedStateComparisonTests(unittest.TestCase):
@@ -38,7 +38,7 @@ class FixedStateComparisonTests(unittest.TestCase):
         with patch("oilfield_energy.model.solve_case", side_effect=AssertionError("optimizer called")), \
              patch("oilfield_energy.misocp_model.solve_case_misocp", side_effect=AssertionError("optimizer called")), \
              patch("oilfield_energy.ac_consistency.solve_case_ac_consistent", side_effect=AssertionError("redispatch")), \
-             patch("oilfield_energy.data.build_synthetic_case", side_effect=AssertionError("synthetic fallback")):
+             patch("oilfield_energy.bootstrap.adapters.project_dataset.build_synthetic_case", side_effect=AssertionError("synthetic fallback")):
             result = compare_fixed_states(self.request)
         self.assertEqual(result["status"], "secure")
         self.assertEqual(asdict(self.request), original)

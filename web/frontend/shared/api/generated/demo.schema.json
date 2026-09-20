@@ -50,6 +50,19 @@
             "title": "Ramp Mw Per Minute",
             "type": "number"
           },
+          "q_abs_over_p_max": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Q Abs Over P Max"
+          },
           "energy_mwh": {
             "default": 0,
             "minimum": 0,

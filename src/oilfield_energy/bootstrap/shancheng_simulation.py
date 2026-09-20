@@ -8,6 +8,7 @@ from oilfield_energy.modules.measurements.api import CaptureDataset
 from oilfield_energy.workflows.field_dataset.adapters.result_directory import DirectoryResultStore
 from oilfield_energy.workflows.shancheng_simulation.api import ShanchengSimulation
 
+from .adapters.project_dataset import study_recipe
 from .adapters.runtime_provenance import runtime_artifact
 from .adapters.simulation_files import generate_dataset
 from .adapters.simulation_runner import SimulationEngine
@@ -26,5 +27,5 @@ def create_simulation() -> ShanchengSimulation:
     )
 
 
-def generate_simulation(config: Path, output: Path) -> None:
-    generate_dataset(config, output, DirectoryResultStore())
+def generate_simulation(config: Path | None, output: Path) -> None:
+    generate_dataset(study_recipe() if config is None else config, output, DirectoryResultStore())

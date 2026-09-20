@@ -45,6 +45,7 @@ import {
   YAxis,
 } from 'recharts';
 
+import { SingleMicrogridCanvas } from '@/features/network-topology';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
@@ -72,6 +73,10 @@ import {
   type RenewableSurgeKind,
 } from '@/features/simulation-events';
 import {
+  ClusterCoordinationPanel,
+  type CoordinationMode,
+} from '@/features/cluster-coordination';
+import {
   cancelSimulation,
   createSimulation,
   SimulationCancelledError,
@@ -96,7 +101,6 @@ import {
   profileFrames,
   resultConfiguration,
   stateLabels,
-  type ProfileFrame,
 } from '@/lib/simulation-presentation';
 import {
   PlatformHeader,
@@ -151,7 +155,7 @@ const viewConfig: Record<
     action: '运行故障仿真',
   },
   group_control: {
-    title: '光伏群调群控状态机',
+    title: '光伏群控策略验证',
     scenario: 'group_control',
     action: '运行群控场景',
   },
@@ -246,56 +250,9 @@ function RegionNode({
       </div>
       <footer>
         {faulted ? <Activity size={14} /> : <Network size={14} />}
-        {faulted ? '通信故障回放' : '参数化五节点模型'}
+        {faulted ? '通信故障回放' : '统一数据集区域模型'}
       </footer>
     </article>
-  );
-}
-
-function SingleMicrogridCanvas({
-  current,
-  region,
-}: {
-  current: ProfileFrame;
-  region: string;
-}) {
-  return (
-    <div
-      className="single-network"
-      aria-label={`${regionDisplayName(region)}五节点示意`}
-    >
-      <div className="single-link link-pcc" />
-      <div className="single-link link-wind" />
-      <div className="single-link link-pv" />
-      <div className="single-link link-flex" />
-      <div className="single-device single-pcc">
-        <Zap />
-        <span>PCC 受电</span>
-        <b>{numberLabel(current.import)} MW</b>
-      </div>
-      <div className="single-device single-main">
-        <Network />
-        <span>主母线</span>
-        <b>全网负荷 {numberLabel(current.load)}</b>
-      </div>
-      <div className="single-device single-wind">
-        <Wind />
-        <span>风电计划</span>
-        <b>{numberLabel(current.wind)} MW</b>
-      </div>
-      <div className="single-device single-pv">
-        <SunMedium />
-        <span>光伏计划</span>
-        <b>{numberLabel(current.pv)} MW</b>
-      </div>
-      <div className="single-device single-flex">
-        <BatteryCharging />
-        <span>储能 / SVG</span>
-        <b>
-          {numberLabel(current.storage)} MW / {numberLabel(current.svg)} Mvar
-        </b>
-      </div>
-    </div>
   );
 }
 
@@ -377,6 +334,8 @@ export default function SimulationDashboard({
   const selectedView = initialView;
   const [isPlaying, setIsPlaying] = useState(false);
   const [cursor, setCursor] = useState(0);
+  const [coordinationMode, setCoordinationMode] =
+    useState<CoordinationMode>('process');
   const [speed, setSpeed] = useState(1);
   const [configuration, setConfiguration] =
     useState<SimulationConfiguration>(defaultConfiguration);
@@ -410,9 +369,10 @@ export default function SimulationDashboard({
   const activeView = viewConfig[selectedView];
   const completedSimulation = completedSimulations[activeView.scenario];
   const simulation = completedSimulation?.result ?? null;
-  const isIterationView =
+  const isCoordinationView =
     selectedView === 'communication_fault' ||
     selectedView === 'cluster_coordination';
+  const isIterationView = isCoordinationView && coordinationMode === 'process';
   const resultRegion = simulation?.request.region ?? configuration.region;
   const groupScenarios = Object.keys(
     simulation?.group_control?.scenario_checks ?? {},
@@ -485,12 +445,13 @@ export default function SimulationDashboard({
           time: `第 ${h.iteration} 轮`,
         })) ?? []
       );
-    return minuteFrames(chartData);
+    return isCoordinationView ? chartData : minuteFrames(chartData);
   }, [
     chartData,
     simulation,
     selectedView,
     isIterationView,
+    isCoordinationView,
     selectedGroupRecords,
   ]);
 
@@ -545,7 +506,10 @@ export default function SimulationDashboard({
           [scenario]: { simulationId: created.simulation_id, result },
         }));
         knownSimulationIds[scenario] = created.simulation_id;
-        setCursor(0);
+        setCoordinationMode('process');
+        setCursor(
+          isCoordinationView ? Math.max(0, result.admm_history.length - 1) : 0,
+        );
         setRunState('success');
         setRunMessage(
           events.length
@@ -572,7 +536,7 @@ export default function SimulationDashboard({
         setIsCancelling(false);
       }
     },
-    [activeView.scenario, configuration],
+    [activeView.scenario, configuration, isCoordinationView],
   );
 
   async function cancelRun() {
@@ -597,7 +561,8 @@ export default function SimulationDashboard({
       runLock.current ||
       activeSimulationId.current ||
       serviceStatus !== 'online' ||
-      !playbackData.length
+      !playbackData.length ||
+      ((kind === 'outage' || kind === 'packet_loss') && !isIterationView)
     )
       return;
     setIsPlaying(false);
@@ -736,6 +701,14 @@ export default function SimulationDashboard({
           [scenario]: { simulationId: simulationId!, result },
         }));
         knownSimulationIds[scenario] = simulationId!;
+        setCoordinationMode('process');
+        setCursor(
+          initialView === 'cluster_coordination' ||
+            initialView === 'communication_fault'
+            ? Math.max(0, result.admm_history.length - 1)
+            : 0,
+        );
+        setIsPlaying(false);
         setRunState('success');
         setRunMessage(result.executive_summary.headline);
       } catch (error) {
@@ -822,8 +795,12 @@ export default function SimulationDashboard({
         (p) => p.time_hour * 60 <= current.minute,
       )
     : null;
-  const iterationRecord = isIterationView
-    ? simulation?.admm_history[Math.min(cursor, playbackData.length - 1)]
+  const iterationRecord = isCoordinationView
+    ? simulation?.admm_history[
+        isIterationView
+          ? Math.min(cursor, playbackData.length - 1)
+          : simulation.admm_history.length - 1
+      ]
     : undefined;
   const currentGroupRecord = selectedGroupRecords.length
     ? selectedGroupRecords[Math.min(cursor, selectedGroupRecords.length - 1)]
@@ -915,7 +892,7 @@ export default function SimulationDashboard({
           accent: '#f3c95d',
         },
         {
-          label: '当前协调轮次',
+          label: isIterationView ? '当前协调轮次' : '最终协调轮次',
           value: numberLabel(iterationRecord?.iteration, 0),
           unit: '轮',
           note: '原生迭代记录 · 非分钟',
@@ -1095,7 +1072,7 @@ export default function SimulationDashboard({
     })) ?? [];
   const topologyTitle =
     selectedView === 'single_microgrid'
-      ? `${resultRegion} 微电网五节点示意`
+      ? `${resultRegion} 微电网网络拓扑`
       : selectedView === 'group_control'
         ? '光伏群控监督器状态转换'
         : '跨区域微电网集群';
@@ -1263,6 +1240,11 @@ export default function SimulationDashboard({
                       <p>
                         {regions.map((region) => region.displayName).join('、')}
                       </p>
+                    </div>
+                  ) : selectedView === 'group_control' ? (
+                    <div className="config-field config-scope">
+                      <span>验证范围</span>
+                      <p>八类预置群控状态机场景</p>
                     </div>
                   ) : (
                     <div className="config-field">
@@ -1480,6 +1462,7 @@ export default function SimulationDashboard({
                 className="inject-button"
                 disabled={
                   runState === 'running' ||
+                  !isIterationView ||
                   !simulation ||
                   serviceStatus !== 'online'
                 }
@@ -1497,6 +1480,7 @@ export default function SimulationDashboard({
                 className="inject-button"
                 disabled={
                   runState === 'running' ||
+                  !isIterationView ||
                   !simulation ||
                   serviceStatus !== 'online'
                 }
@@ -1508,6 +1492,11 @@ export default function SimulationDashboard({
                 <Network />
                 当前轮次注入丢包
               </Button>
+            )}
+            {selectedView === 'communication_fault' && !isIterationView && (
+              <span className="result-origin">
+                切换“协调过程”后可按轮次注入通信事件
+              </span>
             )}
             <Button
               className={`run-button ${runState === 'running' ? 'cancel-button' : ''}`}
@@ -1650,88 +1639,127 @@ export default function SimulationDashboard({
         )}
 
         <div className="dashboard-grid">
-          <section className="panel topology-panel">
-            <div className="panel-title">
-              <h3>{topologyTitle}</h3>
-              <em className={outageNow ? 'fault-status' : ''}>
-                {!simulation
-                  ? '等待计算'
-                  : isIterationView
-                    ? `${current.time} · 原生记录`
-                    : selectedView === 'group_control'
-                      ? '原生分钟记录'
-                      : '计划回放 · 非设备实绩'}
-              </em>
-            </div>
-            {selectedView === 'single_microgrid' ? (
-              <SingleMicrogridCanvas current={current} region={resultRegion} />
-            ) : selectedView === 'group_control' ? (
-              <GroupControlCanvas record={currentGroupRecord} />
-            ) : (
-              <div className="topology-canvas">
-                <div className="grid-source">
-                  <Zap size={25} />
-                  <span>上级电网 / 协调层</span>
-                  <b>
-                    {isIterationView
-                      ? 'ADMM 共识'
-                      : `${numberLabel(current.import)} MW`}
-                  </b>
-                </div>
-                <div className="trunk trunk-main" />
-                <div className="trunk trunk-left" />
-                <div className="trunk trunk-right" />
-                {regions.map((region, index) => (
-                  <RegionNode
-                    key={region.id}
-                    region={region}
-                    index={index}
-                    importMw={clusterPoint?.regional_import_mw[region.id]}
-                    status={
-                      !simulation
-                        ? '等待仿真'
-                        : iterationRecord?.fallback_regions.includes(region.id)
-                          ? '自治降级'
-                          : outageAtIteration(
-                                simulation,
-                                iterationRecord?.iteration ?? -1,
+          {isCoordinationView ? (
+            <ClusterCoordinationPanel
+              mode={coordinationMode}
+              onModeChange={(mode) => {
+                setIsPlaying(false);
+                setCoordinationMode(mode);
+                setCursor(
+                  mode === 'process'
+                    ? Math.max(0, (simulation?.admm_history.length ?? 0) - 1)
+                    : 0,
+                );
+              }}
+              record={iterationRecord}
+              planPoint={clusterPoint ?? undefined}
+              hasResult={simulation != null}
+              busy={runState === 'running'}
+              converged={
+                simulation?.validation_items.find(
+                  (item) => item.code === 'ADMM_CONVERGENCE',
+                )?.passed ??
+                simulation?.coordination_snapshot?.converged ??
+                null
+              }
+              canReplay={(simulation?.admm_history.length ?? 0) > 1}
+              playing={playbackActive}
+              onReplay={() => {
+                setCoordinationMode('process');
+                setCursor(0);
+                setIsPlaying(true);
+              }}
+            />
+          ) : (
+            <section className="panel topology-panel">
+              <div className="panel-title">
+                <h3>{topologyTitle}</h3>
+                <em className={outageNow ? 'fault-status' : ''}>
+                  {!simulation
+                    ? '等待计算'
+                    : isIterationView
+                      ? `${current.time} · 原生记录`
+                      : selectedView === 'group_control'
+                        ? '原生分钟记录'
+                        : '计划回放 · 非设备实绩'}
+                </em>
+              </div>
+              {selectedView === 'single_microgrid' ? (
+                <SingleMicrogridCanvas
+                  nodes={simulation?.topology_nodes ?? []}
+                  edges={simulation?.topology_edges ?? []}
+                  region={resultRegion}
+                />
+              ) : selectedView === 'group_control' ? (
+                <GroupControlCanvas record={currentGroupRecord} />
+              ) : (
+                <div className="topology-canvas">
+                  <div className="grid-source">
+                    <Zap size={25} />
+                    <span>上级电网 / 协调层</span>
+                    <b>
+                      {isIterationView
+                        ? 'ADMM 共识'
+                        : `${numberLabel(current.import)} MW`}
+                    </b>
+                  </div>
+                  <div className="trunk trunk-main" />
+                  <div className="trunk trunk-left" />
+                  <div className="trunk trunk-right" />
+                  {regions.map((region, index) => (
+                    <RegionNode
+                      key={region.id}
+                      region={region}
+                      index={index}
+                      importMw={clusterPoint?.regional_import_mw[region.id]}
+                      status={
+                        !simulation
+                          ? '等待仿真'
+                          : iterationRecord?.fallback_regions.includes(
                                 region.id,
                               )
-                            ? '失联'
-                            : isIterationView
-                              ? '参与协调'
-                              : '计划回放'
-                    }
-                  />
-                ))}
-                {playbackActive && (
-                  <>
-                    <div className="flow-pulse pulse-1" />
-                    <div className="flow-pulse pulse-2" />
-                    <div className="flow-pulse pulse-3" />
-                  </>
-                )}
-              </div>
-            )}
-            <div className="capacity-row">
-              <span>{capacityLabel}</span>
-              {capacityPercent != null && (
-                <Progress
-                  aria-label={capacityLabel}
-                  value={Math.min(100, Math.max(0, capacityPercent))}
-                />
+                            ? '自治降级'
+                            : outageAtIteration(
+                                  simulation,
+                                  iterationRecord?.iteration ?? -1,
+                                  region.id,
+                                )
+                              ? '失联'
+                              : isIterationView
+                                ? '参与协调'
+                                : '计划回放'
+                      }
+                    />
+                  ))}
+                  {playbackActive && (
+                    <>
+                      <div className="flow-pulse pulse-1" />
+                      <div className="flow-pulse pulse-2" />
+                      <div className="flow-pulse pulse-3" />
+                    </>
+                  )}
+                </div>
               )}
-              <b>
-                {isIterationView
-                  ? `${iterationRecord?.fresh_region_count ?? '—'} / 3`
-                  : clusterPoint
-                    ? `${numberLabel(current.import)} / ${numberLabel(clusterPoint.import_limit_mw)} MW`
-                    : selectedView === 'group_control'
-                      ? `${numberLabel(capacityPercent, 1)}%`
-                      : 'PCC 正值受电'}
-              </b>
-            </div>
-          </section>
+              <div className="capacity-row">
+                <span>{capacityLabel}</span>
+                {capacityPercent != null && (
+                  <Progress
+                    aria-label={capacityLabel}
+                    value={Math.min(100, Math.max(0, capacityPercent))}
+                  />
+                )}
+                <b>
+                  {isIterationView
+                    ? `${iterationRecord?.fresh_region_count ?? '—'} / 3`
+                    : clusterPoint
+                      ? `${numberLabel(current.import)} / ${numberLabel(clusterPoint.import_limit_mw)} MW`
+                      : selectedView === 'group_control'
+                        ? `${numberLabel(capacityPercent, 1)}%`
+                        : 'PCC 正值受电'}
+                </b>
+              </div>
+            </section>
+          )}
 
           <section
             className={`panel verdict-panel ${overallPassed === false ? 'has-failures' : ''}`}
@@ -2021,10 +2049,7 @@ export default function SimulationDashboard({
                     />
                   </ComposedChart>
                 </ResponsiveContainer>
-              ) : mounted &&
-                (selectedView === 'cluster_coordination' ||
-                  selectedView === 'communication_fault') &&
-                admmChartData.length ? (
+              ) : mounted && isIterationView && admmChartData.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
                     accessibilityLayer
@@ -2230,7 +2255,13 @@ export default function SimulationDashboard({
           </Button>
           <Button
             disabled={!playbackData.length || cursor >= playbackData.length - 1}
-            aria-label={isIterationView ? '下一轮记录' : '下一分钟记录'}
+            aria-label={
+              isIterationView
+                ? '下一轮记录'
+                : isCoordinationView
+                  ? '下一计划时刻'
+                  : '下一分钟记录'
+            }
             variant="ghost"
             size="icon"
             onClick={() => {
@@ -2261,7 +2292,11 @@ export default function SimulationDashboard({
           <div className="timeline-track">
             <Slider
               aria-label={
-                isIterationView ? '协调迭代回放位置' : '仿真分钟回放位置'
+                isIterationView
+                  ? '协调迭代回放位置'
+                  : isCoordinationView
+                    ? '计划时刻回放位置'
+                    : '仿真分钟回放位置'
               }
               disabled={playbackData.length < 2}
               min={0}
@@ -2273,12 +2308,13 @@ export default function SimulationDashboard({
                 setIsPlaying(false);
               }}
             />
-            {eventMarkerPercent != null && (
-              <em
-                title="事件分支注入点"
-                style={{ left: `${eventMarkerPercent}%` }}
-              />
-            )}
+            {eventMarkerPercent != null &&
+              (!isCoordinationView || isIterationView) && (
+                <em
+                  title="事件分支注入点"
+                  style={{ left: `${eventMarkerPercent}%` }}
+                />
+              )}
           </div>
           <span>{playbackData.at(-1)?.time ?? '—'}</span>
         </div>
@@ -2286,11 +2322,13 @@ export default function SimulationDashboard({
           <span>
             {isIterationView
               ? '原生迭代 · 不插值'
-              : simulation?.group_control
-                ? '群控原生分钟'
-                : simulation
-                  ? '区间插值 · 非新增实绩'
-                  : '等待仿真'}
+              : isCoordinationView
+                ? '原始计划时刻 · 不插值'
+                : simulation?.group_control
+                  ? '群控原生分钟'
+                  : simulation
+                    ? '区间插值 · 非新增实绩'
+                    : '等待仿真'}
           </span>
           <strong>{current.time}</strong>
         </div>

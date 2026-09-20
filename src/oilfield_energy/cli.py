@@ -16,9 +16,10 @@ from .analysis import (
     write_summary,
     write_timeseries_csv,
 )
-from .data import build_synthetic_case
+from .bootstrap.adapters.project_dataset import build_synthetic_case, plant_inputs_by_region
 from .field_data import write_field_data_audit
 from .group_control_scenarios import (
+    scenario_basis,
     run_group_control_scenarios,
     write_group_control_scenario_outputs,
 )
@@ -173,6 +174,8 @@ def run_hierarchy(
     result = run_hierarchical_control(
         case,
         names,
+        intraday_input_case=build_synthetic_case(steps, profile_kind="intraday"),
+        plant_inputs=plant_inputs_by_region(),
         admm_config=admm_config,
         communication_config=communication_config,
         time_scale_config=time_scale_config,
@@ -180,7 +183,7 @@ def run_hierarchy(
         time_limit_seconds=time_limit,
     )
     print("[4/5] Running deterministic group-control scenario regression...")
-    group_scenarios = run_group_control_scenarios(config=group_control_config)
+    group_scenarios = run_group_control_scenarios(config=group_control_config, basis=scenario_basis(case.microgrids[0]))
     failed_scenarios = [
         name for name, scenario in group_scenarios.items() if not scenario.passed
     ]
@@ -252,7 +255,7 @@ def run_hierarchy(
 
 def run_group_scenario_suite(output: Path) -> None:
     """单独运行群调群控确定性场景集，不启动MISOCP或ADMM。"""
-    results = run_group_control_scenarios()
+    results = run_group_control_scenarios(basis=scenario_basis(build_synthetic_case().microgrids[0]))
     write_group_control_scenario_outputs(output, results)
     failed = [name for name, result in results.items() if not result.passed]
     if failed:

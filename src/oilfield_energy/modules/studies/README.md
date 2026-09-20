@@ -1,5 +1,7 @@
 # 可复现模拟研究输入
 
+`contracts.UnifiedDataset` 定义统一三区域数据身份、成员配方和公共时间轴校验。它不自行读取包资源；I/O 与旧数值输入投影由 bootstrap 承担。模式快照位于 `contracts/simulation/unified_dataset.schema.json`。
+
 维护负责人：仿真研究维护负责人；替代评审：设备控制维护负责人。
 
 事件契约及适用性规则归本模块：`contracts.ScenarioEvent` 为可执行事件类型，旧

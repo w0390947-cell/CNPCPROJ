@@ -24,7 +24,7 @@ from oilfield_energy.field_data.snapshot_power_flow import (
     calculate_field_power_flow,
     read_snapshot_request,
 )
-from oilfield_energy.group_control_scenarios import run_group_control_scenarios
+from oilfield_energy.group_control_scenarios import run_group_control_scenarios, scenario_basis
 from oilfield_energy.hierarchy_reporting import write_minute_network_outputs
 from oilfield_energy.modules.control.contracts import BusSeries, PlantInputs
 from oilfield_energy.modules.measurements.contracts import CapturedDataset
@@ -442,7 +442,7 @@ class SimulationEngine:
                     np.all(result.wind_actual_mw[fault_start:fault_end] == 0.0)
                 )
                 checks[name + "_network_valid"] = result.network_invalid_steps == 0
-        group = run_group_control_scenarios()
+        group = run_group_control_scenarios(basis=scenario_basis(case.microgrids[0]))
         save(output / "group_control_scenarios.json", group)
         checks.update({"group_" + name: value.passed for name, value in group.items()})
         checks["execution_completed"] = True

@@ -22,7 +22,7 @@ from pydantic import TypeAdapter
 from .ac_power_flow import backward_forward_sweep
 from .analysis import write_summary
 from .data import ProjectCase
-from .hierarchy_types import ADMMResult, DeviceTrackingResult, HierarchicalResult
+from .hierarchy_types import ADMMIteration, ADMMResult, DeviceTrackingResult, HierarchicalResult
 from .modules.control.contracts import (
     MinuteExecutionRecord,
     ResourcePowerSeries,
@@ -733,7 +733,9 @@ def write_hierarchical_outputs(
             "stop_reason": result.admm.stop_reason,
             "communication_ticks": result.admm.iterations,
             "coordination_updates": result.admm.coordination_updates,
-            "final_iteration": asdict(result.admm.history[-1]),
+            "final_iteration": TypeAdapter(ADMMIteration).dump_python(
+                result.admm.history[-1], mode="json"
+            ),
             "communication": asdict(result.admm.communication),
             "peak_aggregate_import_mw": float(np.max(result.admm.aggregate_import_mw)),
         },

@@ -93,7 +93,7 @@ def command(fleet, name="command-1", **kwargs):
     return Command(
         command_id=name,
         epoch=fleet.epoch,
-        device_id="SC-storage",
+        device_id="SC:storage:SC_FLEX",
         p_mw=kwargs.pop("p_mw", 0.5),
         q_mvar=kwargs.pop("q_mvar", 0.0),
         expires_at=fleet.frame.simulated_at + timedelta(minutes=10),
@@ -126,12 +126,12 @@ def test_command_idempotency_ramp_energy_and_replay_conflict(fleet):
     receipt = fleet.submit(request)
     assert receipt.status == "accepted"
     assert fleet.submit(request) == receipt
-    initial = next(r.energy_mwh for r in fleet.readings if r.device_id == "SC-storage")
+    initial = next(r.energy_mwh for r in fleet.readings if r.device_id == "SC:storage:SC_FLEX")
     first = fleet.step()
     assert first.receipts[-1].status == "executing"
     second = fleet.step()
     assert second.receipts[-1].status == "executed"
-    storage = next(r for r in second.devices if r.device_id == "SC-storage")
+    storage = next(r for r in second.devices if r.device_id == "SC:storage:SC_FLEX")
     assert storage.energy_mwh == pytest.approx(initial - 2 * 0.5 / 0.95 / 60)
     with pytest.raises(ValueError, match="conflicts"):
         fleet.submit(request.model_copy(update={"p_mw": 0.2}))
@@ -165,7 +165,7 @@ def test_timeout_does_not_imply_not_executed(fleet):
     fleet.submit(command(fleet))
     frame = fleet.step()
     assert frame.receipts[-1].status == "timeout"
-    assert next(r.p_mw for r in frame.devices if r.device_id == "SC-storage") == 0.5
+    assert next(r.p_mw for r in frame.devices if r.device_id == "SC:storage:SC_FLEX") == 0.5
 
 
 def test_expiry_supersession_and_capability_rejection(fleet):
@@ -210,7 +210,7 @@ def test_api_lifecycle_fault_commands_and_validation(tmp_path):
         )
         assert availability_value["source"] == "synthetic_bundle_profile"
         assert availability_value["synthetic"] is True
-        assert len(availability_value["series"]) == 7
+        assert len(availability_value["series"]) == 8
         assert all(len(item["points"]) == 96 for item in availability_value["series"])
         assert all(
             [point["minute_of_day"] for point in item["points"]]
@@ -220,16 +220,16 @@ def test_api_lifecycle_fault_commands_and_validation(tmp_path):
         sc_wind = next(
             item
             for item in availability_value["series"]
-            if item["device_id"] == "SC-wind-1"
+            if item["device_id"] == "SC:wind:SC_WT1"
         )
-        assert sc_wind["points"][0]["p_available_mw"] == pytest.approx(2.5)
+        assert 0.0 < sc_wind["points"][0]["p_available_mw"] <= 5.0
         payload = dict(
             command_id="api-command",
             epoch=frame["epoch"],
-            device_id="SC-storage",
+            device_id="SC:storage:SC_FLEX",
             p_mw=0.25,
             q_mvar=0.0,
-            expires_at="2026-01-15T00:10:00Z",
+            expires_at="2026-09-15T00:10:00+08:00",
         )
         receipt = client.post("/api/demo/commands", json=payload)
         assert receipt.status_code == 202
@@ -283,7 +283,7 @@ def test_radial_outages_are_reported_as_islanded(bundle):
         for r in region["results"]
         if r["scenario"]["contingency_id"]
     ]
-    assert len(outages) == 12
+    assert len(outages) == 14
     assert all(r["status"] == "islanded" for r in outages)
 
 

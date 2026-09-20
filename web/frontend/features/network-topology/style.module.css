@@ -1,0 +1,33 @@
+.scroll {
+  width: 100%;
+  overflow-x: auto;
+  padding: 20px 8px;
+}
+.scroll svg {
+  display: block;
+  width: 100%;
+}
+.edge {
+  fill: none;
+  stroke: #3a6479;
+  stroke-width: 2;
+}
+.node rect {
+  fill: #102332;
+  stroke: #34586b;
+}
+.node text {
+  fill: #e0edf2;
+  font-size: 13px;
+  text-anchor: middle;
+}
+.node .kind {
+  fill: #91acba;
+  font-size: 11px;
+}
+.empty {
+  min-height: 280px;
+  display: grid;
+  place-items: center;
+  color: #91acba;
+}

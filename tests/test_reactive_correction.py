@@ -13,7 +13,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from oilfield_energy.ac_consistency import solve_case_ac_consistent
 from oilfield_energy.ac_power_flow import backward_forward_sweep_resolved
-from oilfield_energy.data import build_synthetic_case
+from tests.legacy_case_fixture import build_synthetic_case
 from oilfield_energy.device_control import simulate_device_tracking
 from oilfield_energy.modules.control.contracts import BusSeries, PlantInputs
 from oilfield_energy.network_model import (

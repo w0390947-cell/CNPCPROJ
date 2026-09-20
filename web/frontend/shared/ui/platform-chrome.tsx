@@ -50,7 +50,7 @@ const navigationItems: readonly PlatformNavigationItem[] = [
   },
   {
     id: 'group_control',
-    label: '群调群控',
+    label: '光伏群控策略验证',
     href: '/group-control',
     icon: CircleGauge,
   },

@@ -47,6 +47,10 @@ class Fleet:
             not spec.p_min_mw <= command.p_mw <= spec.p_max_mw
             or abs(command.q_mvar) > spec.q_max_mvar
             or hypot(command.p_mw, command.q_mvar) > spec.s_max_mva + 1e-9
+            or (
+                spec.q_abs_over_p_max is not None
+                and abs(command.q_mvar) > spec.q_abs_over_p_max * abs(command.p_mw) + 1e-9
+            )
         ):
             reason = "CAPABILITY_VIOLATION"
         elif self.blocked:
@@ -128,6 +132,8 @@ class Fleet:
                 p = max(p, -(spec.energy_mwh - energy) * 60 / spec.eta_charge)
                 energy -= (p / spec.eta_discharge if p >= 0 else p * spec.eta_charge) / 60
             q_cap = min(spec.q_max_mvar, sqrt(max(0.0, spec.s_max_mva**2 - p**2)))
+            if spec.q_abs_over_p_max is not None:
+                q_cap = min(q_cap, spec.q_abs_over_p_max * abs(p))
             q = max(-q_cap, min(q_cap, q_target))
             values.append(
                 Reading(

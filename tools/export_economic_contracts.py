@@ -10,7 +10,7 @@ from pydantic import TypeAdapter
 from oilfield_energy.modules.dispatch.contracts import CoordinationSnapshot, ReferenceEconomics
 from oilfield_energy.modules.power_flow.contracts import ClusterValidation
 from oilfield_energy.modules.studies.contracts import CommunicationEventExecution, ScenarioEvent
-from oilfield_energy.service import SimulationResult
+from oilfield_energy.service import ADMMHistoryPoint, ClusterTimeSeriesPoint, SimulationResult
 from oilfield_energy.web_api import app
 
 
@@ -28,6 +28,8 @@ def typescript(schema: dict[str, Any]) -> str:
     if kind == "array":
         return f"Array<{typescript(schema['items'])}>"
     if kind == "object":
+        if "properties" not in schema and isinstance(schema.get("additionalProperties"), dict):
+            return f"Record<string, {typescript(schema['additionalProperties'])}>"
         required = schema.get("required", [])
         return (
             "{ "
@@ -78,6 +80,9 @@ def artifacts(root: Path) -> dict[Path, str]:
         root / "web/frontend/shared/api/generated/economics.ts": type_bundle(ReferenceEconomics),
         root / "web/frontend/shared/api/generated/cluster.ts": type_bundle(
             ClusterValidation, CoordinationSnapshot
+        ),
+        root / "web/frontend/shared/api/generated/coordination.ts": type_bundle(
+            ADMMHistoryPoint, ClusterTimeSeriesPoint
         ),
         root / "web/frontend/shared/api/generated/study-events.ts": type_bundle(
             CommunicationEventExecution, ScenarioEvent

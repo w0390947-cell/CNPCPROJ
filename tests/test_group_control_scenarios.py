@@ -10,6 +10,7 @@ from tempfile import TemporaryDirectory
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from oilfield_energy.group_control_scenarios import (
+    ScenarioBasis,
     run_group_control_scenarios,
     write_group_control_scenario_outputs,
 )
@@ -17,7 +18,7 @@ from oilfield_energy.group_control_scenarios import (
 
 class GroupControlScenarioTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.results = run_group_control_scenarios()
+        self.results = run_group_control_scenarios(basis=ScenarioBasis(10.0, 4.0, 18.0, 8.0, 2.0))
 
     def test_all_required_scenarios_pass_with_stable_names(self) -> None:
         self.assertEqual(
@@ -63,7 +64,7 @@ class GroupControlScenarioTests(unittest.TestCase):
         self.assertEqual(communication.records[-1].decision.action.value, "restore")
 
     def test_scenarios_are_deterministic(self) -> None:
-        repeated = run_group_control_scenarios()
+        repeated = run_group_control_scenarios(basis=ScenarioBasis(10.0, 4.0, 18.0, 8.0, 2.0))
         self.assertEqual(self.results, repeated)
 
     def test_scenario_outputs_are_complete(self) -> None:

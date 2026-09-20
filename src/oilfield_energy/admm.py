@@ -21,7 +21,12 @@ from .hierarchy_types import (
 from .modules.control.api import accept_coordination_message
 from .modules.control.contracts import MessageCursor
 from .modules.dispatch.api import capture_coordination_snapshot
-from .modules.dispatch.contracts import DispatchCapabilities, RegionalPlanSnapshot
+from .modules.dispatch.contracts import (
+    CoordinationIterationTrace,
+    DispatchCapabilities,
+    RegionalCoordinationTrace,
+    RegionalPlanSnapshot,
+)
 from .planning_security import resolve_security_floors
 from .regional_control import ClusterProjectionController, RegionalConvexController
 
@@ -133,6 +138,7 @@ def run_admm_coordination(
     convergence_streak = 0
     pending_responses: Dict[str, RegionalSchedule] = {}
     pending_sent: Dict[str, int] = {}
+    latest_proposal_sent: dict[str, int] = {}
     coordination_updates = 0
     snapshot = None
 
@@ -206,11 +212,14 @@ def run_admm_coordination(
                     continue
                 response_cursors[message.sender] = cursor
                 latest_schedules[message.sender] = schedule
+                latest_proposal_sent[message.sender] = message.sent_iteration
                 if schedule.signal_iteration == coordination_epoch:
                     pending_responses[message.sender] = schedule
                     pending_sent[message.sender] = message.sent_iteration
 
         global_updated = len(pending_responses) == M
+        fresh_regions = frozenset(pending_responses)
+        collected_epoch = coordination_epoch
         z_p_previous = z_p.copy()
         z_q_previous = z_q.copy()
         if global_updated:
@@ -294,6 +303,30 @@ def run_admm_coordination(
                 fresh_region_count=M if global_updated else len(pending_responses),
                 convergence_streak=convergence_streak,
                 fallback_regions=fallback_regions,
+                coordination=CoordinationIterationTrace(
+                    communication_tick=k,
+                    coordination_epoch=collected_epoch,
+                    global_updated=global_updated,
+                    time_hours=tuple(float(hour) for hour in case.time_hours),
+                    regions=tuple(
+                        RegionalCoordinationTrace(
+                            region=name,
+                            response_epoch=latest_schedules[name].signal_iteration
+                            if name in latest_proposal_sent else None,
+                            response_sent_tick=latest_proposal_sent.get(name),
+                            fresh=name in fresh_regions,
+                            outage=channel.region_outage_at(name, k),
+                            fallback=name in fallback_regions,
+                            proposal_p_mw=tuple(float(v) for v in latest_schedules[name].p_grid_mw)
+                            if name in latest_proposal_sent else None,
+                            proposal_q_mvar=tuple(float(v) for v in latest_schedules[name].q_grid_mvar)
+                            if name in latest_proposal_sent else None,
+                            reference_p_mw=tuple(float(v) for v in z_p[m]),
+                            reference_q_mvar=tuple(float(v) for v in z_q[m]),
+                        )
+                        for m, name in enumerate(names)
+                    ),
+                ),
             )
         )
         if convergence_streak >= config.consecutive_convergence_iterations:

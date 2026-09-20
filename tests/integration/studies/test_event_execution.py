@@ -8,7 +8,7 @@ import pytest
 from pydantic import ValidationError
 
 from oilfield_energy.communication import SimulatedCommunicationChannel
-from oilfield_energy.data import build_synthetic_case
+from oilfield_energy.bootstrap.adapters.project_dataset import build_synthetic_case
 from oilfield_energy.hierarchy_types import CommunicationConfig
 from oilfield_energy.modules.studies.api import compile_communication_events
 from oilfield_energy.modules.studies.contracts import ScenarioEvent

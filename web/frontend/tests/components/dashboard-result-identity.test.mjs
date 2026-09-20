@@ -27,6 +27,45 @@ second.metadata.generated_at = '2026-09-19T00:00:00+00:00';
 const idA = 'a'.repeat(32),
   idB = 'b'.repeat(32);
 
+test('recorded seven-bus connectivity renders both wind and both PV buses', async () => {
+  const recorded = structuredClone(first);
+  recorded.topology_nodes = [
+    'PCC',
+    'MAIN',
+    'WT1',
+    'WT2',
+    'PV1',
+    'PV2',
+    'FLEX',
+  ].map((name) => ({
+    id: `SC_${name}`,
+    label: name,
+    kind: name.startsWith('WT')
+      ? 'wind'
+      : name.startsWith('PV')
+        ? 'pv'
+        : name.toLowerCase(),
+  }));
+  recorded.topology_edges = recorded.topology_nodes
+    .slice(1)
+    .map((node, index) => ({
+      id: `branch-${index}`,
+      source: index === 0 ? 'SC_PCC' : 'SC_MAIN',
+      target: node.id,
+    }));
+  const app = await mountDashboard({ hydrate: true, result: recorded });
+  try {
+    const diagram = app.document.querySelector('svg[role="img"]');
+    assert.ok(diagram);
+    assert.equal(diagram.querySelectorAll('rect').length, 7);
+    assert.equal(diagram.querySelectorAll('path').length, 6);
+    for (const name of ['WT1', 'WT2', 'PV1', 'PV2'])
+      assert.ok(diagram.textContent.includes(name));
+  } finally {
+    await app.close();
+  }
+});
+
 async function mountDashboard({
   hydrate = false,
   view = 'single_microgrid',
@@ -139,6 +178,10 @@ async function mountDashboard({
             return load('shared/lib/region-presentation.ts');
           if (name === '@/features/simulation-events')
             return load('features/simulation-events/index.ts');
+          if (name === '@/features/cluster-coordination')
+            return load('features/cluster-coordination/index.ts');
+          if (name === '@/features/network-topology')
+            return load('features/network-topology/index.ts');
           if (name.endsWith('.module.css'))
             return {
               default: new Proxy({}, { get: (_target, key) => key }),
@@ -424,6 +467,199 @@ function clusterFixture() {
   }));
   return result;
 }
+
+function coordinationFixture() {
+  const result = clusterFixture();
+  result.validation_items.push({
+    code: 'ADMM_CONVERGENCE',
+    label: '协调收敛',
+    passed: true,
+    explanation: '',
+  });
+  result.cluster_timeseries[1].regional_import_mw = { SC: 4, YA_B: 5, YA_C: 6 };
+  result.cluster_timeseries[1].aggregate_import_mw = 15;
+  result.admm_history = [1, 2, 3].map((iteration) => ({
+    iteration,
+    primal_residual: 1 / iteration,
+    dual_residual: 0.5 / iteration,
+    primal_tolerance: 0.1,
+    dual_tolerance: 0.1,
+    convergence_streak: iteration,
+    fresh_region_count: 3,
+    fallback_regions: [],
+    coordination: {
+      version: 'coordination-trace-v1',
+      communication_tick: iteration,
+      coordination_epoch: iteration - 1,
+      global_updated: true,
+      time_hours: [0, 3],
+      regions: ['SC', 'YA_B', 'YA_C'].map((region) => ({
+        region,
+        response_epoch: iteration - 1,
+        response_sent_tick: iteration,
+        fresh: true,
+        outage: false,
+        fallback: false,
+        proposal_p_mw: [iteration + 0.25, iteration + 10.25],
+        proposal_q_mvar: [0.5, 0.6],
+        reference_p_mw: [iteration, iteration + 10],
+        reference_q_mvar: [0.4, 0.5],
+      })),
+    },
+  }));
+  return result;
+}
+
+const clusterPanel = '[aria-label="跨区域微电网集群"]';
+
+test('completed coordination opens last round and replays power on an independent planning axis', async () => {
+  const app = await mountDashboard({
+    view: 'cluster_coordination',
+    result: coordinationFixture(),
+  });
+  try {
+    assert.match(
+      app.document.querySelector(clusterPanel).textContent,
+      /运行后显示/,
+    );
+    await app.click('.run-button');
+    assert.match(
+      app.document.querySelector('.current-time').textContent,
+      /第 3 轮/,
+    );
+    const card = () =>
+      app.document.querySelector(`${clusterPanel} [data-region="SC"]`)
+        .textContent;
+    assert.match(card(), /3\.25 MW/);
+    assert.match(card(), /3\.00 MW/);
+    assert.match(card(), /0\.25 MW/);
+    await app.changeSelect('[aria-label="观察计划时刻"]', '3');
+    assert.match(card(), /13\.00 MW/);
+    assert.match(
+      app.document.querySelector('.current-time').textContent,
+      /第 3 轮/,
+    );
+    await app.clickButton('回放协调过程');
+    await app.click('[aria-label="暂停回放"]');
+    assert.match(
+      app.document.querySelector('.current-time').textContent,
+      /第 1 轮/,
+    );
+    assert.match(card(), /11\.00 MW/);
+    await app.click('[aria-label="下一轮记录"]');
+    assert.match(card(), /12\.00 MW/);
+    assert.match(
+      app.document.querySelector(clusterPanel).textContent,
+      /计划时刻 03:00/,
+    );
+    await app.clickButton('最终计划');
+    assert.match(card(), /PCC 计划3\.00 MW/);
+    await app.click('[aria-label="下一计划时刻"]');
+    assert.match(card(), /PCC 计划4\.00 MW/);
+    assert.match(
+      app.document.querySelector(clusterPanel).textContent,
+      /15\.00 MW \/ 26\.00 MW/,
+    );
+    assert.match(
+      app.document.querySelector('.current-time').textContent,
+      /03:00/,
+    );
+    assert.equal(app.requests.length, 1); // Neither axis changes the immutable run.
+    assert.deepEqual((await app.exported()).body, coordinationFixture());
+  } finally {
+    await app.close();
+  }
+});
+
+test('historical history explicitly lacks per-round power but retains final PCC plans', async () => {
+  const result = coordinationFixture();
+  for (const record of result.admm_history) delete record.coordination;
+  const app = await mountDashboard({
+    hydrate: true,
+    view: 'cluster_coordination',
+    result,
+  });
+  try {
+    const panel = () => app.document.querySelector(clusterPanel).textContent;
+    assert.match(panel(), /本次结果未记录逐轮功率/);
+    assert.match(
+      app.document.querySelector('.current-time').textContent,
+      /第 3 轮/,
+    );
+    await app.clickButton('最终计划');
+    assert.match(panel(), /PCC 计划3\.00 MW/);
+    assert.equal(panel().includes('本次结果未记录逐轮功率'), false);
+  } finally {
+    await app.close();
+  }
+});
+
+test('nonconverged results retain last references and never claim a converged plan', async () => {
+  const result = coordinationFixture();
+  result.validation_items.find(
+    (item) => item.code === 'ADMM_CONVERGENCE',
+  ).passed = false;
+  const app = await mountDashboard({
+    hydrate: true,
+    view: 'cluster_coordination',
+    result,
+  });
+  try {
+    assert.match(
+      app.document.querySelector(clusterPanel).textContent,
+      /未收敛 · 最后一轮参考/,
+    );
+    await app.clickButton('最终计划');
+    assert.match(
+      app.document.querySelector(clusterPanel).textContent,
+      /未收敛 · 最后一轮参考/,
+    );
+    assert.match(
+      app.document.querySelector(clusterPanel).textContent,
+      /PCC 计划3\.00 MW/,
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('communication trace distinguishes stale, outage and fallback; final plan cannot inject iterations', async () => {
+  const result = coordinationFixture();
+  result.metadata.scenario_type = 'communication_fault';
+  const record = result.admm_history.at(-1);
+  record.coordination.global_updated = false;
+  record.fresh_region_count = 2;
+  Object.assign(record.coordination.regions[1], {
+    fresh: false,
+    outage: true,
+    fallback: true,
+    response_epoch: 0,
+    response_sent_tick: 1,
+  });
+  const app = await mountDashboard({
+    hydrate: true,
+    view: 'communication_fault',
+    result,
+  });
+  try {
+    const text = app.document.querySelector(
+      `${clusterPanel} [data-region="YA_B"]`,
+    ).textContent;
+    assert.match(text, /失联 · 自治降级 · 沿用历史申报/);
+    assert.match(
+      app.document.querySelector(clusterPanel).textContent,
+      /等待有效区域响应，参考保持/,
+    );
+    await app.clickButton('最终计划');
+    for (const button of app.document.querySelectorAll('.inject-button'))
+      assert.equal(button.disabled, true);
+    await app.clickButton('协调过程');
+    for (const button of app.document.querySelectorAll('.inject-button'))
+      assert.equal(button.disabled, false);
+  } finally {
+    await app.close();
+  }
+});
 
 const eventArea = '[aria-label="新能源事件注入"]';
 

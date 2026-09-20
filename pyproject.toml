@@ -38,11 +38,8 @@ oilfield-demo = "oilfield_energy.entrypoints.demo:main"
 [tool.setuptools]
 package-dir = {"" = "src"}
 
-[tool.setuptools.data-files]
-"share/oilfield-energy-optimization/system-demo" = [
-  "examples/system_demo/bundle.json",
-  "examples/system_demo/bundle.sha256",
-]
-
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"oilfield_energy.bootstrap" = ["assets/*.json"]

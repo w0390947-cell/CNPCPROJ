@@ -1,0 +1,204 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.heading,
+.toolbar,
+.coordinator,
+.capacity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.heading {
+  justify-content: space-between;
+}
+.heading h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #d9edf6;
+}
+.heading output,
+.note,
+.notice {
+  color: #9ebaca;
+  font-size: 0.875rem;
+}
+.toolbar {
+  justify-content: space-between;
+}
+.modes {
+  display: flex;
+  gap: 4px;
+  margin: 0;
+  padding: 3px;
+  border: 1px solid #25495b;
+  border-radius: 8px;
+}
+.toolbar button,
+.timePicker select {
+  font: inherit;
+  font-size: 0.875rem;
+  color: #c8dfeb;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: #102d3e;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+.toolbar button[aria-pressed='true'] {
+  background: #18536b;
+  color: #e2f7ff;
+}
+.toolbar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.toolbar button:focus-visible,
+.timePicker select:focus-visible,
+.region summary:focus-visible {
+  outline: 2px solid #5bc5fa;
+  outline-offset: 3px;
+}
+.timePicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  color: #a9c6d5;
+}
+.replay {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.coordinator {
+  padding: 12px 16px;
+  border: 1px solid #28536b;
+  border-radius: 8px;
+  background: linear-gradient(110deg, #102f42, #0a202e);
+  color: #58cbd7;
+}
+.coordinator strong {
+  color: #d9edf6;
+  font-size: 0.9375rem;
+}
+.coordinator p {
+  margin: 5px 0 0;
+  color: #a4c3d2;
+  font-size: 0.875rem;
+}
+.coordinator b {
+  margin-left: auto;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.coordinator[data-playing] {
+  border-color: #54bdc7;
+}
+.regions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.region {
+  min-width: 0;
+  border: 1px solid #24465b;
+  border-top: 3px solid #40b5c3;
+  border-radius: 8px;
+  padding: 12px;
+  background: #0b2333;
+}
+.region[data-faulted] {
+  border-top-color: #ff9d75;
+}
+.region h4 {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: #d8ebf5;
+}
+.regionStatus {
+  min-height: 2.7em;
+  line-height: 1.4;
+  margin: 8px 0;
+  font-size: 0.875rem;
+  color: #a2c7d3;
+}
+.region[data-faulted] .regionStatus {
+  color: #ffc1a4;
+}
+.region dl {
+  margin: 0;
+}
+.region dl > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 9px 0;
+}
+.region dt {
+  font-size: 0.875rem;
+  color: #a4c0cf;
+}
+.region dd {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: #e0eff5;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.region .reference {
+  padding: 10px 0;
+  border-block: 1px solid #214458;
+}
+.reference dd {
+  color: #68e0d0;
+  font-weight: 600;
+}
+.region summary {
+  color: #91c6db;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+.region details p {
+  color: #a4c0cf;
+  font-size: 0.8125rem;
+}
+.capacity {
+  border-top: 1px solid #234356;
+  padding-top: 12px;
+  font-size: 0.875rem;
+  color: #adc6d2;
+}
+.capacity strong {
+  margin-left: auto;
+  color: #6bdccb;
+  font-variant-numeric: tabular-nums;
+}
+.capacity progress {
+  width: 100%;
+  height: 6px;
+  accent-color: #4acbbd;
+}
+.note,
+.notice {
+  margin: 0;
+  line-height: 1.5;
+}
+.notice {
+  color: #ecd296;
+}
+@media (max-width: 1050px) {
+  .regions {
+    grid-template-columns: 1fr;
+  }
+  .regionStatus {
+    min-height: 0;
+  }
+}

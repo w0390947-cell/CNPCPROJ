@@ -1,6 +1,6 @@
 import { Database, MapPinned, Network } from 'lucide-react';
 
-import { CASE_SECTIONS, REGION_CASE_ROWS } from './content';
+import { CASE_SECTIONS, REGION_CASE_ROWS, DATASET_IDENTITY } from './content';
 import { ReferenceSection } from './reference-section';
 import styles from './style.module.css';
 
@@ -14,6 +14,12 @@ export function CaseSections() {
           通信故障和日内误差场景另使用固定随机种子。
         </p>
         <dl className={styles.identityList}>
+          <div>
+            <dt>统一数据版本</dt>
+            <dd>
+              {DATASET_IDENTITY.dataset_id} · {DATASET_IDENTITY.revision}
+            </dd>
+          </div>
           <div>
             <dt>山城区域</dt>
             <dd>SC 用于模拟山城区域，但不等同于经过现场核验的山城电网模型。</dd>
@@ -51,7 +57,7 @@ export function CaseSections() {
               <tr>
                 <th scope="col">区域 / 内部代码</th>
                 <th scope="col">
-                  负荷尺度<span>MW</span>
+                  负荷峰值参数合计<span>MW</span>
                 </th>
                 <th scope="col">
                   风电<span>MW</span>
@@ -89,26 +95,30 @@ export function CaseSections() {
           <div>
             <dt>网络结构</dt>
             <dd>
-              每个区域采用 PCC、MAIN、WIND、PV、FLEX 五个母线和四条径向支路。
+              {REGION_CASE_ROWS.map(
+                (region) =>
+                  `${region.displayName}：${region.busCount} 个母线、${region.branchCount} 条支路`,
+              ).join('；')}
+              。 山城两台风机和两处光伏独立接入，主变连接 35 kV 与 10 kV
+              电压层级。
             </dd>
           </div>
           <div>
             <dt>负荷分配</dt>
             <dd>
-              总有功负荷按 <strong>38% / 20% / 24% / 18%</strong> 分配到四个非
-              PCC 母线。
+              各母线负荷按统一台账中的峰值参数及固定种子生成；PCC
+              母线不叠加本地负荷。
             </dd>
           </div>
           <div>
             <dt>无功负荷</dt>
-            <dd>
-              负荷基础功率因数取 <strong>0.92 滞后</strong>
-              ，据有功负荷生成对应无功负荷。
-            </dd>
+            <dd>按各母线台账中的滞后功率因数，由有功负荷生成对应无功负荷。</dd>
           </div>
           <div>
             <dt>风光曲线</dt>
-            <dd>风光可用功率由平滑日曲线形成；它不是实时天气预测。</dd>
+            <dd>
+              同一台账生成日前预测、日内预测与分钟实际曲线。三者保留不同误差种子与用途；设备演示使用分钟实际曲线，优化页面使用日前预测。
+            </dd>
           </div>
           <div>
             <dt>经济性比较</dt>

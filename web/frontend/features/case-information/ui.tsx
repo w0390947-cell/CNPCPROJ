@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { ArrowUp, BookOpenText, CircleAlert } from 'lucide-react';
+import { ArrowUp, BookOpenText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import {
@@ -43,17 +43,6 @@ export function CaseInformation() {
           </div>
           <span className={styles.dataTag}>参数化合成数据</span>
         </header>
-
-        <div className={styles.notice} role="note">
-          <CircleAlert aria-hidden="true" size={21} />
-          <div>
-            <strong>当前 Web 使用参数化合成数据</strong>
-            <p>
-              数据不来自中国石油或长庆油田现场，不是 SCADA/D5000
-              实时遥测，页面结论不能替代现场安全许可或正式经济性验收。
-            </p>
-          </div>
-        </div>
 
         <div className={styles.readingLayout}>
           <nav aria-label="本页目录" className={styles.sectionNav}>

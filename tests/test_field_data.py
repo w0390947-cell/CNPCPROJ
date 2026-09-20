@@ -20,29 +20,28 @@ from oilfield_energy.field_data import (
     build_project_asset_registry,
     import_short_circuit_workbook,
 )
-from oilfield_energy.data import build_synthetic_case
+from tests.legacy_case_fixture import build_synthetic_case
 
 
 class FieldDataContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         root = Path(__file__).resolve().parents[1]
-        workbooks = sorted(root.glob("*.xlsx"), key=lambda item: item.stat().st_size)
-        if len(workbooks) != 2:
-            raise AssertionError("expected the two project-party xlsx workbooks")
-        cls.short_circuit = import_short_circuit_workbook(workbooks[0])
-        cls.load_history = audit_line_load_workbook(workbooks[1])
+        # Parser contracts use committed synthetic fixtures, never private client files.
+        fixtures = root / "tests/fixtures/audit"
+        cls.short_circuit = import_short_circuit_workbook(fixtures / "short-circuit-synthetic.xlsx")
+        cls.load_history = audit_line_load_workbook(fixtures / "line-load-invalid-synthetic.xlsx")
         cls.registry = build_project_asset_registry()
 
     def test_short_circuit_workbook_is_imported_without_inventing_units(self) -> None:
         workbook = self.short_circuit
-        self.assertEqual(workbook.sheet_name, "数据第1页")
-        self.assertEqual(len(workbook.records), 18)
+        self.assertEqual(workbook.sheet_name, "合成母线参数")
+        self.assertEqual(len(workbook.records), 3)
         first = workbook.records[0]
-        self.assertEqual(first.station_name, "白杨变")
-        self.assertEqual(first.bus_name, "35kV母线I")
-        self.assertAlmostEqual(first.positive_sequence_impedance_max_ohm, 6.1281)
-        self.assertIsNone(first.zero_sequence_impedance_max_ohm)
+        self.assertEqual(first.station_name, "模拟站-SC")
+        self.assertEqual(first.bus_name, "35kV主母线")
+        self.assertAlmostEqual(first.positive_sequence_impedance_max_ohm, 3.1)
+        self.assertAlmostEqual(first.zero_sequence_impedance_max_ohm, 6.2)
         self.assertEqual(
             workbook.quality.issue_counts["ENGINEERING_UNIT_MISSING"], 6
         )
@@ -50,12 +49,12 @@ class FieldDataContractTests(unittest.TestCase):
 
     def test_load_history_audit_exposes_corruption_and_performs_no_conversion(self) -> None:
         workbook = self.load_history
-        self.assertEqual(len(workbook.sheets), 6)
+        self.assertEqual(len(workbook.sheets), 1)
         self.assertFalse(workbook.raw_units_confirmed)
         self.assertFalse(workbook.raw_direction_confirmed)
         self.assertFalse(workbook.metadata["conversion_performed"])
-        corrupt = next(item for item in workbook.sheets if item.name == "大天线、宋天线")
-        self.assertEqual(corrupt.invalid_timestamp_count, 6)
+        corrupt = next(item for item in workbook.sheets if item.name == "合成异常线路记录")
+        self.assertEqual(corrupt.invalid_timestamp_count, 1)
         self.assertGreater(workbook.quality.issue_counts["MEASUREMENT_NONNUMERIC"], 0)
         self.assertGreater(workbook.quality.issue_counts["POWER_FACTOR_OUT_OF_RANGE"], 0)
         self.assertGreater(workbook.quality.issue_counts["NONPOSITIVE_VOLTAGE"], 0)

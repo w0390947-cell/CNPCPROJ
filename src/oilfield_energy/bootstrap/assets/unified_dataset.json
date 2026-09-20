@@ -1,0 +1,532 @@
+{
+  "schema_version": "oilfield-unified-dataset-v1",
+  "dataset_id": "oilfield-unified-synthetic",
+  "revision": "2026-09-20-v1",
+  "synthetic": true,
+  "cluster_import_limit_mw": 26.0,
+  "regions": [
+    {
+      "schema_version": "shancheng-simulation-v1",
+      "dataset_id": "oilfield-unified-synthetic",
+      "revision": "2026-09-20-v1",
+      "synthetic": true,
+      "seed": 20260915,
+      "start": "2026-09-15T00:00:00+08:00",
+      "intervals": 96,
+      "interval_minutes": 15,
+      "rolling_horizon_intervals": 16,
+      "solver_seconds": 120.0,
+      "pcc_min_mw": 0.5,
+      "pcc_max_mw": 18.0,
+      "pf_min": 0.9,
+      "voltage_min_pu": 0.95,
+      "voltage_max_pu": 1.05,
+      "storage": {
+        "energy_mwh": 5.0,
+        "minimum_mwh": 0.5,
+        "initial_mwh": 2.5,
+        "eta_charge": 0.95,
+        "eta_discharge": 0.95
+      },
+      "resources": [
+        {
+          "resource_id": "SC:wind:SC_WT1",
+          "bus_id": "SC_WT1",
+          "kind": "wind",
+          "p_max_mw": 5.0,
+          "s_max_mva": 5.25,
+          "q_max_mvar": 1.64
+        },
+        {
+          "resource_id": "SC:wind:SC_WT2",
+          "bus_id": "SC_WT2",
+          "kind": "wind",
+          "p_max_mw": 5.0,
+          "s_max_mva": 5.25,
+          "q_max_mvar": 1.64
+        },
+        {
+          "resource_id": "SC:pv:SC_PV1",
+          "bus_id": "SC_PV1",
+          "kind": "pv",
+          "p_max_mw": 2.4,
+          "s_max_mva": 2.52,
+          "q_max_mvar": 1.0
+        },
+        {
+          "resource_id": "SC:pv:SC_PV2",
+          "bus_id": "SC_PV2",
+          "kind": "pv",
+          "p_max_mw": 1.8,
+          "s_max_mva": 1.89,
+          "q_max_mvar": 0.7
+        },
+        {
+          "resource_id": "SC:storage:SC_FLEX",
+          "bus_id": "SC_FLEX",
+          "kind": "storage",
+          "p_max_mw": 2.5,
+          "s_max_mva": 2.7,
+          "q_max_mvar": 2.0
+        },
+        {
+          "resource_id": "SC:svg:SC_FLEX",
+          "bus_id": "SC_FLEX",
+          "kind": "svg",
+          "p_max_mw": 0.0,
+          "s_max_mva": 2.5,
+          "q_max_mvar": 2.5
+        }
+      ],
+      "loads": [
+        {
+          "bus_id": "SC_MAIN",
+          "peak_mw": 6.2,
+          "power_factor": 0.92
+        },
+        {
+          "bus_id": "SC_WT1",
+          "peak_mw": 1.0,
+          "power_factor": 0.93
+        },
+        {
+          "bus_id": "SC_WT2",
+          "peak_mw": 1.0,
+          "power_factor": 0.91
+        },
+        {
+          "bus_id": "SC_PV1",
+          "peak_mw": 2.0,
+          "power_factor": 0.94
+        },
+        {
+          "bus_id": "SC_PV2",
+          "peak_mw": 2.0,
+          "power_factor": 0.92
+        },
+        {
+          "bus_id": "SC_FLEX",
+          "peak_mw": 1.8,
+          "power_factor": 0.93
+        }
+      ],
+      "network": {
+        "network_id": "SC-seven-bus-synthetic-v1",
+        "base_mva": 20.0,
+        "pcc_bus_id": "SC_PCC",
+        "buses": [
+          {
+            "bus_id": "SC_PCC",
+            "name": "模拟上级电网",
+            "nominal_voltage_kv": 35.0
+          },
+          {
+            "bus_id": "SC_MAIN",
+            "name": "模拟主母线",
+            "nominal_voltage_kv": 10.0
+          },
+          {
+            "bus_id": "SC_WT1",
+            "name": "模拟风机1",
+            "nominal_voltage_kv": 10.0
+          },
+          {
+            "bus_id": "SC_WT2",
+            "name": "模拟风机2",
+            "nominal_voltage_kv": 10.0
+          },
+          {
+            "bus_id": "SC_PV1",
+            "name": "模拟光伏区域1",
+            "nominal_voltage_kv": 10.0
+          },
+          {
+            "bus_id": "SC_PV2",
+            "name": "模拟光伏区域2",
+            "nominal_voltage_kv": 10.0
+          },
+          {
+            "bus_id": "SC_FLEX",
+            "name": "模拟储能SVG",
+            "nominal_voltage_kv": 10.0
+          }
+        ],
+        "branches": [
+          {
+            "branch_id": "SC_T1",
+            "from_bus_id": "SC_PCC",
+            "to_bus_id": "SC_MAIN",
+            "kind": "transformer",
+            "r_pu": 0.004,
+            "x_pu": 0.03,
+            "s_max_mva": 20.0,
+            "fixed_tap_ratio": 1.0
+          },
+          {
+            "branch_id": "SC_L1",
+            "from_bus_id": "SC_MAIN",
+            "to_bus_id": "SC_WT1",
+            "kind": "line",
+            "r_pu": 0.01,
+            "x_pu": 0.014,
+            "s_max_mva": 6.0
+          },
+          {
+            "branch_id": "SC_L2",
+            "from_bus_id": "SC_MAIN",
+            "to_bus_id": "SC_WT2",
+            "kind": "line",
+            "r_pu": 0.011,
+            "x_pu": 0.015,
+            "s_max_mva": 6.0
+          },
+          {
+            "branch_id": "SC_L3",
+            "from_bus_id": "SC_MAIN",
+            "to_bus_id": "SC_PV1",
+            "kind": "line",
+            "r_pu": 0.012,
+            "x_pu": 0.015,
+            "s_max_mva": 4.0
+          },
+          {
+            "branch_id": "SC_L4",
+            "from_bus_id": "SC_MAIN",
+            "to_bus_id": "SC_PV2",
+            "kind": "line",
+            "r_pu": 0.015,
+            "x_pu": 0.017,
+            "s_max_mva": 4.0
+          },
+          {
+            "branch_id": "SC_L5",
+            "from_bus_id": "SC_MAIN",
+            "to_bus_id": "SC_FLEX",
+            "kind": "line",
+            "r_pu": 0.009,
+            "x_pu": 0.013,
+            "s_max_mva": 7.0
+          }
+        ],
+        "provenance": {
+          "source": "project-generated synthetic study; not Shancheng field data",
+          "dataset_version": "2026-09-20-v1",
+          "synthetic": true
+        }
+      },
+      "region_id": "SC"
+    },
+    {
+      "schema_version": "shancheng-simulation-v1",
+      "dataset_id": "oilfield-unified-synthetic",
+      "revision": "2026-09-20-v1",
+      "synthetic": true,
+      "seed": 20260916,
+      "start": "2026-09-15T00:00:00+08:00",
+      "intervals": 96,
+      "interval_minutes": 15,
+      "rolling_horizon_intervals": 16,
+      "solver_seconds": 120.0,
+      "pcc_min_mw": 0.5,
+      "pcc_max_mw": 18.0,
+      "pf_min": 0.9,
+      "voltage_min_pu": 0.95,
+      "voltage_max_pu": 1.05,
+      "storage": {
+        "energy_mwh": 4.0,
+        "minimum_mwh": 0.4,
+        "initial_mwh": 2.0,
+        "eta_charge": 0.95,
+        "eta_discharge": 0.95
+      },
+      "resources": [
+        {
+          "resource_id": "YA_B:wind:YA_B_WIND",
+          "bus_id": "YA_B_WIND",
+          "kind": "wind",
+          "p_max_mw": 7.0,
+          "s_max_mva": 7.3500000000000005,
+          "q_max_mvar": 2.2960000000000003
+        },
+        {
+          "resource_id": "YA_B:pv:YA_B_PV",
+          "bus_id": "YA_B_PV",
+          "kind": "pv",
+          "p_max_mw": 3.2,
+          "s_max_mva": 3.3600000000000003,
+          "q_max_mvar": 1.0496
+        },
+        {
+          "resource_id": "YA_B:storage:YA_B_FLEX",
+          "bus_id": "YA_B_FLEX",
+          "kind": "storage",
+          "p_max_mw": 2.0,
+          "s_max_mva": 2.16,
+          "q_max_mvar": 1.6
+        },
+        {
+          "resource_id": "YA_B:svg:YA_B_FLEX",
+          "bus_id": "YA_B_FLEX",
+          "kind": "svg",
+          "p_max_mw": 0.0,
+          "s_max_mva": 2.5,
+          "q_max_mvar": 2.5
+        }
+      ],
+      "loads": [
+        {
+          "bus_id": "YA_B_MAIN",
+          "peak_mw": 3.6479999999999997,
+          "power_factor": 0.92
+        },
+        {
+          "bus_id": "YA_B_WIND",
+          "peak_mw": 1.92,
+          "power_factor": 0.92
+        },
+        {
+          "bus_id": "YA_B_PV",
+          "peak_mw": 2.304,
+          "power_factor": 0.92
+        },
+        {
+          "bus_id": "YA_B_FLEX",
+          "peak_mw": 1.728,
+          "power_factor": 0.92
+        }
+      ],
+      "network": {
+        "network_id": "YA_B-synthetic-network",
+        "base_mva": 20.0,
+        "pcc_bus_id": "YA_B_PCC",
+        "buses": [
+          {
+            "bus_id": "YA_B_PCC",
+            "name": "YA_B_PCC",
+            "nominal_voltage_kv": 35.0
+          },
+          {
+            "bus_id": "YA_B_MAIN",
+            "name": "YA_B_MAIN",
+            "nominal_voltage_kv": 35.0
+          },
+          {
+            "bus_id": "YA_B_WIND",
+            "name": "YA_B_WIND",
+            "nominal_voltage_kv": 35.0
+          },
+          {
+            "bus_id": "YA_B_PV",
+            "name": "YA_B_PV",
+            "nominal_voltage_kv": 35.0
+          },
+          {
+            "bus_id": "YA_B_FLEX",
+            "name": "YA_B_FLEX",
+            "nominal_voltage_kv": 35.0
+          }
+        ],
+        "branches": [
+          {
+            "branch_id": "YA_B_L01",
+            "from_bus_id": "YA_B_PCC",
+            "to_bus_id": "YA_B_MAIN",
+            "kind": "line",
+            "r_pu": 0.0045,
+            "x_pu": 0.009,
+            "s_max_mva": 18.0
+          },
+          {
+            "branch_id": "YA_B_L12",
+            "from_bus_id": "YA_B_MAIN",
+            "to_bus_id": "YA_B_WIND",
+            "kind": "line",
+            "r_pu": 0.01,
+            "x_pu": 0.014,
+            "s_max_mva": 11.0
+          },
+          {
+            "branch_id": "YA_B_L13",
+            "from_bus_id": "YA_B_MAIN",
+            "to_bus_id": "YA_B_PV",
+            "kind": "line",
+            "r_pu": 0.012,
+            "x_pu": 0.015,
+            "s_max_mva": 8.0
+          },
+          {
+            "branch_id": "YA_B_L14",
+            "from_bus_id": "YA_B_MAIN",
+            "to_bus_id": "YA_B_FLEX",
+            "kind": "line",
+            "r_pu": 0.009,
+            "x_pu": 0.013,
+            "s_max_mva": 7.0
+          }
+        ],
+        "provenance": {
+          "source": "project-generated synthetic study; not Shancheng field data",
+          "dataset_version": "2026-09-20-v1",
+          "synthetic": true
+        }
+      },
+      "region_id": "YA_B"
+    },
+    {
+      "schema_version": "shancheng-simulation-v1",
+      "dataset_id": "oilfield-unified-synthetic",
+      "revision": "2026-09-20-v1",
+      "synthetic": true,
+      "seed": 20260917,
+      "start": "2026-09-15T00:00:00+08:00",
+      "intervals": 96,
+      "interval_minutes": 15,
+      "rolling_horizon_intervals": 16,
+      "solver_seconds": 120.0,
+      "pcc_min_mw": 0.5,
+      "pcc_max_mw": 18.0,
+      "pf_min": 0.9,
+      "voltage_min_pu": 0.95,
+      "voltage_max_pu": 1.05,
+      "storage": {
+        "energy_mwh": 3.6,
+        "minimum_mwh": 0.36000000000000004,
+        "initial_mwh": 1.8,
+        "eta_charge": 0.95,
+        "eta_discharge": 0.95
+      },
+      "resources": [
+        {
+          "resource_id": "YA_C:wind:YA_C_WIND",
+          "bus_id": "YA_C_WIND",
+          "kind": "wind",
+          "p_max_mw": 6.0,
+          "s_max_mva": 6.300000000000001,
+          "q_max_mvar": 1.968
+        },
+        {
+          "resource_id": "YA_C:pv:YA_C_PV",
+          "bus_id": "YA_C_PV",
+          "kind": "pv",
+          "p_max_mw": 3.8,
+          "s_max_mva": 3.9899999999999998,
+          "q_max_mvar": 1.2464
+        },
+        {
+          "resource_id": "YA_C:storage:YA_C_FLEX",
+          "bus_id": "YA_C_FLEX",
+          "kind": "storage",
+          "p_max_mw": 1.8,
+          "s_max_mva": 1.9440000000000002,
+          "q_max_mvar": 1.4400000000000002
+        },
+        {
+          "resource_id": "YA_C:svg:YA_C_FLEX",
+          "bus_id": "YA_C_FLEX",
+          "kind": "svg",
+          "p_max_mw": 0.0,
+          "s_max_mva": 2.5,
+          "q_max_mvar": 2.5
+        }
+      ],
+      "loads": [
+        {
+          "bus_id": "YA_C_MAIN",
+          "peak_mw": 3.2832000000000003,
+          "power_factor": 0.92
+        },
+        {
+          "bus_id": "YA_C_WIND",
+          "peak_mw": 1.7280000000000002,
+          "power_factor": 0.92
+        },
+        {
+          "bus_id": "YA_C_PV",
+          "peak_mw": 2.0736,
+          "power_factor": 0.92
+        },
+        {
+          "bus_id": "YA_C_FLEX",
+          "peak_mw": 1.5552000000000001,
+          "power_factor": 0.92
+        }
+      ],
+      "network": {
+        "network_id": "YA_C-synthetic-network",
+        "base_mva": 20.0,
+        "pcc_bus_id": "YA_C_PCC",
+        "buses": [
+          {
+            "bus_id": "YA_C_PCC",
+            "name": "YA_C_PCC",
+            "nominal_voltage_kv": 35.0
+          },
+          {
+            "bus_id": "YA_C_MAIN",
+            "name": "YA_C_MAIN",
+            "nominal_voltage_kv": 35.0
+          },
+          {
+            "bus_id": "YA_C_WIND",
+            "name": "YA_C_WIND",
+            "nominal_voltage_kv": 35.0
+          },
+          {
+            "bus_id": "YA_C_PV",
+            "name": "YA_C_PV",
+            "nominal_voltage_kv": 35.0
+          },
+          {
+            "bus_id": "YA_C_FLEX",
+            "name": "YA_C_FLEX",
+            "nominal_voltage_kv": 35.0
+          }
+        ],
+        "branches": [
+          {
+            "branch_id": "YA_C_L01",
+            "from_bus_id": "YA_C_PCC",
+            "to_bus_id": "YA_C_MAIN",
+            "kind": "line",
+            "r_pu": 0.0045,
+            "x_pu": 0.009,
+            "s_max_mva": 18.0
+          },
+          {
+            "branch_id": "YA_C_L12",
+            "from_bus_id": "YA_C_MAIN",
+            "to_bus_id": "YA_C_WIND",
+            "kind": "line",
+            "r_pu": 0.01,
+            "x_pu": 0.014,
+            "s_max_mva": 11.0
+          },
+          {
+            "branch_id": "YA_C_L13",
+            "from_bus_id": "YA_C_MAIN",
+            "to_bus_id": "YA_C_PV",
+            "kind": "line",
+            "r_pu": 0.012,
+            "x_pu": 0.015,
+            "s_max_mva": 8.0
+          },
+          {
+            "branch_id": "YA_C_L14",
+            "from_bus_id": "YA_C_MAIN",
+            "to_bus_id": "YA_C_FLEX",
+            "kind": "line",
+            "r_pu": 0.009,
+            "x_pu": 0.013,
+            "s_max_mva": 7.0
+          }
+        ],
+        "provenance": {
+          "source": "project-generated synthetic study; not Shancheng field data",
+          "dataset_version": "2026-09-20-v1",
+          "synthetic": true
+        }
+      },
+      "region_id": "YA_C"
+    }
+  ]
+}
