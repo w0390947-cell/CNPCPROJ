@@ -1,12 +1,12 @@
 import hashlib
 import json
-from oilfield_energy.bootstrap.adapters.project_dataset import study_recipe
 from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
 import pytest
 
+from oilfield_energy.bootstrap.adapters.project_dataset import study_recipe
 from oilfield_energy.bootstrap.adapters.simulation_files import load_study, validate_json
 from oilfield_energy.bootstrap.shancheng_simulation import create_simulation, generate_simulation
 from oilfield_energy.modules.measurements.adapters.local_files import LocalDatasetReader
@@ -121,6 +121,33 @@ def test_same_manifest_feeds_all_study_phases(run):
     spec, day, intra, plant = load_study(captured)
     assert spec.dataset_id == captured.manifest.dataset_id
     assert day.start == intra.start == plant.start
+
+
+def test_selected_wind_policy_is_reported_and_respected_by_minute_execution(run):
+    _, output, _ = run
+    parameters = read(output / "simulation_parameters.json")
+    assert parameters["wind_reactive_policy"] == "shancheng-300"
+    assert set(parameters["wind_q_abs_over_p_max"].values()) == {0.30}
+    assert parameters["wind_reactive_policy_source"]
+    tracking = read(output / "minute_normal/tracking.json")
+    for resource in study_recipe().resources:
+        if resource.kind != "wind":
+            continue
+        p = np.asarray(tracking["wind_resource_actual_mw"][resource.resource_id])
+        q = np.asarray(tracking["reactive_resource_actual_mvar"][resource.resource_id])
+        assert np.all(np.abs(q) <= 0.30 * p + 1e-7)
+        assert np.all(np.abs(q) <= resource.q_max_mvar + 1e-7)
+        assert np.all(np.hypot(p, q) <= resource.s_max_mva + 1e-7)
+
+
+def test_reference_svg_boundary_reaches_minute_execution_and_fixed_inputs(run):
+    dataset, output, _ = run
+    devices = read(dataset / "devices.json")["payload"]["devices"]
+    svg = next(d for d in devices if d["resource_type"] == "svg")
+    assert (svg["q_min_mvar"], svg["q_max_mvar"], svg["s_max_mva"]) == (-1.8, 1.8, 2.0)
+    assert all(d["q_max_mvar"] == 0 for d in devices if d["resource_type"] in ("pv", "storage"))
+    tracking = read(output / "minute_normal/tracking.json")
+    assert np.max(np.abs(tracking["svg_reactive_actual_mvar"])) <= 1.8 + 1e-7
 
 
 @pytest.mark.parametrize(

@@ -2,6 +2,21 @@ import type { RegionalCoordinationTrace } from '@/shared/api/generated/coordinat
 
 export type CoordinationMode = 'process' | 'plan';
 
+/** Historical grids retain their actual labels; never resample saved results here. */
+const baseOptimizationOptions = [
+  { steps: 4, label: '6 小时／时段（全天 4 个时段）' },
+  { steps: 8, label: '3 小时／时段（全天 8 个时段）' },
+  { steps: 24, label: '1 小时／时段（全天 24 个时段）' },
+  { steps: 96, label: '15 分钟／时段（全天 96 个时段）' },
+] as const;
+
+export function baseOptimizationTimeLabel(steps: number): string {
+  return (
+    baseOptimizationOptions.find((option) => option.steps === steps)?.label ??
+    `全天 ${steps} 个基础优化时段`
+  );
+}
+
 export function planTimeLabel(hour: number): string {
   const minute = Math.round(hour * 60);
   return `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;

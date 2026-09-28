@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from math import isfinite
 from typing import Dict, Mapping, Sequence
 
 import numpy as np
@@ -11,6 +12,10 @@ from .ac_power_flow import validate_ac_dispatch
 from .data import ProjectCase
 from .misocp_model import solve_case_misocp
 from .model import OptimizationResult
+from .modules.dispatch.api import solve_for_quality
+from .modules.dispatch.contracts import (
+    ComputationQualityPolicy, OptimizationAttempt, OptimizationQuality, PCCTrackingLimits,
+)
 
 
 @dataclass(frozen=True)
@@ -54,6 +59,7 @@ class ACConsistencyResult:
     stop_reason: str
     iterations: int
     history: list[ACConsistencyIteration] = field(default_factory=list)
+    optimization_quality: tuple[OptimizationQuality, ...] = ()
 
 
 def _maximum(report: Dict[str, object], key: str) -> float:
@@ -69,12 +75,14 @@ def solve_case_ac_consistent(
     storage_enabled: bool = True,
     cluster_coordination: bool = True,
     pcc_targets: Mapping[str, Mapping[str, np.ndarray]] | None = None,
+    tracking_limits: PCCTrackingLimits | None = None,
     p_tracking_penalty_cny_per_mw: float = 20_000.0,
     q_tracking_penalty_cny_per_mvar: float = 8_000.0,
     time_limit_seconds: float = 300.0,
     relative_gap: float = 1e-4,
     relax_and_certify_storage_binaries: bool = True,
     consistency_config: ACConsistencyConfig | None = None,
+    quality_policy: ComputationQualityPolicy | None = None,
     p_grid_security_floors_mw: Mapping[str, np.ndarray] | None = None,
 ) -> ACConsistencyResult:
     """求解MISOCP，并仅在锥与独立AC结果一致时接受。
@@ -92,23 +100,40 @@ def solve_case_ac_consistent(
     voltage_margin = 0.0
     last_result: OptimizationResult | None = None
     last_validation: Dict[str, object] = {"passed": False, "microgrids": {}}
+    quality_records: list[OptimizationQuality] = []
+
+    def solve_model(relax: bool) -> OptimizationResult:
+        def attempt(seconds: float) -> tuple[OptimizationResult, OptimizationAttempt]:
+            result = solve_case_misocp(
+                case, names, storage_enabled=storage_enabled,
+                cluster_coordination=cluster_coordination, pcc_targets=pcc_targets,
+                tracking_limits=tracking_limits,
+                p_tracking_penalty_cny_per_mw=p_tracking_penalty_cny_per_mw,
+                q_tracking_penalty_cny_per_mvar=q_tracking_penalty_cny_per_mvar,
+                time_limit_seconds=seconds,
+                relative_gap=quality_policy.relative_gap if quality_policy else relative_gap,
+                relax_storage_binaries=relax,
+                extra_loss_tightening_cny_per_mwh=extra_loss_penalty,
+                voltage_security_margin_pu=voltage_margin,
+                p_grid_security_floors_mw=p_grid_security_floors_mw,
+            )
+            gap = result.mip_gap
+            return result, OptimizationAttempt(
+                budget_seconds=seconds,
+                solver_status=result.message.removeprefix("SCIP status: "),
+                feasible=result.success,
+                objective_cny=result.objective_cny if result.success and isfinite(result.objective_cny) else None,
+                relative_gap=gap if gap is not None and isfinite(gap) and gap >= 0 else None,
+            )
+
+        if quality_policy is None:
+            return attempt(time_limit_seconds)[0]
+        result, evidence = solve_for_quality(attempt, quality_policy)
+        quality_records.append(evidence)
+        return result
 
     for iteration in range(1, config.max_feedback_iterations + 1):
-        result = solve_case_misocp(
-            case,
-            names,
-            storage_enabled=storage_enabled,
-            cluster_coordination=cluster_coordination,
-            pcc_targets=pcc_targets,
-            p_tracking_penalty_cny_per_mw=p_tracking_penalty_cny_per_mw,
-            q_tracking_penalty_cny_per_mvar=q_tracking_penalty_cny_per_mvar,
-            time_limit_seconds=time_limit_seconds,
-            relative_gap=relative_gap,
-            relax_storage_binaries=relax_and_certify_storage_binaries,
-            extra_loss_tightening_cny_per_mwh=extra_loss_penalty,
-            voltage_security_margin_pu=voltage_margin,
-            p_grid_security_floors_mw=p_grid_security_floors_mw,
-        )
+        result = solve_model(relax_and_certify_storage_binaries)
         last_result = result
         if (
             result.success
@@ -117,21 +142,7 @@ def solve_case_ac_consistent(
         ):
             # 连续松弛出现实质性同时充放电，不能作为MISOCP整数最优证书；
             # 立即回退到原始二进制模型。
-            result = solve_case_misocp(
-                case,
-                names,
-                storage_enabled=storage_enabled,
-                cluster_coordination=cluster_coordination,
-                pcc_targets=pcc_targets,
-                p_tracking_penalty_cny_per_mw=p_tracking_penalty_cny_per_mw,
-                q_tracking_penalty_cny_per_mvar=q_tracking_penalty_cny_per_mvar,
-                time_limit_seconds=time_limit_seconds,
-                relative_gap=relative_gap,
-                relax_storage_binaries=False,
-                extra_loss_tightening_cny_per_mwh=extra_loss_penalty,
-                voltage_security_margin_pu=voltage_margin,
-                p_grid_security_floors_mw=p_grid_security_floors_mw,
-            )
+            result = solve_model(False)
             last_result = result
         if not result.success:
             history.append(ACConsistencyIteration(
@@ -220,6 +231,7 @@ def solve_case_ac_consistent(
                 stop_reason="misocp_cone_and_ac_tolerances_met",
                 iterations=iteration,
                 history=history,
+                optimization_quality=tuple(quality_records),
             )
 
         # AC结果反馈：强化真实电流损耗的单调性，并根据观测误差增加电压裕度。
@@ -238,7 +250,14 @@ def solve_case_ac_consistent(
         optimization=last_result,
         ac_validation=last_validation,
         passed=False,
-        stop_reason="solver_failed" if not last_result.success else "ac_consistency_iterations_exhausted",
+        stop_reason=(
+            {
+                "SCIP status: infeasible": "solver_infeasible",
+                "SCIP status: timelimit": "solver_time_limit_without_plan",
+            }.get(last_result.message, "solver_failed")
+            if not last_result.success else "ac_consistency_iterations_exhausted"
+        ),
         iterations=len(history),
         history=history,
+        optimization_quality=tuple(quality_records),
     )

@@ -63,6 +63,96 @@
       "title": "ADMMHistoryPoint",
       "type": "object"
     },
+    "ClusterExecution": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "cluster-execution-v1",
+          "default": "cluster-execution-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "violated",
+            "unknown",
+            "not_computed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "storage_enabled": {
+          "title": "Storage Enabled",
+          "type": "boolean"
+        },
+        "policy": {
+          "$ref": "#/$defs/ExecutionPolicy"
+        },
+        "input_basis": {
+          "title": "Input Basis",
+          "type": "string"
+        },
+        "dataset_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Sha256"
+        },
+        "stages": {
+          "items": {
+            "$ref": "#/$defs/ExecutionStage"
+          },
+          "title": "Stages",
+          "type": "array"
+        },
+        "scope": {
+          "const": "synthetic_execution",
+          "default": "synthetic_execution",
+          "title": "Scope",
+          "type": "string"
+        },
+        "rolling_updates": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RollingUpdate"
+          },
+          "title": "Rolling Updates",
+          "type": "array"
+        },
+        "minute_reserves": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/MinuteReserveObservation"
+          },
+          "title": "Minute Reserves",
+          "type": "array"
+        },
+        "reserve_target_adjustments": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ReserveTargetAdjustment"
+          },
+          "title": "Reserve Target Adjustments",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status",
+        "storage_enabled",
+        "policy",
+        "input_basis",
+        "stages"
+      ],
+      "title": "ClusterExecution",
+      "type": "object"
+    },
     "ClusterImportAssessment": {
       "properties": {
         "stage": {
@@ -456,6 +546,133 @@
       "title": "CommunicationSummary",
       "type": "object"
     },
+    "ComputationQualityPolicy": {
+      "additionalProperties": false,
+      "description": "Bounded offline solve budgets, not physical tolerances or a global optimum claim.",
+      "properties": {
+        "version": {
+          "const": "quality-first-v1",
+          "default": "quality-first-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "solve_seconds": {
+          "default": [
+            180.0,
+            600.0,
+            1800.0
+          ],
+          "items": {
+            "type": "number"
+          },
+          "title": "Solve Seconds",
+          "type": "array"
+        },
+        "admm_iterations": {
+          "default": [
+            360,
+            720,
+            1000
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "title": "Admm Iterations",
+          "type": "array"
+        },
+        "relative_gap": {
+          "default": 0.0001,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Relative Gap",
+          "type": "number"
+        }
+      },
+      "title": "ComputationQualityPolicy",
+      "type": "object"
+    },
+    "ComputationQualityReport": {
+      "additionalProperties": false,
+      "properties": {
+        "policy": {
+          "$ref": "#/$defs/ComputationQualityPolicy"
+        },
+        "reference_optimizations": {
+          "additionalProperties": {
+            "items": {
+              "$ref": "#/$defs/OptimizationQuality"
+            },
+            "type": "array"
+          },
+          "title": "Reference Optimizations",
+          "type": "object"
+        },
+        "reference_coordination": {
+          "items": {
+            "$ref": "#/$defs/CoordinationBudgetEvidence"
+          },
+          "title": "Reference Coordination",
+          "type": "array"
+        }
+      },
+      "required": [
+        "policy",
+        "reference_optimizations",
+        "reference_coordination"
+      ],
+      "title": "ComputationQualityReport",
+      "type": "object"
+    },
+    "CoordinationBudgetEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "iteration_budget": {
+          "minimum": 1,
+          "title": "Iteration Budget",
+          "type": "integer"
+        },
+        "completed_iterations": {
+          "minimum": 1,
+          "title": "Completed Iterations",
+          "type": "integer"
+        },
+        "converged": {
+          "title": "Converged",
+          "type": "boolean"
+        },
+        "primal_residual": {
+          "minimum": 0,
+          "title": "Primal Residual",
+          "type": "number"
+        },
+        "dual_residual": {
+          "minimum": 0,
+          "title": "Dual Residual",
+          "type": "number"
+        },
+        "primal_tolerance": {
+          "minimum": 0,
+          "title": "Primal Tolerance",
+          "type": "number"
+        },
+        "dual_tolerance": {
+          "minimum": 0,
+          "title": "Dual Tolerance",
+          "type": "number"
+        }
+      },
+      "required": [
+        "iteration_budget",
+        "completed_iterations",
+        "converged",
+        "primal_residual",
+        "dual_residual",
+        "primal_tolerance",
+        "dual_tolerance"
+      ],
+      "title": "CoordinationBudgetEvidence",
+      "type": "object"
+    },
     "CoordinationIterationTrace": {
       "additionalProperties": false,
       "description": "Lightweight immutable replay evidence for one communication tick.\n\nEpoch identifies the barrier being collected. References are AFTER this\ntick's projection (unchanged if global_updated is false). Time is a separate\nplanning axis in hours, never a conversion of communication_tick.",
@@ -668,6 +885,201 @@
       "title": "DispatchCapabilities",
       "type": "object"
     },
+    "DynamicTrackingAssessment": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "dynamic-pcc-tracking-v1",
+          "default": "dynamic-pcc-tracking-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "unit": {
+          "enum": [
+            "MW",
+            "Mvar"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "limit": {
+          "exclusiveMinimum": 0,
+          "title": "Limit",
+          "type": "number"
+        },
+        "numerical_tolerance": {
+          "exclusiveMinimum": 0,
+          "title": "Numerical Tolerance",
+          "type": "number"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "violated",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "response_status": {
+          "enum": [
+            "passed",
+            "violated",
+            "unknown"
+          ],
+          "title": "Response Status",
+          "type": "string"
+        },
+        "steady_status": {
+          "enum": [
+            "passed",
+            "violated",
+            "unknown"
+          ],
+          "title": "Steady Status",
+          "type": "string"
+        },
+        "raw_max_error": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Raw Max Error"
+        },
+        "raw_max_error_time_minute": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Raw Max Error Time Minute"
+        },
+        "rmse": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rmse"
+        },
+        "post_deadline_max_error": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Post Deadline Max Error"
+        },
+        "longest_outside_band_minutes": {
+          "minimum": 0,
+          "title": "Longest Outside Band Minutes",
+          "type": "number"
+        },
+        "invalid_samples": {
+          "minimum": 0,
+          "title": "Invalid Samples",
+          "type": "integer"
+        },
+        "transitions": {
+          "items": {
+            "$ref": "#/$defs/TrackingTransition"
+          },
+          "title": "Transitions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "unit",
+        "limit",
+        "numerical_tolerance",
+        "status",
+        "response_status",
+        "steady_status",
+        "longest_outside_band_minutes",
+        "invalid_samples",
+        "transitions"
+      ],
+      "title": "DynamicTrackingAssessment",
+      "type": "object"
+    },
+    "DynamicTrackingPolicy": {
+      "additionalProperties": false,
+      "description": "Offline response assessment parameters, shared with the synthetic plant.",
+      "properties": {
+        "time_constant_minutes": {
+          "default": 2.0,
+          "exclusiveMinimum": 0,
+          "title": "Time Constant Minutes",
+          "type": "number"
+        },
+        "pv_time_constant_minutes": {
+          "default": 0.25,
+          "exclusiveMinimum": 0,
+          "title": "Pv Time Constant Minutes",
+          "type": "number"
+        },
+        "p_ramp_mw_per_minute": {
+          "default": 0.65,
+          "minimum": 0,
+          "title": "P Ramp Mw Per Minute",
+          "type": "number"
+        },
+        "q_ramp_mvar_per_minute": {
+          "default": 0.9,
+          "minimum": 0,
+          "title": "Q Ramp Mvar Per Minute",
+          "type": "number"
+        },
+        "maximum_response_minutes": {
+          "default": 10,
+          "minimum": 1,
+          "title": "Maximum Response Minutes",
+          "type": "integer"
+        },
+        "confirmation_samples": {
+          "default": 3,
+          "minimum": 2,
+          "title": "Confirmation Samples",
+          "type": "integer"
+        },
+        "p_change_threshold_mw": {
+          "default": 0.0001,
+          "exclusiveMinimum": 0,
+          "title": "P Change Threshold Mw",
+          "type": "number"
+        },
+        "q_change_threshold_mvar": {
+          "default": 0.0001,
+          "exclusiveMinimum": 0,
+          "title": "Q Change Threshold Mvar",
+          "type": "number"
+        },
+        "source": {
+          "default": "软件仿真动态判据：依据已记录的响应、爬坡、最长等待和连续确认参数；非现场验收定值",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "title": "DynamicTrackingPolicy",
+      "type": "object"
+    },
     "EconomicCost": {
       "properties": {
         "import_cost_cny": {
@@ -720,6 +1132,266 @@
       ],
       "title": "EventType",
       "type": "string"
+    },
+    "ExecutionCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "violated",
+            "unknown",
+            "not_computed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "actual": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actual"
+        },
+        "limit": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Limit"
+        },
+        "unit": {
+          "default": "",
+          "title": "Unit",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "label",
+        "status"
+      ],
+      "title": "ExecutionCheck",
+      "type": "object"
+    },
+    "ExecutionPolicy": {
+      "additionalProperties": false,
+      "description": "Offline study tolerances, NOT customer-approved operating setpoints.",
+      "properties": {
+        "p_tracking_tolerance_mw": {
+          "default": 0.05,
+          "exclusiveMinimum": 0,
+          "title": "P Tracking Tolerance Mw",
+          "type": "number"
+        },
+        "q_tracking_tolerance_mvar": {
+          "default": 0.05,
+          "exclusiveMinimum": 0,
+          "title": "Q Tracking Tolerance Mvar",
+          "type": "number"
+        },
+        "numerical_tolerance": {
+          "default": 1e-06,
+          "exclusiveMinimum": 0,
+          "title": "Numerical Tolerance",
+          "type": "number"
+        },
+        "source": {
+          "default": "软件仿真策略：工程限值、数值容差与分钟动态规则随结果记录；非现场验收定值",
+          "title": "Source",
+          "type": "string"
+        },
+        "device_step_minutes": {
+          "const": 1,
+          "default": 1,
+          "title": "Device Step Minutes",
+          "type": "integer"
+        },
+        "random_seed": {
+          "default": 20260901,
+          "title": "Random Seed",
+          "type": "integer"
+        },
+        "update_minutes": {
+          "default": 15,
+          "minimum": 1,
+          "title": "Update Minutes",
+          "type": "integer"
+        },
+        "horizon_minutes": {
+          "default": 240,
+          "minimum": 1,
+          "title": "Horizon Minutes",
+          "type": "integer"
+        },
+        "regional_plan_workers": {
+          "default": 1,
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Regional Plan Workers",
+          "type": "integer"
+        },
+        "numerical_threads_per_worker": {
+          "anyOf": [
+            {
+              "const": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Numerical Threads Per Worker"
+        },
+        "coordination_model_reuse": {
+          "default": false,
+          "title": "Coordination Model Reuse",
+          "type": "boolean"
+        },
+        "dynamic_tracking": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DynamicTrackingPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "active_tracking_version": {
+          "anyOf": [
+            {
+              "const": "active-tracking-allocation-v1",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Active Tracking Version"
+        },
+        "storage_reserve": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StorageReservePolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reactive_planning": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReactivePlanningPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reactive_tracking_version": {
+          "anyOf": [
+            {
+              "const": "reactive-tracking-v1",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reactive Tracking Version"
+        },
+        "computation_quality": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ComputationQualityPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "ExecutionPolicy",
+      "type": "object"
+    },
+    "ExecutionStage": {
+      "additionalProperties": false,
+      "properties": {
+        "stage": {
+          "enum": [
+            "day_ahead",
+            "intraday",
+            "minute"
+          ],
+          "title": "Stage",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "violated",
+            "unknown",
+            "not_computed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "regions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RegionalExecution"
+          },
+          "title": "Regions",
+          "type": "array"
+        },
+        "cluster_import": {
+          "$ref": "#/$defs/ClusterImportAssessment"
+        }
+      },
+      "required": [
+        "stage",
+        "status",
+        "cluster_import"
+      ],
+      "title": "ExecutionStage",
+      "type": "object"
     },
     "ExecutiveSummary": {
       "additionalProperties": false,
@@ -949,6 +1621,192 @@
       "title": "GroupControlSummary",
       "type": "object"
     },
+    "MinuteReserveObservation": {
+      "additionalProperties": false,
+      "description": "At a minute boundary, based only on the last completed device state.",
+      "properties": {
+        "minute": {
+          "minimum": 0,
+          "title": "Minute",
+          "type": "integer"
+        },
+        "region": {
+          "title": "Region",
+          "type": "string"
+        },
+        "energy_mwh": {
+          "title": "Energy Mwh",
+          "type": "number"
+        },
+        "storage_power_mw": {
+          "title": "Storage Power Mw",
+          "type": "number"
+        },
+        "required_mw": {
+          "minimum": 0,
+          "title": "Required Mw",
+          "type": "number"
+        },
+        "available_up_mw": {
+          "minimum": 0,
+          "title": "Available Up Mw",
+          "type": "number"
+        },
+        "available_down_mw": {
+          "minimum": 0,
+          "title": "Available Down Mw",
+          "type": "number"
+        },
+        "deficient": {
+          "title": "Deficient",
+          "type": "boolean"
+        },
+        "action": {
+          "default": "monitor",
+          "enum": [
+            "monitor",
+            "recovering",
+            "replan"
+          ],
+          "title": "Action",
+          "type": "string"
+        }
+      },
+      "required": [
+        "minute",
+        "region",
+        "energy_mwh",
+        "storage_power_mw",
+        "required_mw",
+        "available_up_mw",
+        "available_down_mw",
+        "deficient"
+      ],
+      "title": "MinuteReserveObservation",
+      "type": "object"
+    },
+    "OptimizationAttempt": {
+      "additionalProperties": false,
+      "properties": {
+        "budget_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Budget Seconds",
+          "type": "number"
+        },
+        "solver_status": {
+          "title": "Solver Status",
+          "type": "string"
+        },
+        "feasible": {
+          "title": "Feasible",
+          "type": "boolean"
+        },
+        "objective_cny": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Objective Cny"
+        },
+        "relative_gap": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Relative Gap"
+        }
+      },
+      "required": [
+        "budget_seconds",
+        "solver_status",
+        "feasible"
+      ],
+      "title": "OptimizationAttempt",
+      "type": "object"
+    },
+    "OptimizationQuality": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "satisfied",
+            "budget_exhausted",
+            "infeasible",
+            "stopped"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "target_relative_gap": {
+          "exclusiveMinimum": 0,
+          "title": "Target Relative Gap",
+          "type": "number"
+        },
+        "attempts": {
+          "items": {
+            "$ref": "#/$defs/OptimizationAttempt"
+          },
+          "title": "Attempts",
+          "type": "array"
+        },
+        "selected_attempt": {
+          "minimum": 1,
+          "title": "Selected Attempt",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "status",
+        "target_relative_gap",
+        "attempts",
+        "selected_attempt"
+      ],
+      "title": "OptimizationQuality",
+      "type": "object"
+    },
+    "ReactivePlanningPolicy": {
+      "additionalProperties": false,
+      "description": "Study reserve and transition envelope; never expands physical Q authority.",
+      "properties": {
+        "version": {
+          "const": "reactive-planning-v1",
+          "default": "reactive-planning-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "reserve_fraction": {
+          "default": 0.1,
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "Reserve Fraction",
+          "type": "number"
+        },
+        "transition_minutes": {
+          "default": 5.0,
+          "exclusiveMinimum": 0,
+          "title": "Transition Minutes",
+          "type": "number"
+        },
+        "source": {
+          "default": "软件无功规划假设（参数随结果记录）；待现场动态与预测误差校准",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "title": "ReactivePlanningPolicy",
+      "type": "object"
+    },
     "ReferenceEconomics": {
       "description": "Aggregate reference accounting, explicitly NOT regional AC realization.",
       "properties": {
@@ -996,13 +1854,24 @@
           "type": "string"
         },
         "realized_regional_economic_cost_cny": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
           "default": null,
-          "title": "Realized Regional Economic Cost Cny",
-          "type": "null"
+          "title": "Realized Regional Economic Cost Cny"
         },
         "realization_status": {
-          "const": "not_computed",
           "default": "not_computed",
+          "enum": [
+            "not_computed",
+            "computed",
+            "unavailable"
+          ],
           "title": "Realization Status",
           "type": "string"
         },
@@ -1124,6 +1993,153 @@
         "reference_q_mvar"
       ],
       "title": "RegionalCoordinationTrace",
+      "type": "object"
+    },
+    "RegionalExecution": {
+      "additionalProperties": false,
+      "properties": {
+        "region": {
+          "title": "Region",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "violated",
+            "unknown",
+            "not_computed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "optimization_quality": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/OptimizationQuality"
+          },
+          "title": "Optimization Quality",
+          "type": "array"
+        },
+        "checks": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExecutionCheck"
+          },
+          "title": "Checks",
+          "type": "array"
+        },
+        "economic_cost_cny": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Economic Cost Cny"
+        },
+        "time_minutes": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "Time Minutes",
+          "type": "array"
+        },
+        "p_mw": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "P Mw",
+          "type": "array"
+        },
+        "q_mvar": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "Q Mvar",
+          "type": "array"
+        },
+        "p_target_mw": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "P Target Mw",
+          "type": "array"
+        },
+        "q_target_mvar": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "Q Target Mvar",
+          "type": "array"
+        },
+        "storage_power_mw": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "Storage Power Mw",
+          "type": "array"
+        },
+        "storage_energy_mwh": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "Storage Energy Mwh",
+          "type": "array"
+        },
+        "resource_p_mw": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Resource P Mw",
+          "type": "object"
+        },
+        "resource_q_mvar": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Resource Q Mvar",
+          "type": "object"
+        },
+        "dynamic_tracking": {
+          "additionalProperties": {
+            "$ref": "#/$defs/DynamicTrackingAssessment"
+          },
+          "propertyNames": {
+            "enum": [
+              "p",
+              "q"
+            ]
+          },
+          "title": "Dynamic Tracking",
+          "type": "object"
+        }
+      },
+      "required": [
+        "region",
+        "status"
+      ],
+      "title": "RegionalExecution",
       "type": "object"
     },
     "RegionalPlanSnapshot": {
@@ -1279,6 +2295,305 @@
       "title": "RenewableAccounting",
       "type": "object"
     },
+    "ReserveTargetAdjustment": {
+      "additionalProperties": false,
+      "properties": {
+        "minute": {
+          "minimum": 0,
+          "title": "Minute",
+          "type": "integer"
+        },
+        "trigger_regions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Trigger Regions",
+          "type": "array"
+        },
+        "original_p_mw": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Original P Mw",
+          "type": "object"
+        },
+        "original_q_mvar": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Original Q Mvar",
+          "type": "object"
+        },
+        "adopted_p_mw": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Adopted P Mw",
+          "type": "object"
+        },
+        "adopted_q_mvar": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Adopted Q Mvar",
+          "type": "object"
+        },
+        "update": {
+          "$ref": "#/$defs/RollingUpdate"
+        }
+      },
+      "required": [
+        "minute",
+        "trigger_regions",
+        "original_p_mw",
+        "original_q_mvar",
+        "update"
+      ],
+      "title": "ReserveTargetAdjustment",
+      "type": "object"
+    },
+    "RollingUpdate": {
+      "additionalProperties": false,
+      "description": "Information available before adoption, plus post-execution energy evidence.",
+      "properties": {
+        "start_minute": {
+          "minimum": 0,
+          "title": "Start Minute",
+          "type": "integer"
+        },
+        "end_minute": {
+          "exclusiveMinimum": 0,
+          "title": "End Minute",
+          "type": "integer"
+        },
+        "horizon_end_minute": {
+          "exclusiveMinimum": 0,
+          "title": "Horizon End Minute",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "violated",
+            "unknown",
+            "not_computed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "adopted": {
+          "default": false,
+          "title": "Adopted",
+          "type": "boolean"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "coordination_quality": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CoordinationBudgetEvidence"
+          },
+          "title": "Coordination Quality",
+          "type": "array"
+        },
+        "optimization_quality": {
+          "additionalProperties": {
+            "items": {
+              "$ref": "#/$defs/OptimizationQuality"
+            },
+            "type": "array"
+          },
+          "title": "Optimization Quality",
+          "type": "object"
+        },
+        "initial_energy_mwh": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Initial Energy Mwh",
+          "type": "object"
+        },
+        "initial_reactive_mvar": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object"
+          },
+          "title": "Initial Reactive Mvar",
+          "type": "object"
+        },
+        "terminal_target_mwh": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Terminal Target Mwh",
+          "type": "object"
+        },
+        "unreserved_terminal_target_mwh": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Unreserved Terminal Target Mwh",
+          "type": "object"
+        },
+        "reserve_up_mw": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Reserve Up Mw",
+          "type": "object"
+        },
+        "reserve_down_mw": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Reserve Down Mw",
+          "type": "object"
+        },
+        "reserve_energy_floor_mwh": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Reserve Energy Floor Mwh",
+          "type": "object"
+        },
+        "reserve_energy_ceiling_mwh": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Reserve Energy Ceiling Mwh",
+          "type": "object"
+        },
+        "actual_end_energy_mwh": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Actual End Energy Mwh",
+          "type": "object"
+        },
+        "previous_p_target_mw": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Previous P Target Mw",
+          "type": "object"
+        },
+        "previous_q_target_mvar": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Previous Q Target Mvar",
+          "type": "object"
+        },
+        "previous_target_source": {
+          "anyOf": [
+            {
+              "enum": [
+                "day_ahead_admm",
+                "preceding_rolling_admm"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Previous Target Source"
+        },
+        "p_target_mw": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "P Target Mw",
+          "type": "object"
+        },
+        "q_target_mvar": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Q Target Mvar",
+          "type": "object"
+        },
+        "adopted_p_mw": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Adopted P Mw",
+          "type": "object"
+        },
+        "adopted_q_mvar": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Adopted Q Mvar",
+          "type": "object"
+        },
+        "admm_iterations": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Admm Iterations",
+          "type": "integer"
+        },
+        "regional_checks": {
+          "additionalProperties": {
+            "items": {
+              "$ref": "#/$defs/ExecutionCheck"
+            },
+            "type": "array"
+          },
+          "title": "Regional Checks",
+          "type": "object"
+        },
+        "forecast_basis": {
+          "default": "同版本日内预测按窗口读取；反馈仅使用已执行状态，不读取未来分钟实绩",
+          "title": "Forecast Basis",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start_minute",
+        "end_minute",
+        "horizon_end_minute",
+        "status"
+      ],
+      "title": "RollingUpdate",
+      "type": "object"
+    },
     "ScenarioEventRecord": {
       "additionalProperties": false,
       "description": "Stored event description; reading evidence does not authorize execution.",
@@ -1354,7 +2669,7 @@
       "additionalProperties": false,
       "properties": {
         "schema_version": {
-          "default": "1.4.0",
+          "default": "1.7.0",
           "title": "Schema Version",
           "type": "string"
         },
@@ -1569,9 +2884,79 @@
           "maximum": 1800.0,
           "title": "Time Limit Seconds",
           "type": "number"
+        },
+        "quality_policy": {
+          "anyOf": [
+            {
+              "const": "quality-first-v1",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quality Policy"
         }
       },
       "title": "SolverOptions",
+      "type": "object"
+    },
+    "StorageReservePolicy": {
+      "additionalProperties": false,
+      "description": "Explicit study assumptions, not measured forecast-error statistics.",
+      "properties": {
+        "version": {
+          "const": "storage-reserve-v1",
+          "default": "storage-reserve-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "forecast_error_fraction": {
+          "default": 0.02,
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "Forecast Error Fraction",
+          "type": "number"
+        },
+        "minimum_error_mw": {
+          "default": 0.05,
+          "minimum": 0,
+          "title": "Minimum Error Mw",
+          "type": "number"
+        },
+        "support_minutes": {
+          "default": 15,
+          "minimum": 1,
+          "title": "Support Minutes",
+          "type": "integer"
+        },
+        "recovery_minutes": {
+          "default": 15,
+          "minimum": 1,
+          "title": "Recovery Minutes",
+          "type": "integer"
+        },
+        "trigger_fraction": {
+          "default": 0.5,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Trigger Fraction",
+          "type": "number"
+        },
+        "replan_cooldown_minutes": {
+          "default": 5,
+          "minimum": 1,
+          "title": "Replan Cooldown Minutes",
+          "type": "integer"
+        },
+        "source": {
+          "default": "软件仿真备用假设（参数随结果记录）；待现场预测误差统计校准，非现场运行定值",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "title": "StorageReservePolicy",
       "type": "object"
     },
     "TimeSeriesPoint": {
@@ -1616,6 +3001,19 @@
         "wind_used_mw": {
           "title": "Wind Used Mw",
           "type": "number"
+        },
+        "wind_q_mvar": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Regional wind reactive plan in Mvar; positive injection, negative absorption; null for missing historical data.",
+          "title": "Wind Q Mvar"
         },
         "pv_available_mw": {
           "title": "Pv Available Mw",
@@ -1777,6 +3175,120 @@
       "title": "TopologyNode",
       "type": "object"
     },
+    "TrackingTransition": {
+      "additionalProperties": false,
+      "description": "Samples are end-of-step observations labelled by interval start time.",
+      "properties": {
+        "start_minute": {
+          "title": "Start Minute",
+          "type": "number"
+        },
+        "observed_until_minute": {
+          "title": "Observed Until Minute",
+          "type": "number"
+        },
+        "target": {
+          "title": "Target",
+          "type": "number"
+        },
+        "target_change": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Target Change"
+        },
+        "allowed_response_minutes": {
+          "title": "Allowed Response Minutes",
+          "type": "number"
+        },
+        "deadline_minute": {
+          "title": "Deadline Minute",
+          "type": "number"
+        },
+        "entered_band_after_minutes": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entered Band After Minutes"
+        },
+        "confirmed_after_minutes": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmed After Minutes"
+        },
+        "post_deadline_max_error": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Post Deadline Max Error"
+        },
+        "post_deadline_samples": {
+          "minimum": 0,
+          "title": "Post Deadline Samples",
+          "type": "integer"
+        },
+        "response_status": {
+          "enum": [
+            "passed",
+            "violated",
+            "unknown"
+          ],
+          "title": "Response Status",
+          "type": "string"
+        },
+        "steady_status": {
+          "enum": [
+            "passed",
+            "violated",
+            "unknown"
+          ],
+          "title": "Steady Status",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start_minute",
+        "observed_until_minute",
+        "target",
+        "target_change",
+        "allowed_response_minutes",
+        "deadline_minute",
+        "post_deadline_samples",
+        "response_status",
+        "steady_status",
+        "reason"
+      ],
+      "title": "TrackingTransition",
+      "type": "object"
+    },
     "ValidationItem": {
       "additionalProperties": false,
       "properties": {
@@ -1859,7 +3371,10 @@
             {
               "enum": [
                 "centralized_reference",
-                "admm_reference"
+                "admm_reference",
+                "day_ahead",
+                "intraday",
+                "minute"
               ],
               "type": "string"
             },
@@ -1869,6 +3384,24 @@
           ],
           "default": null,
           "title": "Validation Basis"
+        },
+        "assessment_status": {
+          "anyOf": [
+            {
+              "enum": [
+                "passed",
+                "violated",
+                "unknown",
+                "not_computed"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assessment Status"
         }
       },
       "required": [
@@ -2007,6 +3540,28 @@
       "anyOf": [
         {
           "$ref": "#/$defs/CoordinationSnapshot"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "cluster_execution": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ClusterExecution"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "computation_quality": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ComputationQualityReport"
         },
         {
           "type": "null"

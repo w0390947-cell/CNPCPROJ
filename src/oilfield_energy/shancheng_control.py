@@ -24,6 +24,7 @@ from uuid import uuid4
 
 from .modules.control.api import allocate_wind_storage_target, wind_storage_target_bounds
 from .modules.control.contracts import StorageActiveCapability, WindActiveState
+from .modules.resources.contracts import WindReactivePolicy
 
 _POWER_TOLERANCE = 1e-9
 
@@ -532,7 +533,7 @@ class ShanchengControlConfig:
     local_discharge_end_hour: float = 23.0
     local_charge_power_mw: float = 2.0
     local_svg_capacitive_mvar: float = 1.5
-    wind_reactive_ratio: float = 0.30
+    wind_reactive_ratio: float = WindReactivePolicy.SHANCHENG.ratio
     svg_dispatch_limit_mvar: float = 1.8
     active_deadband_mw: float = 0.0
     reactive_deadband_mvar: float = 0.0

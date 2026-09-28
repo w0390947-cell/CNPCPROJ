@@ -16,6 +16,8 @@ from .ac_power_flow import backward_forward_sweep_resolved
 from .network_model import ResolvedNetwork
 from .network_scenarios import NetworkSecurityLimits
 from .reactive_execution import ReactiveCapability
+from .modules.control.api import track_reactive_power
+from .modules.control.contracts import ReactiveTrackingPoint, ReactiveTrackingResult
 
 
 def reactive_response(current, targets, *, alpha: float, ramp_mvar: float):
@@ -37,6 +39,7 @@ class ReactiveCorrection:
     status: str
     evaluations: int
     minimum_constraint_margin: float
+    tracking: ReactiveTrackingResult | None = None
 
 
 def correct_reactive_dispatch(
@@ -54,6 +57,7 @@ def correct_reactive_dispatch(
     alpha: float,
     ramp_mvar: float,
     max_iterations: int = 60,
+    pcc_target_mvar: float | None = None,
 ) -> ReactiveCorrection:
     """Certify a one-step action, or return an improving bounded action.
 
@@ -87,6 +91,7 @@ def correct_reactive_dispatch(
     count = 2 * len(bus_ids) + len(network.branches) + 6
     evaluations = 0
     cache: dict[bytes, tuple] = {}
+    pcc_cache: dict[bytes, float] = {}
 
     def margins(actual):
         nonlocal evaluations
@@ -103,6 +108,7 @@ def correct_reactive_dispatch(
         if not flow["converged"]:
             return np.full(count, -1e6)
         p, q = flow["pcc_p_mw"], flow["pcc_q_mvar"]
+        pcc_cache[np.asarray(actual, dtype=float).tobytes()] = float(q)
         # Scale voltage residuals so sub-milliper-unit errors are not ignored
         # next to Mvar residuals. Both terminals are included by the AC solver.
         return np.r_[1000 * (flow["voltage_pu"] - limits.voltage_min_pu - voltage_reserve),
@@ -134,8 +140,21 @@ def correct_reactive_dispatch(
 
     def output(controls, status):
         targets, actual, constraints = evaluate(controls)
+        tracking = None
+        if pcc_target_mvar is not None and status in ("safe", "corrected"):
+            def point(commands):
+                projected, response, margins_ = evaluate(np.asarray(commands))
+                return ReactiveTrackingPoint(tuple(map(float, commands)), tuple(map(float, projected)),
+                    tuple(map(float, response)), pcc_cache.get(response.tobytes()), bool(np.min(margins_) >= -1e-8))
+            tracking = track_reactive_power(
+                initial=point(tuple(map(float, np.clip(controls, lower, upper)))),
+                minimum_mvar=tuple(map(float, lower)), maximum_mvar=tuple(map(float, upper)),
+                pcc_target_mvar=pcc_target_mvar, alpha=alpha, evaluate=point,
+            )
+            controls = np.asarray(tracking.point.controls)
+            targets, actual, constraints = evaluate(controls)
         return ReactiveCorrection(np.clip(controls, lower, upper), targets.copy(),
-                                  actual.copy(), status, evaluations, float(np.min(constraints)))
+                                  actual.copy(), status, evaluations, float(np.min(constraints)), tracking)
 
     x0 = np.clip(preferred, lower, upper)
     if np.min(evaluate(x0)[2]) >= -1e-8:

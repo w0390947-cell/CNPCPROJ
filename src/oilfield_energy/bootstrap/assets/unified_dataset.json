@@ -1,14 +1,14 @@
 {
-  "schema_version": "oilfield-unified-dataset-v1",
+  "schema_version": "oilfield-unified-dataset-v2",
   "dataset_id": "oilfield-unified-synthetic",
-  "revision": "2026-09-20-v1",
+  "revision": "2026-09-21-v1",
   "synthetic": true,
   "cluster_import_limit_mw": 26.0,
   "regions": [
     {
-      "schema_version": "shancheng-simulation-v1",
+      "schema_version": "shancheng-simulation-v2",
       "dataset_id": "oilfield-unified-synthetic",
-      "revision": "2026-09-20-v1",
+      "revision": "2026-09-21-v1",
       "synthetic": true,
       "seed": 20260915,
       "start": "2026-09-15T00:00:00+08:00",
@@ -35,7 +35,8 @@
           "kind": "wind",
           "p_max_mw": 5.0,
           "s_max_mva": 5.25,
-          "q_max_mvar": 1.64
+          "q_max_mvar": 1.64,
+          "capacity_provenance": "山城微电网控制策略逻辑.pdf第1页单台0–5 MW、两台风机，第3页总额定10 MW；5.25 MVA及绝对Q上限1.64 Mvar沿用模拟假设，非核实铭牌；Q/P按第3、5页0.30执行，独立于容量。"
         },
         {
           "resource_id": "SC:wind:SC_WT2",
@@ -43,7 +44,8 @@
           "kind": "wind",
           "p_max_mw": 5.0,
           "s_max_mva": 5.25,
-          "q_max_mvar": 1.64
+          "q_max_mvar": 1.64,
+          "capacity_provenance": "山城微电网控制策略逻辑.pdf第1页单台0–5 MW、两台风机，第3页总额定10 MW；5.25 MVA及绝对Q上限1.64 Mvar沿用模拟假设，非核实铭牌；Q/P按第3、5页0.30执行，独立于容量。"
         },
         {
           "resource_id": "SC:pv:SC_PV1",
@@ -51,7 +53,8 @@
           "kind": "pv",
           "p_max_mw": 2.4,
           "s_max_mva": 2.52,
-          "q_max_mvar": 1.0
+          "q_max_mvar": 0.0,
+          "capacity_provenance": "容量、数量和接入位置沿用模拟假设，两份资料未确认山城光伏配置；西交大-资料提供.pdf第9页仅支持纯有功控制口径，优化/执行Q=0。"
         },
         {
           "resource_id": "SC:pv:SC_PV2",
@@ -59,7 +62,8 @@
           "kind": "pv",
           "p_max_mw": 1.8,
           "s_max_mva": 1.89,
-          "q_max_mvar": 0.7
+          "q_max_mvar": 0.0,
+          "capacity_provenance": "容量、数量和接入位置沿用模拟假设，两份资料未确认山城光伏配置；西交大-资料提供.pdf第9页仅支持纯有功控制口径，优化/执行Q=0。"
         },
         {
           "resource_id": "SC:storage:SC_FLEX",
@@ -67,15 +71,17 @@
           "kind": "storage",
           "p_max_mw": 2.5,
           "s_max_mva": 2.7,
-          "q_max_mvar": 2.0
+          "q_max_mvar": 0.0,
+          "capacity_provenance": "山城微电网控制策略逻辑.pdf第1页2.5 MW/2 h（5 MWh），第2页Q=0；2.7 MVA沿用未核实的模拟假设，无功边界设为0；能量0.5–5 MWh、初值2.5 MWh及效率0.95仍为模拟假设，SOC限值待确认。"
         },
         {
           "resource_id": "SC:svg:SC_FLEX",
-          "bus_id": "SC_FLEX",
+          "bus_id": "SC_SVG",
           "kind": "svg",
           "p_max_mw": 0.0,
-          "s_max_mva": 2.5,
-          "q_max_mvar": 2.5
+          "s_max_mva": 2.0,
+          "q_max_mvar": 1.8,
+          "capacity_provenance": "西交大-资料提供.pdf第9页山城35 kV微电网SVG容量2 Mvar；山城微电网控制策略逻辑.pdf第1、3、5页调节边界±1.8 Mvar，第2页本地容性目标1.5 Mvar；P=0，模型用2 MVA表达额定视在容量。"
         }
       ],
       "loads": [
@@ -111,92 +117,111 @@
         }
       ],
       "network": {
-        "network_id": "SC-seven-bus-synthetic-v1",
+        "network_id": "SC-35kV-reference-informed-synthetic-v3",
         "base_mva": 20.0,
         "pcc_bus_id": "SC_PCC",
         "buses": [
           {
             "bus_id": "SC_PCC",
-            "name": "模拟上级电网",
-            "nominal_voltage_kv": 35.0
+            "name": "山城变35 kV侧等值电源",
+            "nominal_voltage_kv": 35.0,
+            "provenance": "山城微电网控制策略逻辑.pdf第1页35 kV并网结构；设备节点代表35 kV侧等值接入点，不代表设备端电压，所挂负荷仍为模拟聚合负荷。"
           },
           {
             "bus_id": "SC_MAIN",
-            "name": "模拟主母线",
-            "nominal_voltage_kv": 10.0
+            "name": "微电网35 kV母线（参考接线）",
+            "nominal_voltage_kv": 35.0,
+            "provenance": "山城微电网控制策略逻辑.pdf第1页35 kV并网结构；设备节点代表35 kV侧等值接入点，不代表设备端电压，所挂负荷仍为模拟聚合负荷。"
           },
           {
             "bus_id": "SC_WT1",
-            "name": "模拟风机1",
-            "nominal_voltage_kv": 10.0
+            "name": "风机1的35 kV侧等值节点",
+            "nominal_voltage_kv": 35.0,
+            "provenance": "山城微电网控制策略逻辑.pdf第1页35 kV并网结构；设备节点代表35 kV侧等值接入点，不代表设备端电压，所挂负荷仍为模拟聚合负荷。"
           },
           {
             "bus_id": "SC_WT2",
-            "name": "模拟风机2",
-            "nominal_voltage_kv": 10.0
+            "name": "风机2的35 kV侧等值节点",
+            "nominal_voltage_kv": 35.0,
+            "provenance": "山城微电网控制策略逻辑.pdf第1页35 kV并网结构；设备节点代表35 kV侧等值接入点，不代表设备端电压，所挂负荷仍为模拟聚合负荷。"
           },
           {
             "bus_id": "SC_PV1",
             "name": "模拟光伏区域1",
-            "nominal_voltage_kv": 10.0
+            "nominal_voltage_kv": 10.0,
+            "provenance": "模拟10 kV光伏及负荷支路；两份资料未确认其容量或接入位置。"
           },
           {
             "bus_id": "SC_PV2",
             "name": "模拟光伏区域2",
-            "nominal_voltage_kv": 10.0
+            "nominal_voltage_kv": 10.0,
+            "provenance": "模拟10 kV光伏及负荷支路；两份资料未确认其容量或接入位置。"
           },
           {
             "bus_id": "SC_FLEX",
-            "name": "模拟储能SVG",
-            "nominal_voltage_kv": 10.0
+            "name": "储能35 kV侧等值节点",
+            "nominal_voltage_kv": 35.0,
+            "provenance": "山城微电网控制策略逻辑.pdf第1页35 kV并网结构；设备节点代表35 kV侧等值接入点，不代表设备端电压，所挂负荷仍为模拟聚合负荷。"
+          },
+          {
+            "bus_id": "SC_WIND_COLLECTOR",
+            "name": "风电场35 kV等值汇集点",
+            "nominal_voltage_kv": 35.0,
+            "provenance": "山城微电网控制策略逻辑.pdf第1页风电场独立馈线；场内拆分为模拟等值。"
+          },
+          {
+            "bus_id": "SC_SVG",
+            "name": "SVG 35 kV侧等值节点",
+            "nominal_voltage_kv": 35.0,
+            "provenance": "山城微电网控制策略逻辑.pdf第1页独立SVG支路；西交大-资料提供.pdf第9页35 kV接入。"
+          },
+          {
+            "bus_id": "SC_PV_BUS",
+            "name": "模拟光伏及负荷10 kV母线",
+            "nominal_voltage_kv": 10.0,
+            "provenance": "保留光伏研究的模拟扩展，不对应资料中的山城站实际10 kV母线。"
           }
         ],
         "branches": [
           {
-            "branch_id": "SC_T1",
+            "branch_id": "SC_GRID_LINK",
             "from_bus_id": "SC_PCC",
             "to_bus_id": "SC_MAIN",
-            "kind": "transformer",
+            "kind": "line",
             "r_pu": 0.004,
-            "x_pu": 0.03,
+            "x_pu": 0.006,
             "s_max_mva": 20.0,
-            "fixed_tap_ratio": 1.0
+            "provenance": "R/X、容量及变比为模拟设定，base=20 MVA、各侧额定电压基准；无线路长度/导线型号或现场阻抗依据，不是原10 kV线路升压后的物理折算。"
+          },
+          {
+            "branch_id": "SC_WIND_LINK",
+            "from_bus_id": "SC_MAIN",
+            "to_bus_id": "SC_WIND_COLLECTOR",
+            "kind": "line",
+            "r_pu": 0.003,
+            "x_pu": 0.004,
+            "s_max_mva": 12.0,
+            "provenance": "R/X、容量及变比为模拟设定，base=20 MVA、各侧额定电压基准；无线路长度/导线型号或现场阻抗依据，不是原10 kV线路升压后的物理折算。"
           },
           {
             "branch_id": "SC_L1",
-            "from_bus_id": "SC_MAIN",
+            "from_bus_id": "SC_WIND_COLLECTOR",
             "to_bus_id": "SC_WT1",
             "kind": "line",
             "r_pu": 0.01,
             "x_pu": 0.014,
-            "s_max_mva": 6.0
+            "s_max_mva": 6.0,
+            "provenance": "R/X、容量及变比为模拟设定，base=20 MVA、各侧额定电压基准；无线路长度/导线型号或现场阻抗依据，不是原10 kV线路升压后的物理折算。"
           },
           {
             "branch_id": "SC_L2",
-            "from_bus_id": "SC_MAIN",
+            "from_bus_id": "SC_WIND_COLLECTOR",
             "to_bus_id": "SC_WT2",
             "kind": "line",
             "r_pu": 0.011,
             "x_pu": 0.015,
-            "s_max_mva": 6.0
-          },
-          {
-            "branch_id": "SC_L3",
-            "from_bus_id": "SC_MAIN",
-            "to_bus_id": "SC_PV1",
-            "kind": "line",
-            "r_pu": 0.012,
-            "x_pu": 0.015,
-            "s_max_mva": 4.0
-          },
-          {
-            "branch_id": "SC_L4",
-            "from_bus_id": "SC_MAIN",
-            "to_bus_id": "SC_PV2",
-            "kind": "line",
-            "r_pu": 0.015,
-            "x_pu": 0.017,
-            "s_max_mva": 4.0
+            "s_max_mva": 6.0,
+            "provenance": "R/X、容量及变比为模拟设定，base=20 MVA、各侧额定电压基准；无线路长度/导线型号或现场阻抗依据，不是原10 kV线路升压后的物理折算。"
           },
           {
             "branch_id": "SC_L5",
@@ -205,21 +230,84 @@
             "kind": "line",
             "r_pu": 0.009,
             "x_pu": 0.013,
-            "s_max_mva": 7.0
+            "s_max_mva": 7.0,
+            "provenance": "R/X、容量及变比为模拟设定，base=20 MVA、各侧额定电压基准；无线路长度/导线型号或现场阻抗依据，不是原10 kV线路升压后的物理折算。"
+          },
+          {
+            "branch_id": "SC_SVG_LINK",
+            "from_bus_id": "SC_MAIN",
+            "to_bus_id": "SC_SVG",
+            "kind": "line",
+            "r_pu": 0.003,
+            "x_pu": 0.004,
+            "s_max_mva": 3.0,
+            "provenance": "R/X、容量及变比为模拟设定，base=20 MVA、各侧额定电压基准；无线路长度/导线型号或现场阻抗依据，不是原10 kV线路升压后的物理折算。"
+          },
+          {
+            "branch_id": "SC_PV_T1",
+            "from_bus_id": "SC_MAIN",
+            "to_bus_id": "SC_PV_BUS",
+            "kind": "transformer",
+            "r_pu": 0.004,
+            "x_pu": 0.03,
+            "s_max_mva": 20.0,
+            "fixed_tap_ratio": 1.0,
+            "provenance": "R/X、容量及变比为模拟设定，base=20 MVA、各侧额定电压基准；无线路长度/导线型号或现场阻抗依据，不是原10 kV线路升压后的物理折算。"
+          },
+          {
+            "branch_id": "SC_L3",
+            "from_bus_id": "SC_PV_BUS",
+            "to_bus_id": "SC_PV1",
+            "kind": "line",
+            "r_pu": 0.012,
+            "x_pu": 0.015,
+            "s_max_mva": 4.0,
+            "provenance": "R/X、容量及变比为模拟设定，base=20 MVA、各侧额定电压基准；无线路长度/导线型号或现场阻抗依据，不是原10 kV线路升压后的物理折算。"
+          },
+          {
+            "branch_id": "SC_L4",
+            "from_bus_id": "SC_PV_BUS",
+            "to_bus_id": "SC_PV2",
+            "kind": "line",
+            "r_pu": 0.015,
+            "x_pu": 0.017,
+            "s_max_mva": 4.0,
+            "provenance": "R/X、容量及变比为模拟设定，base=20 MVA、各侧额定电压基准；无线路长度/导线型号或现场阻抗依据，不是原10 kV线路升压后的物理折算。"
           }
         ],
         "provenance": {
-          "source": "project-generated synthetic study; not Shancheng field data",
-          "dataset_version": "2026-09-20-v1",
+          "source": "参考山城微电网控制策略逻辑.pdf第1页及西交大-资料提供.pdf第4、9页；含模拟负荷、光伏及径向等值，非山城完整现场模型；逐项依据见docs/统一模拟数据说明.md。",
+          "dataset_version": "2026-09-20-v3",
           "synthetic": true
-        }
+        },
+        "switches": [
+          {
+            "switch_id": "SC_GRID_DISCONNECT",
+            "controlled_branch_id": "SC_GRID_LINK",
+            "normally_closed": true,
+            "provenance": "山城微电网控制策略逻辑.pdf第1页示意位置；常闭为本算例假设，仅表达拓扑、不模拟保护动作时序。"
+          },
+          {
+            "switch_id": "SC_PCC_SWITCH",
+            "controlled_branch_id": "SC_GRID_LINK",
+            "normally_closed": true,
+            "provenance": "山城微电网控制策略逻辑.pdf第1页示意位置；常闭为本算例假设，仅表达拓扑、不模拟保护动作时序。"
+          },
+          {
+            "switch_id": "SC_WIND_TRIP_SWITCH",
+            "controlled_branch_id": "SC_WIND_LINK",
+            "normally_closed": true,
+            "provenance": "山城微电网控制策略逻辑.pdf第1页示意位置；常闭为本算例假设，仅表达拓扑、不模拟保护动作时序。"
+          }
+        ]
       },
-      "region_id": "SC"
+      "region_id": "SC",
+      "wind_reactive_policy": "shancheng-300"
     },
     {
-      "schema_version": "shancheng-simulation-v1",
+      "schema_version": "shancheng-simulation-v2",
       "dataset_id": "oilfield-unified-synthetic",
-      "revision": "2026-09-20-v1",
+      "revision": "2026-09-21-v1",
       "synthetic": true,
       "seed": 20260916,
       "start": "2026-09-15T00:00:00+08:00",
@@ -244,9 +332,10 @@
           "resource_id": "YA_B:wind:YA_B_WIND",
           "bus_id": "YA_B_WIND",
           "kind": "wind",
-          "p_max_mw": 7.0,
-          "s_max_mva": 7.3500000000000005,
-          "q_max_mvar": 2.2960000000000003
+          "p_max_mw": 5.0,
+          "s_max_mva": 5.25,
+          "q_max_mvar": 1.64,
+          "capacity_provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), p1: 化子坪 化140-265, one 5 MW turbine, T-connected to the 35 kV 化镰 line. S=1.05*rated MW and absolute Q=0.328*rated MW remain synthetic nameplate assumptions, rescaled to 5 MW; general-333 is a separate operating policy (p9)."
         },
         {
           "resource_id": "YA_B:pv:YA_B_PV",
@@ -254,7 +343,8 @@
           "kind": "pv",
           "p_max_mw": 3.2,
           "s_max_mva": 3.3600000000000003,
-          "q_max_mvar": 1.0496
+          "q_max_mvar": 0.0,
+          "capacity_provenance": "Synthetic research extension retained for 化子坪; the PDFs do not confirm this local equipment capacity or connection. Not field equipment. PV Q=0 follows the general active-only statement in XJTU p9."
         },
         {
           "resource_id": "YA_B:storage:YA_B_FLEX",
@@ -262,7 +352,8 @@
           "kind": "storage",
           "p_max_mw": 2.0,
           "s_max_mva": 2.16,
-          "q_max_mvar": 1.6
+          "q_max_mvar": 0.0,
+          "capacity_provenance": "Synthetic research extension retained for 化子坪; the PDFs do not confirm this local equipment capacity or connection. Not field equipment. Storage Q remains disabled as a simulation assumption; Shancheng storage rules do not establish Yan’an equipment capabilities."
         },
         {
           "resource_id": "YA_B:svg:YA_B_FLEX",
@@ -270,17 +361,18 @@
           "kind": "svg",
           "p_max_mw": 0.0,
           "s_max_mva": 2.5,
-          "q_max_mvar": 2.5
+          "q_max_mvar": 2.5,
+          "capacity_provenance": "Synthetic research extension retained for 化子坪; the PDFs do not confirm this local equipment capacity or connection. Not field equipment."
         }
       ],
       "loads": [
         {
-          "bus_id": "YA_B_MAIN",
+          "bus_id": "YA_B_LV",
           "peak_mw": 3.6479999999999997,
           "power_factor": 0.92
         },
         {
-          "bus_id": "YA_B_WIND",
+          "bus_id": "YA_B_REMOTE",
           "peak_mw": 1.92,
           "power_factor": 0.92
         },
@@ -296,86 +388,171 @@
         }
       ],
       "network": {
-        "network_id": "YA_B-synthetic-network",
+        "network_id": "YA_B-reference-synthetic-network-v1",
         "base_mva": 20.0,
         "pcc_bus_id": "YA_B_PCC",
         "buses": [
           {
             "bus_id": "YA_B_PCC",
-            "name": "YA_B_PCC",
-            "nominal_voltage_kv": 35.0
+            "name": "化子坪上级电网等值边界",
+            "nominal_voltage_kv": 35.0,
+            "provenance": "Assumed upstream end of the selected 35 kV supply; field assessment-point position and voltage remain unconfirmed."
           },
           {
             "bus_id": "YA_B_MAIN",
-            "name": "YA_B_MAIN",
-            "nominal_voltage_kv": 35.0
+            "name": "化子坪35 kV合并母线",
+            "nominal_voltage_kv": 35.0,
+            "provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), p2: 35 kV split bus. Sections merged for one radial research mode, not confirmed switch states."
           },
           {
             "bus_id": "YA_B_WIND",
-            "name": "YA_B_WIND",
-            "nominal_voltage_kv": 35.0
+            "name": "化140-265风机T接等值点",
+            "nominal_voltage_kv": 35.0,
+            "provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), p1; T-position assumed halfway along 化镰 line; generator connection impedance absorbed into equivalent. Not the turbine terminal voltage."
           },
           {
             "bus_id": "YA_B_PV",
-            "name": "YA_B_PV",
-            "nominal_voltage_kv": 35.0
+            "name": "化子坪模拟光伏与负荷",
+            "nominal_voltage_kv": 10.0,
+            "provenance": "Synthetic PV/feeder/load extension; location not confirmed."
           },
           {
             "bus_id": "YA_B_FLEX",
-            "name": "YA_B_FLEX",
-            "nominal_voltage_kv": 35.0
+            "name": "化子坪模拟储能SVG与负荷",
+            "nominal_voltage_kv": 10.0,
+            "provenance": "Synthetic storage/SVG/feeder/load extension; location and existence not confirmed."
+          },
+          {
+            "bus_id": "YA_B_LV",
+            "name": "化子坪10 kV合并母线",
+            "nominal_voltage_kv": 10.0,
+            "provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), p2: 10 kV bus sections. Positive-sequence aggregate; transformer rated secondary is 10.5 kV."
+          },
+          {
+            "bus_id": "YA_B_REMOTE",
+            "name": "化镰线远端模拟负荷等值点",
+            "nominal_voltage_kv": 35.0,
+            "provenance": "Synthetic placement of an existing aggregate load, not a measured feeder load or turbine self-consumption."
           }
         ],
         "branches": [
           {
-            "branch_id": "YA_B_L01",
+            "branch_id": "YA_B_SUPPLY",
             "from_bus_id": "YA_B_PCC",
             "to_bus_id": "YA_B_MAIN",
             "kind": "line",
-            "r_pu": 0.0045,
-            "x_pu": 0.009,
-            "s_max_mva": 18.0
+            "r_pu": 0.036728163265306125,
+            "x_pu": 0.045910204081632655,
+            "s_max_mva": 16.36788013152589,
+            "provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), p9: 311 油鲍线; chosen supply route is an assumption, other interconnections excluded; LGJ-95, 7.03 km modeled, 270 A. Synthetic r=0.32 and x=0.40 ohm/km; base 20 MVA / 35 kV. S limit=sqrt(3)*35kV*I, a nominal-voltage proxy, not an exact current constraint."
           },
           {
-            "branch_id": "YA_B_L12",
+            "branch_id": "YA_B_HUALIAN_NEAR",
             "from_bus_id": "YA_B_MAIN",
             "to_bus_id": "YA_B_WIND",
             "kind": "line",
-            "r_pu": 0.01,
-            "x_pu": 0.014,
-            "s_max_mva": 11.0
+            "r_pu": 0.03845224489795918,
+            "x_pu": 0.048065306122448984,
+            "s_max_mva": 4.728498704663035,
+            "provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), p9: 314 化镰线 total 14.72 km / 78 A; synthetic 50:50 T split, not measured turbine distance; LGJ-95, 7.36 km modeled, 78 A. Synthetic r=0.32 and x=0.40 ohm/km; base 20 MVA / 35 kV. S limit=sqrt(3)*35kV*I, a nominal-voltage proxy, not an exact current constraint."
           },
           {
-            "branch_id": "YA_B_L13",
+            "branch_id": "YA_B_HUALIAN_FAR",
+            "from_bus_id": "YA_B_WIND",
+            "to_bus_id": "YA_B_REMOTE",
+            "kind": "line",
+            "r_pu": 0.03845224489795918,
+            "x_pu": 0.048065306122448984,
+            "s_max_mva": 4.728498704663035,
+            "provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), p9: 314 化镰线 total 14.72 km / 78 A; synthetic 50:50 T split, not measured turbine distance; LGJ-95, 7.36 km modeled, 78 A. Synthetic r=0.32 and x=0.40 ohm/km; base 20 MVA / 35 kV. S limit=sqrt(3)*35kV*I, a nominal-voltage proxy, not an exact current constraint."
+          },
+          {
+            "branch_id": "YA_B_MAIN_TRANSFORMERS_EQ",
             "from_bus_id": "YA_B_MAIN",
+            "to_bus_id": "YA_B_LV",
+            "kind": "transformer",
+            "r_pu": 0.010821576868506714,
+            "x_pu": 0.10276499834902005,
+            "s_max_mva": 13.974210801360046,
+            "provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), pp2,9,9: 6.3/8 MVA, uk=7.22/7.52%; #2 load loss 46.28 kW -> r=0.005785 on own base; #1 r=0.01 synthetic. z_i=(r_i+j*sqrt(uk_i^2-r_i^2))*20/S_i; z_eq=1/sum(1/z_i). Simulated parallel mode at equal neutral ratios, not exact station switching or zero-sequence model. S_limit=min(S_i/abs(z_eq/z_i)); fixed tap=(35/10.5)/(35/10)=10/10.5. Actual tap positions, excitation and no-load losses not modeled.",
+            "fixed_tap_ratio": 0.9523809523809523
+          },
+          {
+            "branch_id": "YA_B_PV_LINK",
+            "from_bus_id": "YA_B_LV",
             "to_bus_id": "YA_B_PV",
             "kind": "line",
             "r_pu": 0.012,
             "x_pu": 0.015,
-            "s_max_mva": 8.0
+            "s_max_mva": 8.0,
+            "provenance": "Synthetic 10 kV extension; reused dimensionless study impedance on 20 MVA base, not a field line or voltage conversion of old 35 kV equipment."
           },
           {
-            "branch_id": "YA_B_L14",
-            "from_bus_id": "YA_B_MAIN",
+            "branch_id": "YA_B_FLEX_LINK",
+            "from_bus_id": "YA_B_LV",
             "to_bus_id": "YA_B_FLEX",
             "kind": "line",
             "r_pu": 0.009,
             "x_pu": 0.013,
-            "s_max_mva": 7.0
+            "s_max_mva": 7.0,
+            "provenance": "Synthetic 10 kV extension; reused dimensionless study impedance on 20 MVA base, not a field line or voltage conversion of old 35 kV equipment."
           }
         ],
         "provenance": {
-          "source": "project-generated synthetic study; not Shancheng field data",
-          "dataset_version": "2026-09-20-v1",
+          "source": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), pp1-3, 9, 9. YA_B references 化子坪; balanced radial research equivalent, not the complete field station. One assumed supply route and merged bus sections; all load profiles, PV/storage/SVG extensions, PCC limits and local execution settings remain synthetic. Shancheng local time windows and +1.5 Mvar fallback are retained only as shared simulation assumptions, not Yan’an field policy.",
+          "dataset_version": "2026-09-21-v1",
           "synthetic": true
-        }
+        },
+        "shunts": [
+          {
+            "shunt_id": "YA_B_CAP_I_A",
+            "bus_id": "YA_B_LV",
+            "kind": "capacitor",
+            "q_per_step_mvar": 0.9,
+            "minimum_steps": 0,
+            "maximum_steps": 1,
+            "default_steps": 0,
+            "provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), p9: 10 kV I section 900+900 kvar; II section 800+1600 kvar. Aggregated at the merged 10 kV bus; grouping represented for research. All OFF is an explicit simulation assumption, not observed state; actual grouping, nominal voltage and switching need confirmation."
+          },
+          {
+            "shunt_id": "YA_B_CAP_I_B",
+            "bus_id": "YA_B_LV",
+            "kind": "capacitor",
+            "q_per_step_mvar": 0.9,
+            "minimum_steps": 0,
+            "maximum_steps": 1,
+            "default_steps": 0,
+            "provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), p9: 10 kV I section 900+900 kvar; II section 800+1600 kvar. Aggregated at the merged 10 kV bus; grouping represented for research. All OFF is an explicit simulation assumption, not observed state; actual grouping, nominal voltage and switching need confirmation."
+          },
+          {
+            "shunt_id": "YA_B_CAP_II_A",
+            "bus_id": "YA_B_LV",
+            "kind": "capacitor",
+            "q_per_step_mvar": 0.8,
+            "minimum_steps": 0,
+            "maximum_steps": 1,
+            "default_steps": 0,
+            "provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), p9: 10 kV I section 900+900 kvar; II section 800+1600 kvar. Aggregated at the merged 10 kV bus; grouping represented for research. All OFF is an explicit simulation assumption, not observed state; actual grouping, nominal voltage and switching need confirmation."
+          },
+          {
+            "shunt_id": "YA_B_CAP_II_B",
+            "bus_id": "YA_B_LV",
+            "kind": "capacitor",
+            "q_per_step_mvar": 1.6,
+            "minimum_steps": 0,
+            "maximum_steps": 1,
+            "default_steps": 0,
+            "provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), p9: 10 kV I section 900+900 kvar; II section 800+1600 kvar. Aggregated at the merged 10 kV bus; grouping represented for research. All OFF is an explicit simulation assumption, not observed state; actual grouping, nominal voltage and switching need confirmation."
+          }
+        ]
       },
-      "region_id": "YA_B"
+      "region_id": "YA_B",
+      "wind_reactive_policy": "general-333"
     },
     {
-      "schema_version": "shancheng-simulation-v1",
+      "schema_version": "shancheng-simulation-v2",
       "dataset_id": "oilfield-unified-synthetic",
-      "revision": "2026-09-20-v1",
+      "revision": "2026-09-21-v1",
       "synthetic": true,
       "seed": 20260917,
       "start": "2026-09-15T00:00:00+08:00",
@@ -400,9 +577,10 @@
           "resource_id": "YA_C:wind:YA_C_WIND",
           "bus_id": "YA_C_WIND",
           "kind": "wind",
-          "p_max_mw": 6.0,
-          "s_max_mva": 6.300000000000001,
-          "q_max_mvar": 1.968
+          "p_max_mw": 5.0,
+          "s_max_mva": 5.25,
+          "q_max_mvar": 1.64,
+          "capacity_provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), pp2-3: 榆树 山8增, one 5 MW turbine connected to the 35 kV system. S=1.05*rated MW and absolute Q=0.328*rated MW remain synthetic nameplate assumptions, rescaled to 5 MW; general-333 is a separate operating policy (p9)."
         },
         {
           "resource_id": "YA_C:pv:YA_C_PV",
@@ -410,7 +588,8 @@
           "kind": "pv",
           "p_max_mw": 3.8,
           "s_max_mva": 3.9899999999999998,
-          "q_max_mvar": 1.2464
+          "q_max_mvar": 0.0,
+          "capacity_provenance": "Synthetic research extension retained for 榆树; the PDFs do not confirm this local equipment capacity or connection. Not field equipment. PV Q=0 follows the general active-only statement in XJTU p9."
         },
         {
           "resource_id": "YA_C:storage:YA_C_FLEX",
@@ -418,7 +597,8 @@
           "kind": "storage",
           "p_max_mw": 1.8,
           "s_max_mva": 1.9440000000000002,
-          "q_max_mvar": 1.4400000000000002
+          "q_max_mvar": 0.0,
+          "capacity_provenance": "Synthetic research extension retained for 榆树; the PDFs do not confirm this local equipment capacity or connection. Not field equipment. Storage Q remains disabled as a simulation assumption; Shancheng storage rules do not establish Yan’an equipment capabilities."
         },
         {
           "resource_id": "YA_C:svg:YA_C_FLEX",
@@ -426,17 +606,18 @@
           "kind": "svg",
           "p_max_mw": 0.0,
           "s_max_mva": 2.5,
-          "q_max_mvar": 2.5
+          "q_max_mvar": 2.5,
+          "capacity_provenance": "Synthetic research extension retained for 榆树; the PDFs do not confirm this local equipment capacity or connection. Not field equipment."
         }
       ],
       "loads": [
         {
-          "bus_id": "YA_C_MAIN",
+          "bus_id": "YA_C_LV",
           "peak_mw": 3.2832000000000003,
           "power_factor": 0.92
         },
         {
-          "bus_id": "YA_C_WIND",
+          "bus_id": "YA_C_LOAD",
           "peak_mw": 1.7280000000000002,
           "power_factor": 0.92
         },
@@ -452,81 +633,136 @@
         }
       ],
       "network": {
-        "network_id": "YA_C-synthetic-network",
+        "network_id": "YA_C-reference-synthetic-network-v1",
         "base_mva": 20.0,
         "pcc_bus_id": "YA_C_PCC",
         "buses": [
           {
             "bus_id": "YA_C_PCC",
-            "name": "YA_C_PCC",
-            "nominal_voltage_kv": 35.0
+            "name": "榆树上级电网等值边界",
+            "nominal_voltage_kv": 35.0,
+            "provenance": "Assumed upstream end of the selected 35 kV supply; field assessment-point position and voltage remain unconfirmed."
           },
           {
             "bus_id": "YA_C_MAIN",
-            "name": "YA_C_MAIN",
-            "nominal_voltage_kv": 35.0
+            "name": "榆树35 kV合并母线",
+            "nominal_voltage_kv": 35.0,
+            "provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), p3: 35 kV split bus. Sections merged for one radial research mode, not confirmed switch states."
           },
           {
             "bus_id": "YA_C_WIND",
-            "name": "YA_C_WIND",
-            "nominal_voltage_kv": 35.0
+            "name": "山8增风机35 kV侧等值点",
+            "nominal_voltage_kv": 35.0,
+            "provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), pp2-3; wind feeder impedance remains synthetic. Not the turbine terminal voltage."
           },
           {
             "bus_id": "YA_C_PV",
-            "name": "YA_C_PV",
-            "nominal_voltage_kv": 35.0
+            "name": "榆树模拟光伏与负荷",
+            "nominal_voltage_kv": 10.0,
+            "provenance": "Synthetic PV/feeder/load extension; location not confirmed."
           },
           {
             "bus_id": "YA_C_FLEX",
-            "name": "YA_C_FLEX",
-            "nominal_voltage_kv": 35.0
+            "name": "榆树模拟储能SVG与负荷",
+            "nominal_voltage_kv": 10.0,
+            "provenance": "Synthetic storage/SVG/feeder/load extension; location and existence not confirmed."
+          },
+          {
+            "bus_id": "YA_C_LV",
+            "name": "榆树10 kV合并母线",
+            "nominal_voltage_kv": 10.0,
+            "provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), p3: 10 kV bus sections. Positive-sequence aggregate; transformer rated secondary is 10.5 kV."
+          },
+          {
+            "bus_id": "YA_C_LOAD",
+            "name": "榆树模拟10 kV负荷等值点",
+            "nominal_voltage_kv": 10.0,
+            "provenance": "Synthetic placement of an existing aggregate load, not a measured feeder load or turbine self-consumption."
           }
         ],
         "branches": [
           {
-            "branch_id": "YA_C_L01",
+            "branch_id": "YA_C_SUPPLY",
             "from_bus_id": "YA_C_PCC",
             "to_bus_id": "YA_C_MAIN",
             "kind": "line",
-            "r_pu": 0.0045,
-            "x_pu": 0.009,
-            "s_max_mva": 18.0
+            "r_pu": 0.08818938775510204,
+            "x_pu": 0.11023673469387754,
+            "s_max_mva": 16.489123688055713,
+            "provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), p8: 311 旦榆线; chosen supply route is an assumption, 312 西榆线 excluded; LGJ-95, 16.88 km modeled, 272 A. Synthetic r=0.32 and x=0.40 ohm/km; base 20 MVA / 35 kV. S limit=sqrt(3)*35kV*I, a nominal-voltage proxy, not an exact current constraint."
           },
           {
-            "branch_id": "YA_C_L12",
+            "branch_id": "YA_C_WIND_LINK",
             "from_bus_id": "YA_C_MAIN",
             "to_bus_id": "YA_C_WIND",
             "kind": "line",
             "r_pu": 0.01,
             "x_pu": 0.014,
-            "s_max_mva": 11.0
+            "s_max_mva": 6.0,
+            "provenance": "Synthetic 35 kV wind connection impedance and 6 MVA rating; source confirms connection voltage and 5 MW only."
           },
           {
-            "branch_id": "YA_C_L13",
+            "branch_id": "YA_C_LOAD_LINK",
+            "from_bus_id": "YA_C_LV",
+            "to_bus_id": "YA_C_LOAD",
+            "kind": "line",
+            "r_pu": 0.01,
+            "x_pu": 0.014,
+            "s_max_mva": 7.0,
+            "provenance": "Synthetic 10 kV aggregate feeder, R/X on 20 MVA base; not a specific field circuit."
+          },
+          {
+            "branch_id": "YA_C_MAIN_TRANSFORMERS_EQ",
             "from_bus_id": "YA_C_MAIN",
+            "to_bus_id": "YA_C_LV",
+            "kind": "transformer",
+            "r_pu": 0.00888888888888889,
+            "x_pu": 0.06768548908073846,
+            "s_max_mva": 22.5,
+            "provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), pp3,8,9: 10/12.5 MVA, uk=7.68% each; both r=0.01 on own base are synthetic (#1 load loss absent, #2 81.5 has no printed unit). z_i=(r_i+j*sqrt(uk_i^2-r_i^2))*20/S_i; z_eq=1/sum(1/z_i). Simulated parallel mode at equal neutral ratios, not exact station switching or zero-sequence model. S_limit=min(S_i/abs(z_eq/z_i)); fixed tap=(35/10.5)/(35/10)=10/10.5. Actual tap positions, excitation and no-load losses not modeled.",
+            "fixed_tap_ratio": 0.9523809523809523
+          },
+          {
+            "branch_id": "YA_C_PV_LINK",
+            "from_bus_id": "YA_C_LV",
             "to_bus_id": "YA_C_PV",
             "kind": "line",
             "r_pu": 0.012,
             "x_pu": 0.015,
-            "s_max_mva": 8.0
+            "s_max_mva": 8.0,
+            "provenance": "Synthetic 10 kV extension; reused dimensionless study impedance on 20 MVA base, not a field line or voltage conversion of old 35 kV equipment."
           },
           {
-            "branch_id": "YA_C_L14",
-            "from_bus_id": "YA_C_MAIN",
+            "branch_id": "YA_C_FLEX_LINK",
+            "from_bus_id": "YA_C_LV",
             "to_bus_id": "YA_C_FLEX",
             "kind": "line",
             "r_pu": 0.009,
             "x_pu": 0.013,
-            "s_max_mva": 7.0
+            "s_max_mva": 7.0,
+            "provenance": "Synthetic 10 kV extension; reused dimensionless study impedance on 20 MVA base, not a field line or voltage conversion of old 35 kV equipment."
           }
         ],
         "provenance": {
-          "source": "project-generated synthetic study; not Shancheng field data",
-          "dataset_version": "2026-09-20-v1",
+          "source": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), pp1-3, 8, 9. YA_C references 榆树; balanced radial research equivalent, not the complete field station. One assumed supply route and merged bus sections; all load profiles, PV/storage/SVG extensions, PCC limits and local execution settings remain synthetic. Shancheng local time windows and +1.5 Mvar fallback are retained only as shared simulation assumptions, not Yan’an field policy.",
+          "dataset_version": "2026-09-21-v1",
           "synthetic": true
-        }
+        },
+        "shunts": [
+          {
+            "shunt_id": "YA_C_CAP_162",
+            "bus_id": "YA_C_LV",
+            "kind": "capacitor",
+            "q_per_step_mvar": 2.4,
+            "minimum_steps": 0,
+            "maximum_steps": 1,
+            "default_steps": 0,
+            "provenance": "docs3/西交大-资料提供.pdf (SHA256 ec6fb94cb966f202786bcb93a1600d420a6db90d23d864eea26feb5246b5433f), p8: 162 capacitor 2400 kvar. Aggregated at the merged 10 kV bus; grouping represented for research. All OFF is an explicit simulation assumption, not observed state; actual grouping, nominal voltage and switching need confirmation."
+          }
+        ]
       },
-      "region_id": "YA_C"
+      "region_id": "YA_C",
+      "wind_reactive_policy": "general-333"
     }
   ]
 }

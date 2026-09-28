@@ -139,7 +139,24 @@ class SimulationEngine:
                 network_backend="AC backward-forward sweep",
                 pv_reactive_enabled=False,
                 storage_reactive_enabled=False,
-                wind_q_abs_over_p_max=0.328,
+                wind_reactive_policy=spec.wind_reactive_policy.value
+                if spec.wind_reactive_policy
+                else "legacy-v1",
+                wind_reactive_policy_source=spec.wind_reactive_policy.source
+                if spec.wind_reactive_policy
+                else "historical synthetic recipe; not a field requirement",
+                wind_q_abs_over_p_max={
+                    r.resource_id: spec.wind_reactive_policy.ratio
+                    if spec.wind_reactive_policy
+                    else min(0.328, r.q_max_mvar / r.p_max_mw)
+                    for r in spec.resources
+                    if r.kind == "wind"
+                },
+                wind_q_abs_max_mvar={
+                    r.resource_id: r.q_max_mvar for r in spec.resources if r.kind == "wind"
+                }
+                if spec.wind_reactive_policy
+                else None,
                 artifact_scope="synthetic offline study",
             ),
         )

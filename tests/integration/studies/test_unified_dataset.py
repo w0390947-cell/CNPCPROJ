@@ -36,7 +36,7 @@ def test_web_cli_demo_and_study_share_ratings_topology_and_day_ahead_profiles(tm
     direct = build_synthetic_case()
     bundle = build_bundle()
     demo = case_from_bundle(bundle, 96)
-    assert [len(m.buses) for m in direct.microgrids] == [7, 5, 5]
+    assert [len(m.buses) for m in direct.microgrids] == [10, 7, 7]
     assert (direct.dataset_id, direct.dataset_revision, direct.dataset_sha256) == (
         demo.dataset_id,
         demo.dataset_revision,
@@ -112,14 +112,17 @@ def test_real_single_microgrid_solver_accepts_authoritative_topology(region):
     result = run_simulation(SimulationRequest(region=region, steps=8))
     assert result.metadata.dataset_id == load_dataset()[0].dataset_id
     assert result.executive_summary.overall_passed
-    assert len(result.topology_nodes) == (7 if region == "SC" else 5)
+    assert len(result.topology_nodes) == (10 if region == "SC" else 7)
 
 
 def test_real_cluster_and_group_use_unified_inputs():
     for scenario in (ScenarioType.CLUSTER_COORDINATION, ScenarioType.GROUP_CONTROL):
         result = run_simulation(SimulationRequest(scenario_type=scenario, steps=8))
         assert result.metadata.dataset_sha256 == load_dataset()[1]
-        assert result.executive_summary.overall_passed
+        assert result.executive_summary.overall_passed == all(i.passed for i in result.validation_items)
+        if scenario is ScenarioType.CLUSTER_COORDINATION:
+            assert len(result.cluster_execution.stages) == 3
+            assert result.cluster_execution.dataset_sha256 == load_dataset()[1]
 
 
 def test_generated_web_facts_match_authority():

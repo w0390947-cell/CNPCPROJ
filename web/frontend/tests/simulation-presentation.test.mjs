@@ -31,6 +31,23 @@ test('wind and PV remain separate; storage discharge and capacitive Q are positi
   assert.equal(frame.renewable, 6); assert.equal(frame.storage, -1); assert.equal(frame.svg, 1.5);
 });
 
+test('wind Q preserves signed plans, interpolates with P, and never fills missing history', () => {
+  const result = { cluster_timeseries: [], timeseries: [
+    { ...sample(0), wind_q_mvar: -0.6 },
+    { ...sample(2 / 60), wind_q_mvar: 0.6 },
+  ] };
+  assert.deepEqual(minuteFrames(profileFrames(result, true)).map(p => p.windQ), [-0.6, 0, 0.6]);
+  assert.equal(numberLabel(profileFrames({ ...result, timeseries: [
+    { ...sample(0), wind_q_mvar: 0 },
+  ] }, true)[0].windQ), '0.00');
+  for (const missing of [undefined, null]) {
+    result.timeseries[0].wind_q_mvar = missing;
+    const frames = minuteFrames(profileFrames(result, true));
+    assert.deepEqual(frames.map(p => p.windQ), [null, null, 0.6]);
+    assert.equal(numberLabel(frames[0].windQ), '—');
+  }
+});
+
 test('minute interpolation stops at last measured/planned point without next-day wrap', () => {
   const frames = minuteFrames(profileFrames(result));
   assert.equal(frames.length, 16);

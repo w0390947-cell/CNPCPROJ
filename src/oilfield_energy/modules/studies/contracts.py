@@ -7,6 +7,8 @@ from typing import Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, JsonValue, model_validator
 
+from oilfield_energy.modules.resources.contracts import WindReactivePolicy
+
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True, allow_inf_nan=False)
@@ -60,6 +62,7 @@ class ResourceSpec(StrictModel):
     p_max_mw: float = Field(ge=0)
     s_max_mva: float = Field(gt=0)
     q_max_mvar: float = Field(ge=0)
+    capacity_provenance: str | None = Field(default=None, min_length=1)
 
 
 class LoadSpec(StrictModel):
@@ -77,7 +80,8 @@ class StorageSpec(StrictModel):
 
 
 class StudySpec(StrictModel):
-    schema_version: Literal["shancheng-simulation-v1"]
+    schema_version: Literal["shancheng-simulation-v1", "shancheng-simulation-v2"]
+    wind_reactive_policy: WindReactivePolicy | None = None
     region_id: Literal["SC", "YA_B", "YA_C"] = "SC"
     dataset_id: str
     revision: str
@@ -100,6 +104,13 @@ class StudySpec(StrictModel):
 
     @model_validator(mode="after")
     def validate_recipe(self) -> "StudySpec":
+        if self.schema_version == "shancheng-simulation-v2":
+            if self.wind_reactive_policy is None:
+                raise ValueError("v2 study requires an explicit wind reactive policy")
+            if any(r.kind == "wind" and not r.capacity_provenance for r in self.resources):
+                raise ValueError("v2 wind ratings require capacity provenance")
+        elif self.wind_reactive_policy is not None:
+            raise ValueError("explicit wind policies require a v2 study")
         known = set(self.bus_ids)
         if self.network.get("pcc_bus_id") not in known:
             raise ValueError("PCC bus missing")
@@ -146,7 +157,7 @@ class StudySpec(StrictModel):
 class UnifiedDataset(StrictModel):
     """One version owns all regional recipes; variants retain their lineage."""
 
-    schema_version: Literal["oilfield-unified-dataset-v1"]
+    schema_version: Literal["oilfield-unified-dataset-v1", "oilfield-unified-dataset-v2"]
     dataset_id: str
     revision: str
     synthetic: Literal[True]
@@ -159,6 +170,13 @@ class UnifiedDataset(StrictModel):
             raise ValueError("unified dataset requires SC, YA_B and YA_C")
         first = self.regions[0]
         for region in self.regions:
+            expected_schema = (
+                "shancheng-simulation-v2"
+                if self.schema_version.endswith("v2")
+                else "shancheng-simulation-v1"
+            )
+            if region.schema_version != expected_schema:
+                raise ValueError("dataset and regional schema versions differ")
             if (region.dataset_id, region.revision) != (self.dataset_id, self.revision):
                 raise ValueError("regional dataset identity mismatch")
             if (region.start, region.intervals, region.interval_minutes, region.pf_min) != (

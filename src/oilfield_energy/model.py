@@ -22,7 +22,7 @@ from scipy.sparse import coo_matrix
 
 from .data import MicrogridData, ProjectCase, renewable_active_power_limits
 from .modules.dispatch.api import account_renewable, evaluate_economics
-from .modules.dispatch.contracts import ACCOUNTING_VERSION, CostRates
+from .modules.dispatch.contracts import ACCOUNTING_VERSION, CostRates, PCCTrackingLimits
 from .network_model import validate_legacy_network_alignment
 from .resource_control_contracts import (
     ResourceSchedule,
@@ -156,6 +156,7 @@ def solve_case(
     storage_enabled: bool = True,
     cluster_coordination: bool = True,
     pcc_targets: Mapping[str, Mapping[str, np.ndarray]] | None = None,
+    tracking_limits: PCCTrackingLimits | None = None,
     p_tracking_penalty_cny_per_mw: float = 20_000.0,
     q_tracking_penalty_cny_per_mvar: float = 8_000.0,
     time_limit_seconds: float = 180.0,
@@ -195,11 +196,16 @@ def solve_case(
         }
         refs[mg.name] = r
         target = pcc_targets.get(mg.name) if pcc_targets is not None else None
+        if tracking_limits is not None and target is None:
+            raise ValueError(f"{mg.name} requires PCC targets when tracking limits are enabled")
         if target is not None:
             if "p_mw" not in target or "q_mvar" not in target:
                 raise KeyError(f"{mg.name} target requires p_mw and q_mvar")
-            if len(target["p_mw"]) != T or len(target["q_mvar"]) != T:
-                raise ValueError(f"{mg.name} target length must equal {T}")
+            if any(
+                np.shape(target[key]) != (T,) or not np.isfinite(target[key]).all()
+                for key in ("p_mw", "q_mvar")
+            ):
+                raise ValueError(f"{mg.name} targets must be finite vectors of length {T}")
         p_min = max(mg.p_grid_min_mw, a.no_reverse_margin_mw)
         # 优化层采用更严格的运行目标，为线性模型到 AC 校核的偏差留裕度。
         pf_tan = tan(acos(a.pf_dispatch_target))
@@ -220,11 +226,13 @@ def solve_case(
             )
             if target is not None:
                 r["p_target_dev"][t] = model.var(
-                    f"{mg.name}.p_target_dev[{t}]", 0.0, INF,
+                    f"{mg.name}.p_target_dev[{t}]", 0.0,
+                    tracking_limits.p_mw if tracking_limits is not None else INF,
                     objective=p_tracking_penalty_cny_per_mw * a.dt_hours,
                 )
                 r["q_target_dev"][t] = model.var(
-                    f"{mg.name}.q_target_dev[{t}]", 0.0, INF,
+                    f"{mg.name}.q_target_dev[{t}]", 0.0,
+                    tracking_limits.q_mvar if tracking_limits is not None else INF,
                     objective=q_tracking_penalty_cny_per_mvar * a.dt_hours,
                 )
                 p_ref = float(target["p_mw"][t])
@@ -324,7 +332,8 @@ def solve_case(
                     f"{mg.name}.p_wind[{bus},{t}]", 0.0, float(wind_limits[bus][t]),
                     objective=-a.curtailment_cost_cny_per_mwh * a.dt_hours,
                 )
-                r["q_wind"][key] = model.var(f"{mg.name}.q_wind[{bus},{t}]", -cap, cap)
+                q_cap = mg.wind_reactive_capability(bus).absolute_limit_mvar
+                r["q_wind"][key] = model.var(f"{mg.name}.q_wind[{bus},{t}]", -q_cap, q_cap)
                 _polygon_constraints(
                     model, {r["p_wind"][key]: 1.0}, {r["q_wind"][key]: 1.0},
                     cap, a.polygon_sides, f"{mg.name}.wind[{bus},{t}]",
@@ -379,7 +388,23 @@ def solve_case(
                 f"{mg.name}.p_dis[{t}]", 0.0, pmax,
                 objective=a.storage_degradation_cny_per_mwh * a.dt_hours,
             )
+            reserve = case.storage_reserves.get(mg.name) if storage_enabled else None
+            if reserve is not None:
+                model.constraint(
+                    {r["p_dis"][t]: 1.0, r["p_ch"][t]: -1.0},
+                    lb=reserve.minimum_power_mw[t], ub=reserve.maximum_power_mw[t],
+                    name=f"{mg.name}.reserve_power[{t}]",
+                )
             r["q_ess"][t] = model.var(f"{mg.name}.q_ess[{t}]", -qmax, qmax)
+            if reserve is not None:
+                for direction, offset in (("up", reserve.up_mw[t]), ("down", -reserve.down_mw[t])):
+                    for k in range(a.polygon_sides):
+                        angle = 2 * pi * k / a.polygon_sides
+                        model.constraint(
+                            {r["p_dis"][t]: cos(angle), r["p_ch"][t]: -cos(angle), r["q_ess"][t]: sin(angle)},
+                            ub=st.s_max_mva * cos(pi / a.polygon_sides) - offset * cos(angle),
+                            name=f"{mg.name}.reserve_{direction}_cap[{t},{k}]",
+                        )
             r["charge_mode"][t] = model.var(
                 f"{mg.name}.charge_mode[{t}]", 0.0, 1.0,
                 integer=storage_enabled,
@@ -430,10 +455,16 @@ def solve_case(
             elif t == 0:
                 lo = hi = st.e_initial_mwh
             elif t == T:
-                lo = max(st.e_min_mwh, st.e_initial_mwh - a.terminal_energy_tolerance_mwh)
-                hi = min(st.e_max_mwh, st.e_initial_mwh + a.terminal_energy_tolerance_mwh)
+                lo = max(st.e_min_mwh, st.terminal_energy_mwh - a.terminal_energy_tolerance_mwh)
+                hi = min(st.e_max_mwh, st.terminal_energy_mwh + a.terminal_energy_tolerance_mwh)
             else:
                 lo, hi = st.e_min_mwh, st.e_max_mwh
+            reserve = case.storage_reserves.get(mg.name) if storage_enabled else None
+            if reserve is not None:
+                lo = max(lo, reserve.energy_floor_mwh[t])
+                hi = min(hi, reserve.energy_ceiling_mwh[t])
+                if lo > hi:
+                    raise ValueError(f"{mg.name} reserve and terminal energy conflict at {t}")
             r["energy"][t] = model.var(f"{mg.name}.energy[{t}]", lo, hi)
         for t in range(T):
             model.constraint(
@@ -445,6 +476,21 @@ def solve_case(
                 },
                 lb=0.0, ub=0.0, name=f"{mg.name}.energy_balance[{t}]",
             )
+
+        for i, row in enumerate(case.reactive_plans.get(mg.name, ())):
+            t = row.time_index
+            active = {**{mg.resource_id("wind", b): {r["p_wind"][(b, t)]: 1.0} for b in mg.wind_capacity_mw},
+                      **{mg.resource_id("pv", b): {r["p_pv"][(b, t)]: 1.0} for b in mg.pv_capacity_mw},
+                      mg.resource_id("storage", st.bus): {r["p_dis"][t]: 1.0, r["p_ch"][t]: -1.0}, mg.resource_id("svg", mg.svg_bus): {}}
+            def reactive_at(index):
+                return {**{mg.resource_id("wind", b): r["q_wind"][(b, index)] for b in mg.wind_capacity_mw},
+                        **{mg.resource_id("pv", b): r["q_pv"][(b, index)] for b in mg.pv_capacity_mw},
+                        mg.resource_id("storage", st.bus): r["q_ess"][index], mg.resource_id("svg", mg.svg_bus): r["q_svg"][index]}[row.resource_id]
+            terms = {index: value * row.p_coefficient for index, value in active[row.resource_id].items()}
+            _add(terms, reactive_at(t), row.q_coefficient)
+            if row.previous_q_coefficient:
+                _add(terms, reactive_at(t - 1), row.previous_q_coefficient)
+            model.constraint(terms, ub=row.upper, name=f"{mg.name}.reactive_plan[{i}]")
 
         incoming = {bus: [] for bus in mg.buses}
         outgoing = {bus: [] for bus in mg.buses}

@@ -1,8 +1,8 @@
 {
   "schema_version": "dataset-facts-v1",
   "dataset_id": "oilfield-unified-synthetic",
-  "revision": "2026-09-20-v1",
-  "sha256": "f32e2bb2c0b59549765b68b692d158fd594a138a411f7198d620dfe4d9a74f08",
+  "revision": "2026-09-21-v1",
+  "sha256": "ecb39787fca686e7206b5544ddac59ab42aa37a70e922f06e8efd11239d2740e",
   "clusterImportLimitMw": 26.0,
   "regions": {
     "SC": {
@@ -10,30 +10,30 @@
       "windMw": 10.0,
       "pvMw": 4.2,
       "storage": "2.5 MW / 5 MWh",
-      "busCount": 7,
-      "branchCount": 6,
+      "busCount": 10,
+      "branchCount": 9,
       "voltageMinPu": 0.95,
       "voltageMaxPu": 1.05,
       "pccMinMw": 0.5
     },
     "YA_B": {
       "loadScaleMw": 9.6,
-      "windMw": 7.0,
+      "windMw": 5.0,
       "pvMw": 3.2,
       "storage": "2 MW / 4 MWh",
-      "busCount": 5,
-      "branchCount": 4,
+      "busCount": 7,
+      "branchCount": 6,
       "voltageMinPu": 0.95,
       "voltageMaxPu": 1.05,
       "pccMinMw": 0.5
     },
     "YA_C": {
       "loadScaleMw": 8.64,
-      "windMw": 6.0,
+      "windMw": 5.0,
       "pvMw": 3.8,
       "storage": "1.8 MW / 3.6 MWh",
-      "busCount": 5,
-      "branchCount": 4,
+      "busCount": 7,
+      "branchCount": 6,
       "voltageMinPu": 0.95,
       "voltageMaxPu": 1.05,
       "pccMinMw": 0.5

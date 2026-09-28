@@ -100,10 +100,24 @@ def make_case(
             ResourceIdentity(r.resource_id, r.bus_id, r.kind) for r in spec.resources
         ),
         wind_q_abs_over_p_max={
-            r.bus_id: min(0.328, r.q_max_mvar / r.p_max_mw)
+            # v1 replay preserves its original synthetic restriction.
+            r.bus_id: spec.wind_reactive_policy.ratio
+            if spec.wind_reactive_policy is not None
+            else min(0.328, r.q_max_mvar / r.p_max_mw)
             for r in spec.resources
             if r.kind == "wind"
         },
+        wind_q_abs_max_mvar={r.bus_id: r.q_max_mvar for r in spec.resources if r.kind == "wind"}
+        if spec.wind_reactive_policy is not None
+        else None,
+        wind_reactive_policy=spec.wind_reactive_policy.value
+        if spec.wind_reactive_policy is not None
+        else None,
+        wind_capacity_provenance={
+            r.bus_id: r.capacity_provenance or "" for r in spec.resources if r.kind == "wind"
+        }
+        if spec.wind_reactive_policy is not None
+        else None,
         pv_reactive_enabled={r.bus_id: False for r in spec.resources if r.kind == "pv"},
         storage_reactive_enabled=False,
         network_model_v2=network,

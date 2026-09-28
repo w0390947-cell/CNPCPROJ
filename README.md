@@ -32,7 +32,7 @@ npm.cmd ci
 没有 `py` 启动器时，可将 `py -3.12` 替换为已安装的 Python 3.12 命令，例如 `python`。以下步骤直接调用虚拟环境中的程序，无需激活环境或修改 PowerShell 执行策略。
 
 ### 2.2 启动后端
-
+cd
 在第一个 PowerShell 窗口执行，并保持窗口开启：
 
 ```powershell

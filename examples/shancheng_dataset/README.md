@@ -1,6 +1,6 @@
 # 固定状态资料导出
 
-固定状态潮流现在与山城专项研究共用统一 SC 七母线输入，不维护独立三母线业务样例。
+固定状态潮流现在与山城专项研究共用统一 SC 十母线输入，不维护独立三母线业务样例。
 
 ```powershell
 oilfield-sim generate --output artifacts/unified-sc-001

@@ -21,7 +21,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from .runtime.job_lease import JobRootLease
 from .runtime.retention import RetentionCapacityError, RetentionPolicy
 from .runtime.retention_store import RetentionStore, StorageUsage, is_job_id, is_plain_directory
-from .service import ProgressUpdate, SimulationRequest, SimulationResult
+from .service import ProgressUpdate, SimulationRequest, SimulationResult, SimulationStage
+from .workflows.cluster_execution.contracts import RollingProgress
 
 
 class JobState(str, Enum):
@@ -45,6 +46,7 @@ class JobStatus(BaseModel):
     stage_label: str | None = None
     stage_sequence: int | None = None
     total_stages: int = Field(default=6, ge=1)
+    rolling: RollingProgress | None = None
     result_available: bool = False
     error_code: str | None = None
     error_message: str | None = None
@@ -78,14 +80,22 @@ def write_job_status(session_dir: Path, status: JobStatus) -> None:
 
 
 def progress_status(base: JobStatus, update: ProgressUpdate) -> JobStatus:
+    # The pure computation finishes before the worker/manager publish result.json.
+    # Terminal status belongs exclusively to that publication boundary.
+    if base.state not in {JobState.QUEUED, JobState.RUNNING}:
+        return base
+    saving = update.stage is SimulationStage.SUCCEEDED
     return base.model_copy(
         update={
             "state": JobState.RUNNING,
             "updated_at": utc_now(),
-            "stage": update.stage.value,
-            "stage_label": update.label,
+            "stage": SimulationStage.SERIALIZING.value
+            if saving
+            else update.stage.value,
+            "stage_label": "正在保存仿真结果" if saving else update.label,
             "stage_sequence": update.sequence,
             "total_stages": update.total_stages,
+            "rolling": update.rolling if update.rolling is not None else base.rolling,
         }
     )
 

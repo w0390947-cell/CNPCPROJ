@@ -63,6 +63,19 @@
           "minimum": 0,
           "title": "Q Max Mvar",
           "type": "number"
+        },
+        "capacity_provenance": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Capacity Provenance"
         }
       },
       "required": [
@@ -121,9 +134,23 @@
       "additionalProperties": false,
       "properties": {
         "schema_version": {
-          "const": "shancheng-simulation-v1",
+          "enum": [
+            "shancheng-simulation-v1",
+            "shancheng-simulation-v2"
+          ],
           "title": "Schema Version",
           "type": "string"
+        },
+        "wind_reactive_policy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WindReactivePolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "region_id": {
           "default": "SC",
@@ -254,13 +281,25 @@
       ],
       "title": "StudySpec",
       "type": "object"
+    },
+    "WindReactivePolicy": {
+      "description": "Source-backed Q/P policy, independent of a device's absolute ratings.",
+      "enum": [
+        "general-333",
+        "shancheng-300"
+      ],
+      "title": "WindReactivePolicy",
+      "type": "string"
     }
   },
   "additionalProperties": false,
   "description": "One version owns all regional recipes; variants retain their lineage.",
   "properties": {
     "schema_version": {
-      "const": "oilfield-unified-dataset-v1",
+      "enum": [
+        "oilfield-unified-dataset-v1",
+        "oilfield-unified-dataset-v2"
+      ],
       "title": "Schema Version",
       "type": "string"
     },

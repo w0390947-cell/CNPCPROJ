@@ -3,6 +3,78 @@ scope = "field dataset and synthetic Shancheng study increments; existing flat m
 adr = "decisions/0001-field-dataset-files.md"
 
 [[components]]
+name = "computation_quality_ui"
+path = "web/frontend/features/computation-quality"
+language = "typescript"
+owners = ["前端维护负责人"]
+reviewers = ["优化调度维护负责人"]
+public_modules = ["index"]
+allowed_consumers = ["cluster_coordination_ui", "simulation_dashboard"]
+adr = "decisions/0032-single-quality.md"
+
+[[components]]
+name = "simulation_progress_ui"
+path = "web/frontend/features/simulation-progress"
+language = "typescript"
+owners = ["前端维护负责人"]
+reviewers = ["仿真研究维护负责人"]
+public_modules = ["index"]
+adr = "decisions/0025-rolling-progress.md"
+
+[[components]]
+name = "cluster_execution"
+path = "src/oilfield_energy/workflows/cluster_execution"
+language = "python"
+owners = ["仿真研究维护负责人"]
+reviewers = ["优化调度维护负责人", "设备控制维护负责人"]
+public_modules = ["api", "contracts"]
+allow_public = ["power_flow.api", "power_flow.contracts", "dispatch.contracts", "control.contracts"]
+adr = "decisions/0022-dynamic-pcc-tracking.md"
+
+[[legacy_bridges]]
+path = "src/oilfield_energy/bootstrap/adapters/cluster_reactive.py"
+imports = ["oilfield_energy.data"]
+owners = ["优化调度维护负责人"]
+review_by = "2026-10-15"
+exit_task = "Replace ProjectCase projection with dispatch public case contracts; reactive planning rules remain in dispatch."
+
+[[legacy_bridges]]
+path = "src/oilfield_energy/bootstrap/adapters/cluster_reserve.py"
+imports = ["oilfield_energy.data"]
+owners = ["优化调度维护负责人"]
+review_by = "2026-10-15"
+exit_task = "Replace ProjectCase projection with dispatch public case contracts; reserve rules already live in dispatch."
+
+[[legacy_bridges]]
+path = "src/oilfield_energy/bootstrap/adapters/cluster_rolling.py"
+imports = ["oilfield_energy.admm", "oilfield_energy.data", "oilfield_energy.device_control", "oilfield_energy.hierarchy_types", "oilfield_energy.model", "oilfield_energy.planning_security", "oilfield_energy.resource_control_contracts"]
+owners = ["仿真研究维护负责人"]
+review_by = "2026-10-15"
+exit_task = "Migrate continuous device sessions and rolling numerical adapters to control/dispatch APIs; retain causal workflow and audit."
+
+[[legacy_bridges]]
+path = "src/oilfield_energy/bootstrap/adapters/cluster_execution.py"
+imports = ["oilfield_energy.ac_consistency", "oilfield_energy.analysis", "oilfield_energy.data", "oilfield_energy.device_control", "oilfield_energy.hierarchy_types", "oilfield_energy.model", "oilfield_energy.planning_security", "oilfield_energy.scenario_events", "oilfield_energy.resource_control_contracts"]
+owners = ["仿真研究维护负责人"]
+review_by = "2026-10-15"
+exit_task = "Replace legacy numerical adapters with migrated dispatch/control public APIs; keep automatic workflow and evidence contracts."
+
+[[components]]
+name = "active_power_chart_ui"
+path = "web/frontend/features/active-power-chart"
+language = "typescript"
+owners = ["前端维护负责人"]
+reviewers = ["仿真研究维护负责人"]
+public_modules = ["index"]
+
+[[legacy_bridges]]
+path = "src/oilfield_energy/bootstrap/adapters/project_dataset.py"
+imports = ["oilfield_energy.data", "oilfield_energy.network_model"]
+owners = ["仿真研究维护负责人"]
+review_by = "2026-10-15"
+exit_task = "Replace legacy case projection with public grid/dispatch contracts when migrated. Packaged input remains authoritative."
+
+[[components]]
 name = "cluster_coordination_ui"
 path = "web/frontend/features/cluster-coordination"
 language = "typescript"
@@ -39,13 +111,13 @@ allow_apis = []
 adr = "decisions/0011-adopted-schedules.md"
 
 [[legacy_public_consumers]]
-paths = ["src/oilfield_energy/data.py"]
+paths = ["src/oilfield_energy/data.py", "src/oilfield_energy/shancheng_control.py", "src/oilfield_energy/field_data/project_sources.py"]
 imports = ["oilfield_energy.modules.resources.contracts"]
 owners = ["设备建模维护负责人"]
 reviewers = ["优化调度维护负责人"]
 
 [[legacy_public_consumers]]
-paths = ["src/oilfield_energy/device_control.py"]
+paths = ["src/oilfield_energy/device_control.py", "src/oilfield_energy/data.py"]
 imports = ["oilfield_energy.modules.dispatch.contracts"]
 owners = ["设备控制维护负责人"]
 reviewers = ["优化调度维护负责人"]
@@ -97,7 +169,7 @@ reviewers = ["设备控制维护负责人"]
 # Existing solver/service files may consume the extracted public accounting API.
 # This does not permit new dispatch code to import any legacy module or SDK.
 [[legacy_public_consumers]]
-paths = ["src/oilfield_energy/model.py", "src/oilfield_energy/misocp_model.py", "src/oilfield_energy/regional_control.py", "src/oilfield_energy/service.py"]
+paths = ["src/oilfield_energy/model.py", "src/oilfield_energy/misocp_model.py", "src/oilfield_energy/regional_control.py", "src/oilfield_energy/service.py", "src/oilfield_energy/ac_consistency.py"]
 imports = ["oilfield_energy.modules.dispatch.api", "oilfield_energy.modules.dispatch.contracts"]
 owners = ["优化调度维护负责人"]
 reviewers = ["仿真研究维护负责人"]
@@ -186,7 +258,7 @@ allow_apis = []
 adr = "decisions/0008-device-dynamics.md"
 
 [[legacy_public_consumers]]
-paths = ["src/oilfield_energy/device_control.py", "src/oilfield_energy/hierarchy_types.py", "src/oilfield_energy/hierarchy_reporting.py", "src/oilfield_energy/shancheng_control.py", "src/oilfield_energy/hierarchical.py"]
+paths = ["src/oilfield_energy/device_control.py", "src/oilfield_energy/reactive_correction.py", "src/oilfield_energy/hierarchy_types.py", "src/oilfield_energy/hierarchy_reporting.py", "src/oilfield_energy/shancheng_control.py", "src/oilfield_energy/hierarchical.py"]
 imports = ["oilfield_energy.modules.control.api", "oilfield_energy.modules.control.contracts"]
 owners = ["设备控制维护负责人"]
 reviewers = ["潮流计算维护负责人"]
@@ -197,9 +269,9 @@ path = "src/oilfield_energy/modules/studies"
 owners = ["仿真研究维护负责人"]
 reviewers = ["设备控制维护负责人"]
 public_modules = ["api", "contracts"]
-allow_contracts = ["control"]
+allow_contracts = ["control", "resources"]
 allow_apis = []
-adr = "decisions/0010-study-events.md"
+adr = "decisions/0015-wind-reactive-policy.md"
 
 [[legacy_public_consumers]]
 paths = ["src/oilfield_energy/service.py", "src/oilfield_energy/scenario_events.py", "src/oilfield_energy/communication.py", "src/oilfield_energy/hierarchy_types.py"]

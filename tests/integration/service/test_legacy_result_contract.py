@@ -73,9 +73,11 @@ def test_public_service_completes_each_declared_model_with_honest_result(
         assert result.executive_summary.overall_passed == all(
             i.passed for i in result.validation_items
         )
-    else:
+    elif scenario == "single_microgrid":
         assert result.executive_summary.overall_passed
     if scenario == "cluster_coordination":
+        assert result.executive_summary.overall_passed == all(i.passed for i in result.validation_items)
+        assert result.cluster_execution is not None
         assert len(result.cluster_timeseries) == steps
         assert result.admm_history
 

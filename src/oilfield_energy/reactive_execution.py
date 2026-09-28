@@ -14,7 +14,6 @@ from typing import Iterable, Mapping
 from .data import MicrogridData
 from .resource_control_contracts import ResourceSchedule, ResourceType
 
-
 _TOLERANCE = 1e-9
 
 
@@ -74,13 +73,7 @@ def calculate_reactive_capabilities(
             raise ValueError("resource active power must be nonnegative and finite")
         p = max(0.0, p)
         if schedule.resource_type is ResourceType.WIND:
-            apparent = float(microgrid.wind_capacity_mva[schedule.bus_id])
-            circle_limit = sqrt(max(0.0, apparent * apparent - p * p))
-            ratio = microgrid.wind_q_over_p_limit(schedule.bus_id)
-            if ratio is not None:
-                limit = min(circle_limit, max(0.0, float(ratio) * p))
-            else:
-                limit = circle_limit
+            limit = microgrid.wind_reactive_capability(schedule.bus_id).limit_at(p)
             lower, upper = -limit, limit
         elif schedule.resource_type is ResourceType.PV:
             if microgrid.pv_can_control_reactive(schedule.bus_id):

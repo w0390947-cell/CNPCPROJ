@@ -60,7 +60,10 @@ def actual_runs():
 
 def test_real_service_executes_both_faults_and_is_permutation_invariant(actual_runs):
     ab, ba = actual_runs["ab"], actual_runs["ba"]
-    assert ab.executive_summary.overall_passed and ba.executive_summary.overall_passed
+    for result in (ab, ba):
+        assert result.executive_summary.overall_passed == all(i.passed for i in result.validation_items)
+        assert result.coordination_snapshot.converged
+    assert ab.cluster_execution == ba.cluster_execution
     rows = ab.communication.event_executions
     assert [row.window.event_id for row in rows] == ["a", "b"]
     assert [row.status for row in rows] == ["executed", "executed"]

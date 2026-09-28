@@ -17,7 +17,9 @@
 
 允许通过公开契约依赖 `control.contracts`，用于生成控制外部输入；该新增边见 [ADR-0002](../../../../docs/architecture/decisions/0002-shancheng-simulation.md)。输入参数不会被修改。相同配方和兼容 Python 实现应生成相同值；跨环境数值复算采用容差。
 
-配方版本 `shancheng-simulation-v1`。所有数据明确模拟、无现场批准。配方中的网络载荷还必须经过既有严格网络契约校验；不能把配方模式校验等同于电气适用性验证。
+新配方版本为`shancheng-simulation-v2`，统一台账版本为`oilfield-unified-dataset-v2`；兼容读取v1原有参数，禁止将历史输入默认为新策略。v2要求显式`wind_reactive_policy`及风机`capacity_provenance`，不按区域名称隐式选择策略。公开依赖新增`resources.contracts`，只复用轻量的`WindReactivePolicy`契约；依据、范围与兼容决策见 [ADR 0015](../../../../docs/architecture/decisions/0015-wind-reactive-policy.md)。默认SC选择30%、YA_B/YA_C选择33.3%，绝对Q与MVA容量分别保留。
+
+所有配方数据明确模拟、无现场批准。网络载荷还必须经过既有严格网络契约校验；不能把配方模式校验等同于电气适用性验证。策略跨入口和历史兼容回归见`tests/integration/studies/test_wind_reactive_policy.py`。
 
 静态网络研究归档另有 `NetworkScenarioSummaryMetadata`，版本
 `network-scenarios-v2`，仅规定元数据，不启动潮流或计算第二套安全结论。

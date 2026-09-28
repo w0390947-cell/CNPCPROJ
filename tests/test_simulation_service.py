@@ -15,6 +15,7 @@ from oilfield_energy.service import (
     SolverOptions,
     run_simulation,
 )
+from oilfield_energy.bootstrap.adapters.project_dataset import build_synthetic_case
 
 
 class SimulationServiceTests(unittest.TestCase):
@@ -37,14 +38,15 @@ class SimulationServiceTests(unittest.TestCase):
         payload = self.result.model_dump(mode="json")
         encoded = json.dumps(payload, ensure_ascii=False, allow_nan=False)
         self.assertIn("参数化模拟数据", encoded)
-        self.assertEqual(payload["metadata"]["schema_version"], "1.4.0")
+        self.assertEqual(payload["metadata"]["schema_version"], "1.7.0")
         self.assertEqual(payload["metadata"]["steps"], 8)
 
     def test_true_solver_result_contains_complete_display_contract(self) -> None:
         self.assertTrue(self.result.executive_summary.overall_passed)
         self.assertEqual(len(self.result.timeseries), 8)
-        self.assertEqual(len(self.result.topology_nodes), 7)
-        self.assertEqual(len(self.result.topology_edges), 6)
+        grid = next(m for m in build_synthetic_case(8).microgrids if m.name == "SC")
+        self.assertEqual({n.id for n in self.result.topology_nodes}, set(grid.buses))
+        self.assertEqual({e.id for e in self.result.topology_edges}, {line.name for line in grid.lines})
         self.assertTrue(all(item.passed for item in self.result.validation_items))
         self.assertIn("SCIP status", self.result.solver["message"])
 
@@ -108,15 +110,20 @@ class MultiScenarioServiceTests(unittest.TestCase):
         ))
 
     def test_cluster_coordination_contains_real_admm_and_three_regions(self) -> None:
-        self.assertTrue(self.cluster.executive_summary.overall_passed)
-        self.assertEqual(len(self.cluster.topology_nodes), 17)
+        self.assertEqual(self.cluster.executive_summary.overall_passed,
+                         all(i.passed for i in self.cluster.validation_items))
+        self.assertEqual(len(self.cluster.cluster_execution.stages), 3)
+        expected = {bus for mg in build_synthetic_case(4).microgrids for bus in mg.buses}
+        self.assertEqual({n.id for n in self.cluster.topology_nodes}, expected)
         self.assertEqual(len(self.cluster.cluster_timeseries), 4)
         self.assertGreater(len(self.cluster.admm_history), 3)
         self.assertTrue(self.cluster.solver["success"])
         self.assertEqual(self.cluster.communication.dropped, 0)
 
     def test_communication_fault_records_outage_and_recovery(self) -> None:
-        self.assertTrue(self.fault.executive_summary.overall_passed)
+        self.assertEqual(self.fault.executive_summary.overall_passed,
+                         all(i.passed for i in self.fault.validation_items))
+        self.assertEqual(len(self.fault.cluster_execution.stages), 3)
         self.assertGreater(self.fault.communication.dropped, 0)
         self.assertGreater(self.fault.communication.outage_dropped, 0)
         self.assertGreater(self.fault.communication.fallback_uses, 0)

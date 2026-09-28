@@ -287,6 +287,18 @@ a:focus-visible {
   gap: 18px;
   min-height: 0;
 }
+.dashboard-grid.execution-grid {
+  grid-template-rows: auto;
+  align-items: start;
+}
+.execution-grid > .verdict-panel {
+  grid-row: 1;
+}
+@media (max-width: 1000px) {
+  .execution-grid > .verdict-panel {
+    grid-row: auto;
+  }
+}
 .panel {
   padding: 20px;
 }
@@ -583,15 +595,17 @@ a:focus-visible {
   flex-direction: column;
 }
 .verdict-main {
-  padding: 20px 0;
+  padding: 20px 16px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 14px;
   border-bottom: 1px solid #293f51;
 }
 .verdict-main > i {
   width: 52px;
   height: 52px;
+  flex-shrink: 0;
   display: grid;
   place-items: center;
   border-radius: 50%;

@@ -8,6 +8,170 @@ from typing import Literal
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, computed_field, model_validator
 
 
+class DynamicTrackingPolicy(BaseModel):
+    """Offline response assessment parameters, shared with the synthetic plant."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    time_constant_minutes: float = Field(default=2.0, gt=0)
+    pv_time_constant_minutes: float = Field(default=0.25, gt=0)
+    p_ramp_mw_per_minute: float = Field(default=0.65, ge=0)
+    q_ramp_mvar_per_minute: float = Field(default=0.90, ge=0)
+    maximum_response_minutes: int = Field(default=10, ge=1)
+    confirmation_samples: int = Field(default=3, ge=2)
+    p_change_threshold_mw: float = Field(default=1e-4, gt=0)
+    q_change_threshold_mvar: float = Field(default=1e-4, gt=0)
+    source: str = "软件仿真动态判据：依据已记录的响应、爬坡、最长等待和连续确认参数；非现场验收定值"
+
+
+TrackingStatus = Literal["passed", "violated", "unknown"]
+
+
+@dataclass(frozen=True)
+class ReactiveTrackingPoint:
+    """Predicted, arbitrated ONE-cycle response; not executed telemetry."""
+
+    controls: tuple[float, ...]
+    targets: tuple[float, ...]
+    responses: tuple[float, ...]
+    pcc_q_mvar: float | None
+    safe: bool
+
+
+@dataclass(frozen=True)
+class ReactiveTrackingResult:
+    point: ReactiveTrackingPoint
+    initial_error_mvar: float | None
+    final_error_mvar: float | None
+    evaluations: int
+    status: Literal["improved", "limited", "held", "blocked"]
+    version: Literal["reactive-tracking-v1"] = "reactive-tracking-v1"
+
+# Numerical action comparisons in MW; neither is an engineering tracking limit.
+ACTIVE_TRACKING_TRIGGER_MW = 1e-6
+ACTIVE_TRACKING_MOVEMENT_MW = 1e-9
+
+
+@dataclass(frozen=True)
+class ActiveTrackingResource:
+    """One device/group's authorized injection envelope, MW; positive is generation.
+
+    previous is the start-of-cycle physical output; baseline is the provisional
+    response to the plan. Bounds already include availability and owned caps.
+    alpha and ramp describe ONE complete cycle, not another response allowance.
+    """
+
+    resource_id: str
+    previous_mw: float
+    baseline_mw: float
+    minimum_mw: float
+    maximum_mw: float
+    ramp_mw: float
+    alpha: float
+    controllable: bool = True
+
+    def __post_init__(self) -> None:
+        if type(self.resource_id) is not str or not self.resource_id.strip():
+            raise ValueError("active tracking requires a resource ID")
+        values = (self.previous_mw, self.baseline_mw, self.minimum_mw,
+                  self.maximum_mw, self.ramp_mw, self.alpha)
+        if any(isinstance(v, bool) or not isfinite(v) for v in values):
+            raise ValueError("active tracking inputs must be finite")
+        if self.minimum_mw > self.maximum_mw or self.ramp_mw < 0 or not 0 < self.alpha <= 1:
+            raise ValueError("invalid active tracking envelope or dynamics")
+        if type(self.controllable) is not bool:
+            raise ValueError("controllability must be explicit")
+
+
+@dataclass(frozen=True)
+class ActiveTrackingAllocation:
+    """Proposed synthetic responses, not executed telemetry or a safety certificate."""
+
+    requested_change_mw: float
+    responses_mw: tuple[tuple[str, float], ...]
+    # None means retain the existing command, including frozen resources.
+    commands_mw: tuple[tuple[str, float | None], ...]
+    unserved_change_mw: float
+    version: Literal["active-tracking-allocation-v1"] = "active-tracking-allocation-v1"
+
+
+class TrackingTransition(BaseModel):
+    """Samples are end-of-step observations labelled by interval start time."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    start_minute: float
+    observed_until_minute: float
+    target: float
+    target_change: float | None
+    allowed_response_minutes: float
+    deadline_minute: float
+    entered_band_after_minutes: float | None = None
+    confirmed_after_minutes: float | None = None
+    post_deadline_max_error: float | None = None
+    post_deadline_samples: int = Field(ge=0)
+    response_status: TrackingStatus
+    steady_status: TrackingStatus
+    reason: str
+
+
+class DynamicTrackingAssessment(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    version: Literal["dynamic-pcc-tracking-v1"] = "dynamic-pcc-tracking-v1"
+    unit: Literal["MW", "Mvar"]
+    limit: float = Field(gt=0)
+    numerical_tolerance: float = Field(gt=0)
+    status: TrackingStatus
+    response_status: TrackingStatus
+    steady_status: TrackingStatus
+    raw_max_error: float | None = None
+    raw_max_error_time_minute: float | None = None
+    rmse: float | None = None
+    post_deadline_max_error: float | None = None
+    longest_outside_band_minutes: float = Field(ge=0)
+    invalid_samples: int = Field(ge=0)
+    transitions: tuple[TrackingTransition, ...]
+
+
+class DeviceCheckpoint(BaseModel):
+    """State before the next SIL minute; contains no future plant observations."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    minute: int = Field(ge=0)
+    storage_energy_mwh: float
+    storage_power_mw: float
+    reactive_power_mvar: dict[str, float] = Field(default_factory=dict)
+
+
+class StopDeviceSession(Exception):
+    """Stop at a minute boundary and return only the completed execution prefix."""
+
+
+class DevicePlanUpdate(BaseModel):
+    """Prospective minute commands; injections positive, PCC imports positive."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    start_minute: int = Field(ge=0)
+    p_mw: tuple[float, ...]
+    q_mvar: tuple[float, ...]
+    resource_p_mw: dict[str, tuple[float, ...]]
+    resource_q_mvar: dict[str, tuple[float, ...]]
+
+    @model_validator(mode="after")
+    def aligned(self) -> "DevicePlanUpdate":
+        n = len(self.p_mw)
+        if (
+            not n
+            or not self.resource_p_mw
+            or self.resource_p_mw.keys() != self.resource_q_mvar.keys()
+        ):
+            raise ValueError("minute update requires matching resource identities")
+        if any(
+            len(v) != n
+            for v in (self.q_mvar, *self.resource_p_mw.values(), *self.resource_q_mvar.values())
+        ):
+            raise ValueError("minute update trajectories must align")
+        return self
+
+
 @dataclass(frozen=True)
 class StoragePowerProjection:
     """Ordinary candidate after joint limits; signed unmet request is in MW."""

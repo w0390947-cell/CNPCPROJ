@@ -36,6 +36,7 @@ def _realize_targets(
     q_references: Dict[str, np.ndarray],
     time_limit_seconds: float,
     p_grid_security_floors_mw: Dict[str, np.ndarray],
+    storage_enabled: bool = True,
 ) -> tuple[Dict[str, OptimizationResult], Dict[str, ACConsistencyResult]]:
     """每个区域单独构建并求解本地MISOCP，不共享内部变量。"""
     results: Dict[str, OptimizationResult] = {}
@@ -50,7 +51,7 @@ def _realize_targets(
         checked = solve_case_ac_consistent(
             case,
             [name],
-            storage_enabled=True,
+            storage_enabled=storage_enabled,
             cluster_coordination=False,
             pcc_targets=target,
             time_limit_seconds=time_limit_seconds,
@@ -86,6 +87,7 @@ def run_hierarchical_control(
     time_limit_seconds: float = 180.0,
     intraday_input_case: ProjectCase | None = None,
     plant_inputs: dict[str, PlantInputs] | None = None,
+    storage_enabled: bool = True,
 ) -> HierarchicalResult:
     """运行完整三层仿真。
 
@@ -113,7 +115,7 @@ def run_hierarchical_control(
     centralized_checked = solve_case_ac_consistent(
         case,
         names,
-        storage_enabled=True,
+        storage_enabled=storage_enabled,
         cluster_coordination=True,
         time_limit_seconds=time_limit_seconds,
         p_grid_security_floors_mw=day_ahead_floors,
@@ -130,7 +132,7 @@ def run_hierarchical_control(
     legacy_centralized = solve_case_legacy(
         case,
         names,
-        storage_enabled=True,
+        storage_enabled=storage_enabled,
         cluster_coordination=True,
         time_limit_seconds=time_limit_seconds,
     )
@@ -155,6 +157,7 @@ def run_hierarchical_control(
         loss_calibration=loss_calibration,
         p_grid_security_floors_mw=day_ahead_floors,
         group_control_config=cfg_group,
+        storage_enabled=storage_enabled,
     )
     local_results, local_consistency = _realize_targets(
         case,
@@ -163,6 +166,7 @@ def run_hierarchical_control(
         admm.q_references_mvar,
         time_limit_seconds,
         day_ahead_floors,
+        storage_enabled,
     )
 
     if case.dataset_id is not None and (intraday_input_case is None or plant_inputs is None):
@@ -187,6 +191,7 @@ def run_hierarchical_control(
         admm.q_references_mvar,
         time_limit_seconds,
         intraday_floors,
+        storage_enabled,
     )
     tracking: Dict[str, DeviceTrackingResult] = {}
     intraday_lookup = {mg.name: mg for mg in intraday_case.microgrids}
@@ -200,6 +205,7 @@ def run_hierarchical_control(
             reverse_flow_probability_15=(intraday_security[name].reverse_flow_probability),
             seed=20260901 + idx,
             plant_inputs=plant_inputs[name] if plant_inputs is not None else None,
+            storage_enabled=storage_enabled,
         )
 
     centralized_cost = float(centralized.cluster["economic_cost_cny"])

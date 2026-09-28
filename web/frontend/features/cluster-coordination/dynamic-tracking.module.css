@@ -1,0 +1,44 @@
+.details {
+  margin-top: 12px;
+  border-top: 1px solid var(--border, #dbe4ee);
+  padding-top: 12px;
+}
+.details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.details p {
+  margin: 8px 0;
+  line-height: 1.65;
+}
+.scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 10px 0;
+}
+.scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+}
+.scroll th,
+.scroll td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border, #dbe4ee);
+  vertical-align: top;
+}
+.scroll th {
+  white-space: nowrap;
+}
+.scroll td {
+  min-width: 100px;
+}
+.scroll caption {
+  text-align: left;
+  padding-bottom: 8px;
+  color: var(--muted-foreground, #64748b);
+}
+.region {
+  margin: 10px 0;
+}

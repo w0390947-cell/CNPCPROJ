@@ -1,5 +1,22 @@
 # 控制输入契约
 
+ADR 0030 新增 `api.track_reactive_power`，通过注入的权限/动态/AC 预测端口改进
+PCC 无功跟踪；所有候选共用同一周期初状态和响应预算，安全或授权不满足则不采用。
+规则不依赖求解 SDK，不提交命令，预测与实绩分开。见
+[Reactive_Tracking.md](../../../../docs/modeling/Reactive_Tracking.md)。
+
+ADR 0028 新增 `api.allocate_active_tracking` 及不可变 `ActiveTrackingResource` /
+`ActiveTrackingAllocation`：在明确的能力、许可和单周期动态边界内分配剩余有功偏差。
+纯规则位于 `application_active_tracking.py`，不调用网络求解或写设备；装配方独立
+核验候选网络及执行证据。模型见 `docs/modeling/Active_Tracking.md`，测试见
+`tests/unit/control/test_active_tracking.py` 和 `tests/integration/control/test_active_tracking.py`。
+
+ADR 0022 新增 `api.assess_dynamic_tracking`：依据显式已采用目标和分钟输出评价
+有限响应期限与期限后偏差；纯计算、不修改目标或安全状态。契约包括动态策略、
+分段响应和总体证据，单位为 MW/Mvar/分钟。规则见
+[动态模型说明](../../../../docs/modeling/Dynamic_PCC_Tracking.md)，测试为
+`tests/unit/control/test_dynamic_tracking.py`。缺失历史证据不自动补算。
+
 维护负责人：设备控制维护负责人；替代评审：潮流计算维护负责人。
 
 本次公开 `contracts.PlantInputs` 与 `BusSeries`，表达带时区起点、固定步长和母线标识的不可变模拟外部输入。`load_p/load_q` 单位为 MW/Mvar，正值为总负荷消耗；风光 `available` 单位为 MW，表示可用上限，不是指令或已执行出力。
@@ -47,3 +64,10 @@ ADR 0008 增加 `execution_substeps` 和 `constrain_storage_power`，纯时间�
 模型见 `docs/modeling/Device_Dynamics.md`；新增证据 storage-dynamics-v1 独立于
 已有 minute-execution-v2，公开契约生成的 schema 位于 contracts/control。
 测试：`tests/unit/control/test_dynamics.py`、`tests/integration/control/test_device_dynamics.py`。
+## 连续设备仿真反馈契约
+
+`DeviceCheckpoint` 只暴露下一分钟开始前已知的储能电量和出力；
+`DevicePlanUpdate` 接收从当前分钟开始、按设备 ID 对齐的前向 P/Q 命令。
+`StopDeviceSession` 在边界停止并保留已完成轨迹。遗留设备引擎的连续会话实现
+保留控制器和保护状态，滚动工作流通过装配桥接调用；不提供现场命令接口。
+依据见 ADR 0020，回归入口为 `tests/integration/control/test_device_session.py`。

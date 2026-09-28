@@ -26,7 +26,10 @@ export function CaseSections() {
           </div>
           <div>
             <dt>跨区域演示</dt>
-            <dd>YA_B、YA_C 是跨区域协调研究所需的合成演示区域。</dd>
+            <dd>
+              当前版本 YA_B 参考化子坪、YA_C 参考榆树资料；两地各采用一台 5 MW
+              风机，仍包含模拟设备和运行数据。历史结果保留原算例参数。
+            </dd>
           </div>
           <div>
             <dt>设备数据</dt>
@@ -99,8 +102,12 @@ export function CaseSections() {
                 (region) =>
                   `${region.displayName}：${region.busCount} 个母线、${region.branchCount} 条支路`,
               ).join('；')}
-              。 山城两台风机和两处光伏独立接入，主变连接 35 kV 与 10 kV
-              电压层级。
+              。 山城参考资料中的 35 kV 并网结构，风电、储能与 SVG
+              分支接入；两处光伏及其 35/10 kV
+              变压器为保留的模拟扩展。延安两区参考 35/10 kV
+              站级结构：化子坪风机按化镰线 T 接，榆树风机接入 35 kV
+              系统；双主变采用并列等值。光伏、储能、SVG及负荷曲线仍为模拟配置，
+              电容器容量参考资料，投退状态尚未确认。
             </dd>
           </div>
           <div>

@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
 from copy import deepcopy
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, fields, replace
 from datetime import datetime, timedelta, timezone
 from math import acos, exp, tan
-from typing import Callable
+from typing import Any, Callable
 
 import numpy as np
 
@@ -44,12 +45,19 @@ from .modules.dispatch.contracts import AdoptedSchedule
 from .modules.control.api import (
     CurtailmentLedger,
     RestorationMonitor,
+    allocate_active_tracking,
     constrain_storage_power,
     disaggregate_executed_generation,
     execution_substeps,
     limit_synthetic_generation,
 )
 from .modules.control.contracts import (
+    ACTIVE_TRACKING_MOVEMENT_MW,
+    ACTIVE_TRACKING_TRIGGER_MW,
+    ActiveTrackingResource,
+    DeviceCheckpoint,
+    DevicePlanUpdate,
+    StopDeviceSession,
     PlantInputs,
     RestorationCommand,
     RestorationObservation,
@@ -412,8 +420,53 @@ def simulate_device_tracking(
     slack_voltage_pu: float = 1.0,
     seed: int = 20260901,
     plant_inputs: PlantInputs | None = None,
+    storage_enabled: bool = True,
 ) -> DeviceTrackingResult:
+    """Run an uninterrupted session with its original plan (legacy API)."""
+    session = device_tracking_session(
+        case, microgrid, regional_result, config=config,
+        group_control_config=group_control_config,
+        reverse_flow_probability_15=reverse_flow_probability_15,
+        network_config=network_config, network_limits=network_limits,
+        network_snapshot_adapter=network_snapshot_adapter,
+        network_rearm_steps=network_rearm_steps, slack_voltage_pu=slack_voltage_pu,
+        seed=seed, plant_inputs=plant_inputs, storage_enabled=storage_enabled,
+    )
+    try:
+        while True:
+            next(session)
+    except StopIteration as done:
+        return done.value
+    finally:
+        session.close()
+
+
+def device_tracking_session(
+    case: ProjectCase,
+    microgrid: MicrogridData,
+    regional_result: OptimizationResult | AdoptedSchedule,
+    *,
+    config: TimeScaleConfig | None = None,
+    group_control_config: GroupControlConfig | None = None,
+    reverse_flow_probability_15: np.ndarray | None = None,
+    network_config: MinuteNetworkConfig | None = None,
+    network_limits: NetworkSecurityLimits | None = None,
+    network_snapshot_adapter: Callable[[FixedStateSnapshot, str], FixedStateSnapshot] | None = None,
+    network_rearm_steps: tuple[int, ...] = (),
+    slack_voltage_pu: float = 1.0,
+    seed: int = 20260901,
+    plant_inputs: PlantInputs | None = None,
+    storage_enabled: bool = True,
+) -> Generator[DeviceCheckpoint, DevicePlanUpdate | None, DeviceTrackingResult]:
     """仿真独立风光储响应，并在本地硬保护之前运行光伏群控监督器。"""
+    # Keep the input snapshot immutable. A disabled PCS has no active/reactive
+    # authority, including feedback correction and local hard-protection paths.
+    if not storage_enabled:
+        microgrid = replace(
+            microgrid,
+            storage=replace(microgrid.storage, p_max_mw=0.0, s_max_mva=0.0),
+            storage_reactive_enabled=False,
+        )
     cfg = config or TimeScaleConfig()
     group_cfg = group_control_config or GroupControlConfig()
     substeps = execution_substeps(case.assumptions.dt_hours * 60, cfg.device_step_minutes)
@@ -495,7 +548,6 @@ def simulate_device_tracking(
         np.vstack([item.active_power_mw for item in pv_schedules])
         if pv_schedules else np.zeros((0, T))
     )
-    pv_command_15 = np.sum(pv_command_by_bus_15, axis=0)
     if reverse_flow_probability_15 is not None:
         reverse_flow_probability_15 = np.asarray(
             reverse_flow_probability_15, dtype=float
@@ -520,6 +572,11 @@ def simulate_device_tracking(
         if pv_buses else np.zeros((0, T))
     )
     storage_command_15 = storage_schedules[0].active_power_mw
+    if not storage_enabled and (
+        np.max(np.abs(storage_command_15)) > 1e-6
+        or np.max(np.abs(storage_schedules[0].reactive_power_mvar)) > 1e-6
+    ):
+        raise ValueError("disabled storage cannot execute a nonzero P/Q plan")
     reactive_resource_ids = tuple(item.resource_id for item in resource_schedules)
     reactive_plan_15 = np.vstack([
         item.reactive_power_mvar for item in resource_schedules
@@ -693,13 +750,13 @@ def simulate_device_tracking(
     group_actions = np.empty(total_steps, dtype=object)
     group_reasons = np.empty(total_steps, dtype=object)
 
-    wind_actual = min(float(wind_cmd[0]), float(wind_avail[0]))
+    wind_actual: float = min(float(wind_cmd[0]), float(wind_avail[0]))
     initial_pv_target = np.minimum(
         pv_plan_by_bus[:, 0],
         pv_available_by_bus[:, 0],
     )
     pv_uncontrolled_actual = initial_pv_target.copy()
-    pv_actual_by_bus = initial_pv_target.copy()
+    pv_actual_by_bus: np.ndarray = initial_pv_target.copy()
     station_ids = tuple(f"{microgrid.name}:{bus}" for bus in pv_buses)
     arbiter = ActuationArbiter()
     configured_wind_ratios = tuple(
@@ -751,9 +808,9 @@ def simulate_device_tracking(
         else np.zeros(0)
     )
     pv_ramp_per_step = pv_ramp_per_minute * cfg.device_step_minutes
-    storage_actual = float(storage_cmd[0])
-    reactive_actual_by_resource = q_plan_by_resource[:, 0].copy()
-    energy = microgrid.storage.e_initial_mwh
+    storage_actual: float = float(storage_cmd[0])
+    reactive_actual_by_resource: np.ndarray = q_plan_by_resource[:, 0].copy()
+    energy: float = microgrid.storage.e_initial_mwh
     dt_hours = cfg.device_step_minutes / 60.0
     pf_tan = tan(acos(case.assumptions.pf_min))
     before_violations = 0
@@ -871,7 +928,43 @@ def simulate_device_tracking(
             supervisor.hold_for_network(network_gate.reason, remaining)
         return rearmed
 
+    completed_steps = total_steps
     for k in range(total_steps):
+        try:
+            update: DevicePlanUpdate | None = yield DeviceCheckpoint(
+                minute=k * cfg.device_step_minutes,
+                storage_energy_mwh=float(energy),
+                storage_power_mw=float(storage_actual),
+                reactive_power_mvar={rid: float(reactive_actual_by_resource[i]) for i, rid in enumerate(reactive_resource_ids)},
+            )
+        except StopDeviceSession:
+            if k == 0:
+                raise ValueError("no completed device steps to archive") from None
+            completed_steps = k
+            break
+        if update is not None:
+            if cfg.device_step_minutes != 1 or update.start_minute != k:
+                raise ValueError("updates must start at the current one-minute boundary")
+            stop = k + len(update.p_mw)
+            if stop > total_steps or set(update.resource_p_mw) != set(reactive_resource_ids):
+                raise ValueError("update horizon or resource identities differ from the plant")
+            if not storage_enabled and any(
+                abs(v) > 1e-6 for v in (
+                    *update.resource_p_mw[storage_schedules[0].resource_id],
+                    *update.resource_q_mvar[storage_schedules[0].resource_id],
+                )
+            ):
+                raise ValueError("disabled storage cannot execute updated nonzero P/Q")
+            p_cmd[k:stop] = update.p_mw
+            q_cmd[k:stop] = update.q_mvar
+            for i, resource in enumerate(resource_schedules):
+                q_plan_by_resource[i, k:stop] = update.resource_q_mvar[resource.resource_id]
+            for i, resource in enumerate(wind_schedules):
+                wind_command_by_resource[i, k:stop] = update.resource_p_mw[resource.resource_id]
+            wind_cmd[k:stop] = np.sum(wind_command_by_resource[:, k:stop], axis=0)
+            for i, resource in enumerate(pv_schedules):
+                pv_plan_by_bus[i, k:stop] = update.resource_p_mw[resource.resource_id]
+            storage_cmd[k:stop] = update.resource_p_mw[storage_schedules[0].resource_id]
         cycle_network_feedback: list[MinuteNetworkFeedback] = []
         time_minutes = float(k * cfg.device_step_minutes)
         energy_before_step = energy
@@ -891,6 +984,8 @@ def simulate_device_tracking(
         )
         pv_availability_limited[k] = float(np.sum(pv_actual_by_bus - bounded_pv))
         pv_actual_by_bus = bounded_pv
+        wind_before_response = wind_actual
+        pv_before_response = pv_actual_by_bus.copy()
         pv_uncontrolled_actual = np.minimum(pv_uncontrolled_actual, pv_available_by_bus[:, k])
         base_wind_target = min(float(wind_cmd[k]), float(wind_avail[k]))
         base_storage_target = float(storage_cmd[k])
@@ -1025,7 +1120,7 @@ def simulate_device_tracking(
         storage_soc_within_limits = (
             storage_soc_within_limits and correction_within_soc
         )
-        decision_network = observe_network("pre_control")
+        decision_network = observe_network("storage_tracking_response")
         network_rearmed = apply_network_gate(decision_network, rearm=k in network_rearm_steps)
         q_grid = float(net_demand_q[k] - float(np.sum(reactive_actual_by_resource)))
         p_grid = float(
@@ -1034,6 +1129,69 @@ def simulate_device_tracking(
             - float(np.sum(pv_actual_by_bus))
             - storage_actual
         )
+
+        # Storage has used its ordinary correction budget. Propose the residual
+        # on authorized renewables, using ONE cycle's response/ramp envelope.
+        # Probes are not telemetry and cannot release a protection owner.
+        active_allocation = None
+        active_allocation_status = "not_needed"
+        residual_p = p_grid - p_tracking_reference
+        if abs(residual_p) > ACTIVE_TRACKING_TRIGGER_MW:
+            active_allocation_status = "blocked"
+            if (decision_network.recovery_safe and not network_gate.blocked
+                    and not supervisor.curtailment_active
+                    and restoration_command_id is None
+                    and not safety_coordinator.active and not hard_protection_latched):
+                allowed_pv = {
+                    c.station_id: c for c in arbiter.resolve({
+                        sid: float(pv_available_by_bus[i, k])
+                        for i, sid in enumerate(station_ids)
+                    })
+                }
+                wind_group_id = f"{microgrid.name}:wind-group"
+                resources = tuple(
+                    ActiveTrackingResource(
+                        sid, float(pv_before_response[i]), float(pv_actual_by_bus[i]),
+                        0.0, allowed_pv[sid].effective_cap_mw,
+                        float(pv_ramp_per_step[i]), pv_alpha,
+                        controllable=not bool(allowed_pv[sid].owner_caps),
+                    ) for i, sid in enumerate(station_ids)
+                ) + (ActiveTrackingResource(
+                    wind_group_id, wind_before_response, wind_actual,
+                    0.0, float(wind_avail[k]), p_ramp, alpha,
+                ),)
+                active_allocation = allocate_active_tracking(resources, residual_p)
+                responses = dict(active_allocation.responses_mw)
+                commands = dict(active_allocation.commands_mw)
+                candidate_pv = np.asarray([responses[sid] for sid in station_ids])
+                candidate_wind = responses[wind_group_id]
+                active_allocation_status = "capacity_limited"
+                if (np.any(np.abs(candidate_pv - pv_actual_by_bus) > ACTIVE_TRACKING_MOVEMENT_MW)
+                        or abs(candidate_wind - wind_actual) > ACTIVE_TRACKING_MOVEMENT_MW):
+                    candidate = observe_network(
+                        "active_tracking_candidate", pv=candidate_pv,
+                        wind=candidate_wind, refresh=False,
+                    )
+                    if (candidate.recovery_safe and not candidate.flow.violations
+                            and candidate.flow.pcc_import_mw >= active_safety_floor_mw
+                            and candidate.flow.pcc_import_mw <= microgrid.p_grid_max_mw
+                            and abs(candidate.flow.pcc_import_mw - p_tracking_reference)
+                            < abs(residual_p)):
+                        for i, sid in enumerate(station_ids):
+                            if abs(candidate_pv[i] - pv_actual_by_bus[i]) > ACTIVE_TRACKING_MOVEMENT_MW:
+                                command = commands[sid]
+                                assert command is not None
+                                device_caps[sid] = command
+                                pv_uncontrolled_actual[i] = candidate_pv[i]
+                        pv_actual_by_bus = candidate_pv
+                        wind_actual = candidate_wind
+                        active_allocation_status = "adopted"
+                    else:
+                        active_allocation_status = "network_rejected"
+
+        decision_network = observe_network("pre_control")
+        p_grid = float(net_demand_p[k] - wind_actual - np.sum(pv_actual_by_bus) - storage_actual)
+        q_grid = float(net_demand_q[k] - np.sum(reactive_actual_by_resource))
 
         group_caps = arbiter.owner_caps("group_control")
         curtailment_ledger.synchronize(device_caps, group_caps)
@@ -1564,6 +1722,7 @@ def simulate_device_tracking(
                 capabilities=reactive_capabilities, project_targets=project_targets,
                 slack_voltage_pu=reactive_feedback.inputs["snapshot"]["slack_voltage_pu"],
                 alpha=alpha, ramp_mvar=q_ramp,
+                pcc_target_mvar=desired_q_grid,
             )
             if correction.status in ("safe", "corrected", "best_effort"):
                 reactive_decision = shancheng_controller.step(reactive_snapshot, command_for(correction.controls))
@@ -1620,6 +1779,7 @@ def simulate_device_tracking(
             group_q_unserved = abs(requested_group_q - retained_group_q)
             reactive_dispatch_unserved[k] = max(reactive_dispatch_unserved[k], group_q_unserved)
         network_records[-1]["reactive_control"] = {
+            "tracking": asdict(correction.tracking) if correction is not None and correction.tracking is not None else None,
             "status": correction.status if correction is not None else "unavailable",
             "candidate_evaluations": correction.evaluations if correction is not None else 0,
             "predicted_safe": correction is not None and correction.status in ("safe", "corrected"),
@@ -1633,6 +1793,14 @@ def simulate_device_tracking(
             "q_targets_mvar": reactive_targets.tolist(),
             "q_executed_mvar": reactive_actual_by_resource.tolist(),
             "aggregate_q_ramp_mvar": q_ramp,
+        }
+        network_records[-1]["active_tracking"] = {
+            "version": "active-tracking-allocation-v1",
+            "trigger_tolerance_mw": ACTIVE_TRACKING_TRIGGER_MW,
+            "movement_tolerance_mw": ACTIVE_TRACKING_MOVEMENT_MW,
+            "status": active_allocation_status,
+            "proposal": asdict(active_allocation) if active_allocation is not None else None,
+            "post_action_error_mw": p_grid - p_tracking_reference if final_network.valid else None,
         }
 
         p_actual[k] = p_grid
@@ -1705,7 +1873,7 @@ def simulate_device_tracking(
             pv_uncontrolled_actual - pv_actual_by_bus,
         )))
 
-    return DeviceTrackingResult(
+    result: DeviceTrackingResult = DeviceTrackingResult(
         name=microgrid.name,
         time_minutes=np.arange(total_steps, dtype=float) * cfg.device_step_minutes,
         pcc_command_mw=p_cmd,
@@ -1743,7 +1911,7 @@ def simulate_device_tracking(
         wind_availability_limited_mw=wind_availability_limited,
         pv_availability_limited_mw=pv_availability_limited,
         group_restoration_evidence=tuple(restoration_evidence),
-        pv_plan_mw=np.repeat(pv_command_15, substeps),
+        pv_plan_mw=np.sum(pv_plan_by_bus, axis=0),
         pv_available_mw=np.sum(pv_available_by_bus, axis=0),
         pv_control_target_mw=pv_control_target_series,
         pv_actual_mw=pv_actual_series,
@@ -1828,3 +1996,17 @@ def simulate_device_tracking(
         local_reverse_flow_interventions=local_reverse_interventions,
         local_power_factor_interventions=local_pf_interventions,
     )
+    if completed_steps < total_steps:
+        # All array evidence uses the execution time axis; never expose the
+        # unexecuted allocation tail as zero-valued measurements.
+        updates: dict[str, Any] = {}
+        for field in fields(result):
+            value = getattr(result, field.name)
+            if isinstance(value, np.ndarray):
+                updates[field.name] = value[:completed_steps].copy()
+            elif isinstance(value, dict) and value and all(isinstance(v, np.ndarray) for v in value.values()):
+                updates[field.name] = {key: v[:completed_steps].copy() for key, v in value.items()}
+        updates["p_tracking_rmse_mw"] = float(np.sqrt(np.mean((p_actual[:completed_steps] - p_cmd[:completed_steps]) ** 2)))
+        updates["q_tracking_rmse_mvar"] = float(np.sqrt(np.mean((q_actual[:completed_steps] - q_cmd[:completed_steps]) ** 2)))
+        result = replace(result, **updates)
+    return result

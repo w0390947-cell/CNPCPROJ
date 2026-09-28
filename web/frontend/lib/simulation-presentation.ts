@@ -13,10 +13,11 @@ export type ProfileFrame = {
   time: string; minute: number;
   import: number | null; load: number | null; renewable: number | null;
   wind: number | null; pv: number | null; storage: number | null; svg: number | null;
+  windQ: number | null;
 };
 export const emptyFrame: ProfileFrame = {
   time: '—', minute: 0, import: null, load: null, renewable: null,
-  wind: null, pv: null, storage: null, svg: null,
+  wind: null, windQ: null, pv: null, storage: null, svg: null,
 };
 
 /** 原始计划点：不补造任何曲线，也不把风光总和当作光伏。 */
@@ -30,6 +31,7 @@ export function profileFrames(result: SimulationResult | null, single = false): 
     time: clockLabel(p.time_hour * 60), minute: p.time_hour * 60,
     import: p.p_grid_optimized_mw, load: p.load_mw, renewable: p.wind_used_mw + p.pv_used_mw,
     wind: p.wind_used_mw, pv: p.pv_used_mw,
+    windQ: p.wind_q_mvar ?? null,
     storage: p.storage_discharge_mw - p.storage_charge_mw, svg: p.svg_q_mvar,
   }));
 }
@@ -44,7 +46,7 @@ export function minuteFrames(points: ProfileFrame[]): ProfileFrame[] {
     for (let minute = left.minute; minute < right.minute; minute++) {
       const ratio = (minute - left.minute) / (right.minute - left.minute);
       const frame = { ...emptyFrame, minute, time: clockLabel(minute) };
-      for (const key of ['import', 'load', 'renewable', 'wind', 'pv', 'storage', 'svg'] as const) {
+      for (const key of ['import', 'load', 'renewable', 'wind', 'windQ', 'pv', 'storage', 'svg'] as const) {
         const a = left[key], b = right[key];
         frame[key] = a == null || b == null ? null : a + (b - a) * ratio;
       }

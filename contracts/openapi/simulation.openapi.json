@@ -505,6 +505,95 @@
         ],
         "title": "Catalog"
       },
+      "ClusterExecution": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "cluster-execution-v1",
+            "title": "Version",
+            "default": "cluster-execution-v1"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "violated",
+              "unknown",
+              "not_computed"
+            ],
+            "title": "Status"
+          },
+          "storage_enabled": {
+            "type": "boolean",
+            "title": "Storage Enabled"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/ExecutionPolicy"
+          },
+          "input_basis": {
+            "type": "string",
+            "title": "Input Basis"
+          },
+          "dataset_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset Sha256"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionStage"
+            },
+            "type": "array",
+            "title": "Stages"
+          },
+          "scope": {
+            "type": "string",
+            "const": "synthetic_execution",
+            "title": "Scope",
+            "default": "synthetic_execution"
+          },
+          "rolling_updates": {
+            "items": {
+              "$ref": "#/components/schemas/RollingUpdate"
+            },
+            "type": "array",
+            "title": "Rolling Updates",
+            "default": []
+          },
+          "minute_reserves": {
+            "items": {
+              "$ref": "#/components/schemas/MinuteReserveObservation"
+            },
+            "type": "array",
+            "title": "Minute Reserves",
+            "default": []
+          },
+          "reserve_target_adjustments": {
+            "items": {
+              "$ref": "#/components/schemas/ReserveTargetAdjustment"
+            },
+            "type": "array",
+            "title": "Reserve Target Adjustments",
+            "default": []
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "storage_enabled",
+          "policy",
+          "input_basis",
+          "stages"
+        ],
+        "title": "ClusterExecution"
+      },
       "ClusterImportAssessment": {
         "properties": {
           "stage": {
@@ -934,6 +1023,133 @@
         ],
         "title": "CommunicationSummary"
       },
+      "ComputationQualityPolicy": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "quality-first-v1",
+            "title": "Version",
+            "default": "quality-first-v1"
+          },
+          "solve_seconds": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Solve Seconds",
+            "default": [
+              180.0,
+              600.0,
+              1800.0
+            ]
+          },
+          "admm_iterations": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Admm Iterations",
+            "default": [
+              360,
+              720,
+              1000
+            ]
+          },
+          "relative_gap": {
+            "type": "number",
+            "exclusiveMaximum": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Relative Gap",
+            "default": 0.0001
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ComputationQualityPolicy",
+        "description": "Bounded offline solve budgets, not physical tolerances or a global optimum claim."
+      },
+      "ComputationQualityReport": {
+        "properties": {
+          "policy": {
+            "$ref": "#/components/schemas/ComputationQualityPolicy"
+          },
+          "reference_optimizations": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/OptimizationQuality"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Reference Optimizations"
+          },
+          "reference_coordination": {
+            "items": {
+              "$ref": "#/components/schemas/CoordinationBudgetEvidence"
+            },
+            "type": "array",
+            "title": "Reference Coordination"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "policy",
+          "reference_optimizations",
+          "reference_coordination"
+        ],
+        "title": "ComputationQualityReport"
+      },
+      "CoordinationBudgetEvidence": {
+        "properties": {
+          "iteration_budget": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Iteration Budget"
+          },
+          "completed_iterations": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Completed Iterations"
+          },
+          "converged": {
+            "type": "boolean",
+            "title": "Converged"
+          },
+          "primal_residual": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Primal Residual"
+          },
+          "dual_residual": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Dual Residual"
+          },
+          "primal_tolerance": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Primal Tolerance"
+          },
+          "dual_tolerance": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Dual Tolerance"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "iteration_budget",
+          "completed_iterations",
+          "converged",
+          "primal_residual",
+          "dual_residual",
+          "primal_tolerance",
+          "dual_tolerance"
+        ],
+        "title": "CoordinationBudgetEvidence"
+      },
       "CoordinationIterationTrace": {
         "properties": {
           "version": {
@@ -1299,6 +1515,197 @@
         "title": "DispatchCapabilities",
         "description": "One dispatch request's device participation, not physical nameplate data.\n\nDisabled storage provides neither active nor reactive support, matching\nexisting central solvers. Its initial energy is held fixed."
       },
+      "DynamicTrackingAssessment": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "dynamic-pcc-tracking-v1",
+            "title": "Version",
+            "default": "dynamic-pcc-tracking-v1"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "MW",
+              "Mvar"
+            ],
+            "title": "Unit"
+          },
+          "limit": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Limit"
+          },
+          "numerical_tolerance": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Numerical Tolerance"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "violated",
+              "unknown"
+            ],
+            "title": "Status"
+          },
+          "response_status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "violated",
+              "unknown"
+            ],
+            "title": "Response Status"
+          },
+          "steady_status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "violated",
+              "unknown"
+            ],
+            "title": "Steady Status"
+          },
+          "raw_max_error": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Max Error"
+          },
+          "raw_max_error_time_minute": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Max Error Time Minute"
+          },
+          "rmse": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rmse"
+          },
+          "post_deadline_max_error": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Post Deadline Max Error"
+          },
+          "longest_outside_band_minutes": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Longest Outside Band Minutes"
+          },
+          "invalid_samples": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Invalid Samples"
+          },
+          "transitions": {
+            "items": {
+              "$ref": "#/components/schemas/TrackingTransition"
+            },
+            "type": "array",
+            "title": "Transitions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "unit",
+          "limit",
+          "numerical_tolerance",
+          "status",
+          "response_status",
+          "steady_status",
+          "longest_outside_band_minutes",
+          "invalid_samples",
+          "transitions"
+        ],
+        "title": "DynamicTrackingAssessment"
+      },
+      "DynamicTrackingPolicy": {
+        "properties": {
+          "time_constant_minutes": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Time Constant Minutes",
+            "default": 2.0
+          },
+          "pv_time_constant_minutes": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Pv Time Constant Minutes",
+            "default": 0.25
+          },
+          "p_ramp_mw_per_minute": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "P Ramp Mw Per Minute",
+            "default": 0.65
+          },
+          "q_ramp_mvar_per_minute": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Q Ramp Mvar Per Minute",
+            "default": 0.9
+          },
+          "maximum_response_minutes": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Maximum Response Minutes",
+            "default": 10
+          },
+          "confirmation_samples": {
+            "type": "integer",
+            "minimum": 2.0,
+            "title": "Confirmation Samples",
+            "default": 3
+          },
+          "p_change_threshold_mw": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "P Change Threshold Mw",
+            "default": 0.0001
+          },
+          "q_change_threshold_mvar": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Q Change Threshold Mvar",
+            "default": 0.0001
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": "软件仿真动态判据：依据已记录的响应、爬坡、最长等待和连续确认参数；非现场验收定值"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DynamicTrackingPolicy",
+        "description": "Offline response assessment parameters, shared with the synthetic plant."
+      },
       "EconomicCost": {
         "properties": {
           "import_cost_cny": {
@@ -1351,6 +1758,257 @@
           "communication_outage"
         ],
         "title": "EventType"
+      },
+      "ExecutionCheck": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "violated",
+              "unknown",
+              "not_computed"
+            ],
+            "title": "Status"
+          },
+          "actual": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit",
+            "default": ""
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "label",
+          "status"
+        ],
+        "title": "ExecutionCheck"
+      },
+      "ExecutionPolicy": {
+        "properties": {
+          "p_tracking_tolerance_mw": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "P Tracking Tolerance Mw",
+            "default": 0.05
+          },
+          "q_tracking_tolerance_mvar": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Q Tracking Tolerance Mvar",
+            "default": 0.05
+          },
+          "numerical_tolerance": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Numerical Tolerance",
+            "default": 1e-06
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": "软件仿真策略：工程限值、数值容差与分钟动态规则随结果记录；非现场验收定值"
+          },
+          "device_step_minutes": {
+            "type": "integer",
+            "const": 1,
+            "title": "Device Step Minutes",
+            "default": 1
+          },
+          "random_seed": {
+            "type": "integer",
+            "title": "Random Seed",
+            "default": 20260901
+          },
+          "update_minutes": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Update Minutes",
+            "default": 15
+          },
+          "horizon_minutes": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Horizon Minutes",
+            "default": 240
+          },
+          "regional_plan_workers": {
+            "type": "integer",
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Regional Plan Workers",
+            "default": 1
+          },
+          "numerical_threads_per_worker": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "const": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Numerical Threads Per Worker"
+          },
+          "coordination_model_reuse": {
+            "type": "boolean",
+            "title": "Coordination Model Reuse",
+            "default": false
+          },
+          "dynamic_tracking": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DynamicTrackingPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active_tracking_version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "active-tracking-allocation-v1"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Tracking Version"
+          },
+          "storage_reserve": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StorageReservePolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reactive_planning": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReactivePlanningPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reactive_tracking_version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "reactive-tracking-v1"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reactive Tracking Version"
+          },
+          "computation_quality": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComputationQualityPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ExecutionPolicy",
+        "description": "Offline study tolerances, NOT customer-approved operating setpoints."
+      },
+      "ExecutionStage": {
+        "properties": {
+          "stage": {
+            "type": "string",
+            "enum": [
+              "day_ahead",
+              "intraday",
+              "minute"
+            ],
+            "title": "Stage"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "violated",
+              "unknown",
+              "not_computed"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
+          },
+          "regions": {
+            "items": {
+              "$ref": "#/components/schemas/RegionalExecution"
+            },
+            "type": "array",
+            "title": "Regions",
+            "default": []
+          },
+          "cluster_import": {
+            "$ref": "#/components/schemas/ClusterImportAssessment"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stage",
+          "status",
+          "cluster_import"
+        ],
+        "title": "ExecutionStage"
       },
       "ExecutiveSummary": {
         "properties": {
@@ -1831,6 +2489,16 @@
             "title": "Total Stages",
             "default": 6
           },
+          "rolling": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RollingProgress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "result_available": {
             "type": "boolean",
             "title": "Result Available",
@@ -1871,6 +2539,190 @@
         "title": "JobStatus"
       },
       "JsonValue": {},
+      "MinuteReserveObservation": {
+        "properties": {
+          "minute": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Minute"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region"
+          },
+          "energy_mwh": {
+            "type": "number",
+            "title": "Energy Mwh"
+          },
+          "storage_power_mw": {
+            "type": "number",
+            "title": "Storage Power Mw"
+          },
+          "required_mw": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Required Mw"
+          },
+          "available_up_mw": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Available Up Mw"
+          },
+          "available_down_mw": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Available Down Mw"
+          },
+          "deficient": {
+            "type": "boolean",
+            "title": "Deficient"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "monitor",
+              "recovering",
+              "replan"
+            ],
+            "title": "Action",
+            "default": "monitor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "minute",
+          "region",
+          "energy_mwh",
+          "storage_power_mw",
+          "required_mw",
+          "available_up_mw",
+          "available_down_mw",
+          "deficient"
+        ],
+        "title": "MinuteReserveObservation",
+        "description": "At a minute boundary, based only on the last completed device state."
+      },
+      "OptimizationAttempt": {
+        "properties": {
+          "budget_seconds": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Budget Seconds"
+          },
+          "solver_status": {
+            "type": "string",
+            "title": "Solver Status"
+          },
+          "feasible": {
+            "type": "boolean",
+            "title": "Feasible"
+          },
+          "objective_cny": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Objective Cny"
+          },
+          "relative_gap": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relative Gap"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "budget_seconds",
+          "solver_status",
+          "feasible"
+        ],
+        "title": "OptimizationAttempt"
+      },
+      "OptimizationQuality": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "satisfied",
+              "budget_exhausted",
+              "infeasible",
+              "stopped"
+            ],
+            "title": "Status"
+          },
+          "target_relative_gap": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Target Relative Gap"
+          },
+          "attempts": {
+            "items": {
+              "$ref": "#/components/schemas/OptimizationAttempt"
+            },
+            "type": "array",
+            "title": "Attempts"
+          },
+          "selected_attempt": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Selected Attempt"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "target_relative_gap",
+          "attempts",
+          "selected_attempt"
+        ],
+        "title": "OptimizationQuality"
+      },
+      "ReactivePlanningPolicy": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "reactive-planning-v1",
+            "title": "Version",
+            "default": "reactive-planning-v1"
+          },
+          "reserve_fraction": {
+            "type": "number",
+            "exclusiveMaximum": 1.0,
+            "minimum": 0.0,
+            "title": "Reserve Fraction",
+            "default": 0.1
+          },
+          "transition_minutes": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Transition Minutes",
+            "default": 5.0
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": "软件无功规划假设（参数随结果记录）；待现场动态与预测误差校准"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ReactivePlanningPolicy",
+        "description": "Study reserve and transition envelope; never expands physical Q authority."
+      },
       "Reading": {
         "properties": {
           "device_id": {
@@ -2011,12 +2863,23 @@
             "default": "aggregate_reference_with_calibrated_losses"
           },
           "realized_regional_economic_cost_cny": {
-            "type": "null",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Realized Regional Economic Cost Cny"
           },
           "realization_status": {
             "type": "string",
-            "const": "not_computed",
+            "enum": [
+              "not_computed",
+              "computed",
+              "unavailable"
+            ],
             "title": "Realization Status",
             "default": "not_computed"
           },
@@ -2140,6 +3003,152 @@
         ],
         "title": "RegionalCoordinationTrace",
         "description": "Coordinator's latest accepted proposal, never a device measurement.\n\nPositive P/Q mean PCC import. Missing proposals remain None. Fresh means\neligible for this barrier epoch, including an unexpired buffered response.\nOutage and local fallback are independent observations, not inferred from P."
+      },
+      "RegionalExecution": {
+        "properties": {
+          "region": {
+            "type": "string",
+            "title": "Region"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "violated",
+              "unknown",
+              "not_computed"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
+          },
+          "optimization_quality": {
+            "items": {
+              "$ref": "#/components/schemas/OptimizationQuality"
+            },
+            "type": "array",
+            "title": "Optimization Quality",
+            "default": []
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionCheck"
+            },
+            "type": "array",
+            "title": "Checks",
+            "default": []
+          },
+          "economic_cost_cny": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Economic Cost Cny"
+          },
+          "time_minutes": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Time Minutes",
+            "default": []
+          },
+          "p_mw": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "P Mw",
+            "default": []
+          },
+          "q_mvar": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Q Mvar",
+            "default": []
+          },
+          "p_target_mw": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "P Target Mw",
+            "default": []
+          },
+          "q_target_mvar": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Q Target Mvar",
+            "default": []
+          },
+          "storage_power_mw": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Storage Power Mw",
+            "default": []
+          },
+          "storage_energy_mwh": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Storage Energy Mwh",
+            "default": []
+          },
+          "resource_p_mw": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Resource P Mw"
+          },
+          "resource_q_mvar": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Resource Q Mvar"
+          },
+          "dynamic_tracking": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DynamicTrackingAssessment"
+            },
+            "propertyNames": {
+              "enum": [
+                "p",
+                "q"
+              ]
+            },
+            "type": "object",
+            "title": "Dynamic Tracking"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "region",
+          "status"
+        ],
+        "title": "RegionalExecution"
       },
       "RegionalPlanSnapshot": {
         "properties": {
@@ -2294,6 +3303,75 @@
         "title": "RenewableAccounting",
         "description": "Chronological interval MW. Availability is AFTER the rated-MW bound.\n\nRaw predictions remain diagnostics. Excess above rated availability is not\ncontrollable curtailment. Tuples own their values and cannot mutate callers."
       },
+      "ReserveTargetAdjustment": {
+        "properties": {
+          "minute": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Minute"
+          },
+          "trigger_regions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Trigger Regions"
+          },
+          "original_p_mw": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Original P Mw"
+          },
+          "original_q_mvar": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Original Q Mvar"
+          },
+          "adopted_p_mw": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Adopted P Mw"
+          },
+          "adopted_q_mvar": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Adopted Q Mvar"
+          },
+          "update": {
+            "$ref": "#/components/schemas/RollingUpdate"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "minute",
+          "trigger_regions",
+          "original_p_mw",
+          "original_q_mvar",
+          "update"
+        ],
+        "title": "ReserveTargetAdjustment"
+      },
       "ResourceAvailability": {
         "properties": {
           "schema_version": {
@@ -2341,6 +3419,292 @@
         ],
         "title": "ResourceAvailability",
         "description": "Read-only, per-device renewable capability from the fixed demo bundle."
+      },
+      "RollingProgress": {
+        "properties": {
+          "current_window": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Current Window"
+          },
+          "completed_windows": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Completed Windows"
+          },
+          "total_windows": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Total Windows"
+          },
+          "start_minute": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Start Minute"
+          },
+          "end_minute": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "End Minute"
+          },
+          "total_minutes": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Total Minutes"
+          },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "preparing",
+              "executing",
+              "completed",
+              "stopped"
+            ],
+            "title": "Phase"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "current_window",
+          "completed_windows",
+          "total_windows",
+          "start_minute",
+          "end_minute",
+          "total_minutes",
+          "phase"
+        ],
+        "title": "RollingProgress",
+        "description": "Observed work, not an elapsed-time estimate or an engineering verdict.\n\nWindows are one-based. Minutes are offsets from the simulation start.\nOnly a completed prepare/advance pair increments completed_windows."
+      },
+      "RollingUpdate": {
+        "properties": {
+          "start_minute": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Start Minute"
+          },
+          "end_minute": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "End Minute"
+          },
+          "horizon_end_minute": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Horizon End Minute"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "violated",
+              "unknown",
+              "not_computed"
+            ],
+            "title": "Status"
+          },
+          "adopted": {
+            "type": "boolean",
+            "title": "Adopted",
+            "default": false
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
+          },
+          "coordination_quality": {
+            "items": {
+              "$ref": "#/components/schemas/CoordinationBudgetEvidence"
+            },
+            "type": "array",
+            "title": "Coordination Quality",
+            "default": []
+          },
+          "optimization_quality": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/OptimizationQuality"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Optimization Quality"
+          },
+          "initial_energy_mwh": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Initial Energy Mwh"
+          },
+          "initial_reactive_mvar": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Initial Reactive Mvar"
+          },
+          "terminal_target_mwh": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Terminal Target Mwh"
+          },
+          "unreserved_terminal_target_mwh": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Unreserved Terminal Target Mwh"
+          },
+          "reserve_up_mw": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Reserve Up Mw"
+          },
+          "reserve_down_mw": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Reserve Down Mw"
+          },
+          "reserve_energy_floor_mwh": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Reserve Energy Floor Mwh"
+          },
+          "reserve_energy_ceiling_mwh": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Reserve Energy Ceiling Mwh"
+          },
+          "actual_end_energy_mwh": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Actual End Energy Mwh"
+          },
+          "previous_p_target_mw": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Previous P Target Mw"
+          },
+          "previous_q_target_mvar": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Previous Q Target Mvar"
+          },
+          "previous_target_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "day_ahead_admm",
+                  "preceding_rolling_admm"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Target Source"
+          },
+          "p_target_mw": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "P Target Mw"
+          },
+          "q_target_mvar": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Q Target Mvar"
+          },
+          "adopted_p_mw": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Adopted P Mw"
+          },
+          "adopted_q_mvar": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Adopted Q Mvar"
+          },
+          "admm_iterations": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Admm Iterations",
+            "default": 0
+          },
+          "regional_checks": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/ExecutionCheck"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Regional Checks"
+          },
+          "forecast_basis": {
+            "type": "string",
+            "title": "Forecast Basis",
+            "default": "同版本日内预测按窗口读取；反馈仅使用已执行状态，不读取未来分钟实绩"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start_minute",
+          "end_minute",
+          "horizon_end_minute",
+          "status"
+        ],
+        "title": "RollingUpdate",
+        "description": "Information available before adoption, plus post-execution energy evidence."
       },
       "Safety": {
         "properties": {
@@ -2607,7 +3971,7 @@
           "schema_version": {
             "type": "string",
             "title": "Schema Version",
-            "default": "1.4.0"
+            "default": "1.7.0"
           },
           "generated_at": {
             "type": "string",
@@ -3018,6 +4382,26 @@
                 "type": "null"
               }
             ]
+          },
+          "cluster_execution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClusterExecution"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "computation_quality": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComputationQualityReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -3055,11 +4439,80 @@
             "exclusiveMinimum": 0.0,
             "title": "Time Limit Seconds",
             "default": 60.0
+          },
+          "quality_policy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "quality-first-v1"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality Policy"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "title": "SolverOptions"
+      },
+      "StorageReservePolicy": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "const": "storage-reserve-v1",
+            "title": "Version",
+            "default": "storage-reserve-v1"
+          },
+          "forecast_error_fraction": {
+            "type": "number",
+            "exclusiveMaximum": 1.0,
+            "minimum": 0.0,
+            "title": "Forecast Error Fraction",
+            "default": 0.02
+          },
+          "minimum_error_mw": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Minimum Error Mw",
+            "default": 0.05
+          },
+          "support_minutes": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Support Minutes",
+            "default": 15
+          },
+          "recovery_minutes": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Recovery Minutes",
+            "default": 15
+          },
+          "trigger_fraction": {
+            "type": "number",
+            "maximum": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Trigger Fraction",
+            "default": 0.5
+          },
+          "replan_cooldown_minutes": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Replan Cooldown Minutes",
+            "default": 5
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": "软件仿真备用假设（参数随结果记录）；待现场预测误差统计校准，非现场运行定值"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "StorageReservePolicy",
+        "description": "Explicit study assumptions, not measured forecast-error statistics."
       },
       "TimeSeriesPoint": {
         "properties": {
@@ -3102,6 +4555,18 @@
           "wind_used_mw": {
             "type": "number",
             "title": "Wind Used Mw"
+          },
+          "wind_q_mvar": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wind Q Mvar",
+            "description": "Regional wind reactive plan in Mvar; positive injection, negative absorption; null for missing historical data."
           },
           "pv_available_mw": {
             "type": "number",
@@ -3264,6 +4729,117 @@
         ],
         "title": "TopologyNode"
       },
+      "TrackingTransition": {
+        "properties": {
+          "start_minute": {
+            "type": "number",
+            "title": "Start Minute"
+          },
+          "observed_until_minute": {
+            "type": "number",
+            "title": "Observed Until Minute"
+          },
+          "target": {
+            "type": "number",
+            "title": "Target"
+          },
+          "target_change": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Change"
+          },
+          "allowed_response_minutes": {
+            "type": "number",
+            "title": "Allowed Response Minutes"
+          },
+          "deadline_minute": {
+            "type": "number",
+            "title": "Deadline Minute"
+          },
+          "entered_band_after_minutes": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entered Band After Minutes"
+          },
+          "confirmed_after_minutes": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed After Minutes"
+          },
+          "post_deadline_max_error": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Post Deadline Max Error"
+          },
+          "post_deadline_samples": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Post Deadline Samples"
+          },
+          "response_status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "violated",
+              "unknown"
+            ],
+            "title": "Response Status"
+          },
+          "steady_status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "violated",
+              "unknown"
+            ],
+            "title": "Steady Status"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start_minute",
+          "observed_until_minute",
+          "target",
+          "target_change",
+          "allowed_response_minutes",
+          "deadline_minute",
+          "post_deadline_samples",
+          "response_status",
+          "steady_status",
+          "reason"
+        ],
+        "title": "TrackingTransition",
+        "description": "Samples are end-of-step observations labelled by interval start time."
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -3383,7 +4959,10 @@
                 "type": "string",
                 "enum": [
                   "centralized_reference",
-                  "admm_reference"
+                  "admm_reference",
+                  "day_ahead",
+                  "intraday",
+                  "minute"
                 ]
               },
               {
@@ -3391,6 +4970,23 @@
               }
             ],
             "title": "Validation Basis"
+          },
+          "assessment_status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "passed",
+                  "violated",
+                  "unknown",
+                  "not_computed"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessment Status"
           }
         },
         "additionalProperties": false,

@@ -1,5 +1,39 @@
 # Dispatch economics
 
+ADR 0031 adds `api.solve_for_quality` and typed quality/budget evidence. Only
+budget exhaustion retries; infeasible/unknown/cancelled paths do not acquire
+success. The numerical AC bridge supplies observations; the pure API owns the
+bounded decision. See [Computation_Quality.md](../../../../docs/modeling/Computation_Quality.md).
+Tests: `tests/unit/dispatch/test_computation_quality.py`,
+`tests/integration/dispatch/test_computation_quality.py`.
+
+ADR 0030 adds `api.plan_reactive_envelope`: immutable physical-facet reserve and
+finite-response rows shared by the convex, MISOCP and linear bridges. Initial Q
+comes only from completed device checkpoints. See
+[Reactive_Tracking.md](../../../../docs/modeling/Reactive_Tracking.md).
+
+ADR 0029 adds `api.plan_storage_reserve`, immutable `StorageReservePlan` and
+versioned `StorageReservePolicy`. Forecast-derived power/energy margins are
+planning envelopes, separate from physical storage ratings. The numerical
+adapters share these constraints and refresh them when reusing a model.
+See [Storage_Reserve.md](../../../../docs/modeling/Storage_Reserve.md).
+
+ADR 0024 adds job-owned DPP model reuse to the legacy numerical adapters and
+process-isolated regional realization at the bootstrap boundary. Public accounting
+and contracts remain solver independent. See `tests/integration/dispatch/test_coordination_workspace.py`.
+
+ADR 0023 corrects the existing `regional_control.py` numerical adapter to use
+per-resource planned P/Q and the execution layer's declared capability limits.
+No SDK or new backend is imported into this public accounting module. Day-ahead,
+rolling and autonomous coordination share the same corrected resource model.
+See [model and limits](../../../../docs/modeling/Coordination_Resource_Capabilities.md)
+and `tests/integration/dispatch/test_coordination_capabilities.py`.
+
+Service schema 1.5.0 may attach a separately computed day-ahead regional
+realization cost. `realization_status=computed` only confirms that cost evidence
+exists; it does not certify tracking, execution safety or the 10% requirement.
+Missing/failed realization keeps its cost null. See ADR 0018.
+
 Owns `dispatch-economics-v2`: renewable curtailment accounting, weighted operating
 cost and comparable aggregate reference costs. It does not solve a network, run
 SCIP/CVXPY, read files, issue commands or certify the customer's 10% requirement.
@@ -7,6 +41,10 @@ SCIP/CVXPY, read files, issue commands or certify the customer's 10% requirement
 Public operations: `api.account_renewable`, `api.evaluate_economics`,
 `api.assess_reference_economics`, `api.capture_coordination_snapshot`.
 Immutable values live in `contracts`.
+`contracts.PCCTrackingLimits` additionally owns per-interval PCC P/Q bounds and
+the separate numerical comparison allowance (ADR 0021). Legacy linear/MISOCP
+adapters impose the engineering bounds; the workflow injects its recorded policy.
+See [PCC tracking model](../../../../docs/modeling/PCC_Tracking_Limits.md).
 Inputs are chronological interval MW and CNY/MWh with an explicit constant hour
 duration. The caller resolves asset IDs and applies rated limits per resource
 before aggregating. All public operations validate finite values and dimensions,

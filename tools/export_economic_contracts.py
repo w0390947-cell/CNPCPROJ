@@ -7,11 +7,25 @@ from typing import Any
 
 from pydantic import TypeAdapter
 
-from oilfield_energy.modules.dispatch.contracts import CoordinationSnapshot, ReferenceEconomics
+from oilfield_energy.job_manager import JobStatus
+from oilfield_energy.modules.dispatch.contracts import (
+    ComputationQualityReport,
+    CoordinationSnapshot,
+    ReferenceEconomics,
+)
 from oilfield_energy.modules.power_flow.contracts import ClusterValidation
-from oilfield_energy.modules.studies.contracts import CommunicationEventExecution, ScenarioEvent
-from oilfield_energy.service import ADMMHistoryPoint, ClusterTimeSeriesPoint, SimulationResult
+from oilfield_energy.modules.studies.contracts import (
+    CommunicationEventExecution,
+    ScenarioEvent,
+)
+from oilfield_energy.service import (
+    ADMMHistoryPoint,
+    ClusterTimeSeriesPoint,
+    SimulationResult,
+    TimeSeriesPoint,
+)
 from oilfield_energy.web_api import app
+from oilfield_energy.workflows.cluster_execution.contracts import ClusterExecution
 
 
 def typescript(schema: dict[str, Any]) -> str:
@@ -28,13 +42,18 @@ def typescript(schema: dict[str, Any]) -> str:
     if kind == "array":
         return f"Array<{typescript(schema['items'])}>"
     if kind == "object":
-        if "properties" not in schema and isinstance(schema.get("additionalProperties"), dict):
+        if "properties" not in schema and isinstance(
+            schema.get("additionalProperties"), dict
+        ):
             return f"Record<string, {typescript(schema['additionalProperties'])}>"
         required = schema.get("required", [])
         return (
             "{ "
             + "; ".join(
-                json.dumps(name) + ("" if name in required else "?") + ": " + typescript(value)
+                json.dumps(name)
+                + ("" if name in required else "?")
+                + ": "
+                + typescript(value)
                 for name, value in schema["properties"].items()
             )
             + " }"
@@ -69,6 +88,9 @@ def type_bundle(*models: type) -> str:
 
 def artifacts(root: Path) -> dict[Path, str]:
     return {
+        root / "web/frontend/shared/api/generated/computation-quality.ts": type_bundle(
+            ComputationQualityReport
+        ),
         root / "contracts/openapi/simulation.openapi.json": json.dumps(
             app.openapi(), ensure_ascii=False, indent=2
         )
@@ -77,7 +99,18 @@ def artifacts(root: Path) -> dict[Path, str]:
             SimulationResult.model_json_schema(), ensure_ascii=False, indent=2
         )
         + "\n",
-        root / "web/frontend/shared/api/generated/economics.ts": type_bundle(ReferenceEconomics),
+        root / "web/frontend/shared/api/generated/economics.ts": type_bundle(
+            ReferenceEconomics
+        ),
+        root / "web/frontend/shared/api/generated/job-status.ts": type_bundle(
+            JobStatus
+        ),
+        root / "web/frontend/shared/api/generated/timeseries.ts": type_bundle(
+            TimeSeriesPoint
+        ),
+        root / "web/frontend/shared/api/generated/cluster-execution.ts": type_bundle(
+            ClusterExecution
+        ),
         root / "web/frontend/shared/api/generated/cluster.ts": type_bundle(
             ClusterValidation, CoordinationSnapshot
         ),

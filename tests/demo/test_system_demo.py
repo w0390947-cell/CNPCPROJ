@@ -283,7 +283,7 @@ def test_radial_outages_are_reported_as_islanded(bundle):
         for r in region["results"]
         if r["scenario"]["contingency_id"]
     ]
-    assert len(outages) == 14
+    assert len(outages) == 21
     assert all(r["status"] == "islanded" for r in outages)
 
 

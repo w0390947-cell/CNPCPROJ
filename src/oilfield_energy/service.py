@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import replace
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Literal
@@ -18,13 +19,19 @@ from .ac_consistency import solve_case_ac_consistent
 from .ac_power_flow import validate_ac_dispatch
 from .admm import run_admm_coordination
 from .analysis import compare_results, validate_result
-from .data import MicrogridData, ProjectCase
 from .bootstrap.adapters.project_dataset import build_synthetic_case
+from .bootstrap.adapters.cluster_execution import run_cluster_execution
+from .workflows.cluster_execution.contracts import ClusterExecution, RollingProgress
+from .data import MicrogridData, ProjectCase
 from .group_control_scenarios import run_group_control_scenarios, scenario_basis
 from .hierarchy_types import ADMMConfig, CommunicationConfig
 from .model import OptimizationResult, solve_case
 from .modules.dispatch.api import assess_reference_economics
 from .modules.dispatch.contracts import (
+    ComputationQualityPolicy,
+    ComputationQualityReport,
+    CoordinationBudgetEvidence,
+    OptimizationQuality,
     ACCOUNTING_VERSION,
     CoordinationIterationTrace,
     CoordinationSnapshot,
@@ -38,7 +45,7 @@ from .modules.studies.contracts import CommunicationEventExecution, ScenarioEven
 from .network_model import validate_legacy_network_alignment
 from .scenario_events import EventType, ScenarioEvent, apply_physical_events
 
-SCHEMA_VERSION = "1.4.0"
+SCHEMA_VERSION = "1.7.0"
 SIMULATED_DATA_NOTICE = "全部网络与运行数据均为参数化模拟数据，不代表实际油田数据。"
 
 
@@ -70,6 +77,7 @@ class ContractModel(BaseModel):
 class SolverOptions(ContractModel):
     formulation: SolverFormulation = SolverFormulation.MISOCP
     time_limit_seconds: float = Field(default=60.0, gt=0.0, le=1800.0)
+    quality_policy: Literal["quality-first-v1"] | None = None
 
 
 class SimulationRequestRecord(ContractModel):
@@ -97,6 +105,11 @@ class SimulationRequest(SimulationRequestRecord):
 
     @model_validator(mode="after")
     def validate_scenario_options(self) -> "SimulationRequest":
+        if self.solver.quality_policy is not None and (
+            self.scenario_type not in {ScenarioType.CLUSTER_COORDINATION, ScenarioType.SINGLE_MICROGRID}
+            or self.solver.formulation is not SolverFormulation.MISOCP
+        ):
+            raise ValueError("quality-first policy requires a MISOCP single or cluster scenario")
         validate_scenario_events(
             self.scenario_type.value, self.region, self.events, self.admm_max_iterations
         )
@@ -118,6 +131,7 @@ class ProgressUpdate(ContractModel):
     label: str
     sequence: int = Field(ge=1)
     total_stages: int = Field(default=6, ge=1)
+    rolling: RollingProgress | None = None
 
 
 class TopologyNode(ContractModel):
@@ -146,7 +160,8 @@ class ValidationItem(ContractModel):
     unit: str | None = None
     scope: str
     explanation: str
-    validation_basis: Literal["centralized_reference", "admm_reference"] | None = None
+    validation_basis: Literal["centralized_reference", "admm_reference", "day_ahead", "intraday", "minute"] | None = None
+    assessment_status: Literal["passed", "violated", "unknown", "not_computed"] | None = None
 
 
 class TimeSeriesPoint(ContractModel):
@@ -160,6 +175,10 @@ class TimeSeriesPoint(ContractModel):
     power_factor: float
     wind_available_mw: float
     wind_used_mw: float
+    wind_q_mvar: float | None = Field(
+        default=None,
+        description="Regional wind reactive plan in Mvar; positive injection, negative absorption; null for missing historical data.",
+    )
     pv_available_mw: float
     pv_used_mw: float
     storage_charge_mw: float
@@ -296,14 +315,25 @@ class SimulationResult(ContractModel):
     reference_economics: ReferenceEconomics | None = None
     cluster_validation: ClusterValidation | None = None
     coordination_snapshot: CoordinationSnapshot | None = None
+    cluster_execution: ClusterExecution | None = None
+    computation_quality: ComputationQualityReport | None = None
 
 
 ProgressCallback = Callable[[ProgressUpdate], None]
 
 
-def _emit(callback: ProgressCallback | None, stage: SimulationStage, label: str, sequence: int) -> None:
+def _emit(
+    callback: ProgressCallback | None,
+    stage: SimulationStage,
+    label: str,
+    sequence: int,
+    *,
+    rolling: RollingProgress | None = None,
+) -> None:
     if callback is not None:
-        callback(ProgressUpdate(stage=stage, label=label, sequence=sequence))
+        callback(
+            ProgressUpdate(stage=stage, label=label, sequence=sequence, rolling=rolling)
+        )
 
 
 def _solve(
@@ -314,6 +344,7 @@ def _solve(
     storage_enabled: bool,
     time_limit_seconds: float,
     cluster_coordination: bool = False,
+    quality_policy: ComputationQualityPolicy | None = None,
 ) -> tuple[OptimizationResult, dict[str, Any]]:
     if formulation is SolverFormulation.LEGACY_MILP:
         result = solve_case(
@@ -335,12 +366,17 @@ def _solve(
         storage_enabled=storage_enabled,
         cluster_coordination=cluster_coordination,
         time_limit_seconds=time_limit_seconds,
+        quality_policy=quality_policy,
     )
     if not checked.passed:
-        raise RuntimeError(f"AC consistency failed: {checked.stop_reason}")
+        raise RuntimeError(
+            f"AC consistency failed: {checked.stop_reason}; "
+            f"quality evidence: {[q.model_dump() for q in checked.optimization_quality]}"
+        )
     last = checked.history[-1]
     return checked.optimization, {
         "ac_consistency_required": True,
+        "optimization_quality": [q.model_dump(mode="json") for q in checked.optimization_quality],
         "ac_consistency_passed": checked.passed,
         "ac_consistency_stop_reason": checked.stop_reason,
         "ac_consistency_iterations": checked.iterations,
@@ -349,6 +385,36 @@ def _solve(
         "maximum_line_q_loss_difference_mvar": float(last.line_q_loss_difference_mvar),
         "maximum_voltage_difference_pu": float(last.voltage_difference_pu),
     }
+
+
+def _reference_quality(
+    policy: ComputationQualityPolicy | None,
+    baseline_details: dict[str, Any],
+    optimized_details: dict[str, Any],
+    coordination: tuple[CoordinationBudgetEvidence, ...] = (),
+) -> tuple[ComputationQualityReport | None, list[ValidationItem]]:
+    """Project recorded solver evidence into the same quality gates for both views."""
+    if policy is None:
+        return None, []
+    records = {
+        name: tuple(OptimizationQuality.model_validate(q) for q in details["optimization_quality"])
+        for name, details in (("baseline", baseline_details), ("optimized", optimized_details))
+    }
+    report = ComputationQualityReport(
+        policy=policy, reference_optimizations=records, reference_coordination=coordination,
+    )
+    checks = []
+    for name, attempts in records.items():
+        q = attempts[-1]
+        checks.append(ValidationItem(
+            code="REFERENCE_OPTIMIZATION_QUALITY", label="参考优化最优性精度",
+            passed=q.status == "satisfied", scope=name,
+            actual=q.attempts[q.selected_attempt - 1].relative_gap,
+            limit=q.target_relative_gap, explanation=q.status,
+            validation_basis="centralized_reference",
+            assessment_status="passed" if q.status == "satisfied" else "unknown",
+        ))
+    return report, checks
 
 
 def _require_success(label: str, result: OptimizationResult) -> None:
@@ -461,6 +527,7 @@ def _timeseries(
             power_factor=float(opt["power_factor"][index]),
             wind_available_mw=float(opt["wind_available_mw"][index]),
             wind_used_mw=float(opt["wind_used_mw"][index]),
+            wind_q_mvar=float(opt["wind_q_mvar"][index]),
             pv_available_mw=float(opt["pv_available_mw"][index]),
             pv_used_mw=float(opt["pv_used_mw"][index]),
             storage_charge_mw=float(opt["storage_charge_mw"][index]),
@@ -483,6 +550,7 @@ def _run_single_microgrid(
     *, input_case: ProjectCase | None = None,
 ) -> SimulationResult:
     """运行真实单微网基准/优化求解并返回网页稳定契约。"""
+    quality_policy = ComputationQualityPolicy() if request.solver.quality_policy else None
     _emit(progress_callback, SimulationStage.PREPARING_CASE, "构造参数化模拟算例", 1)
     case = apply_physical_events(
         input_case if input_case is not None else build_synthetic_case(steps=request.steps),
@@ -499,6 +567,7 @@ def _run_single_microgrid(
         formulation=request.solver.formulation,
         storage_enabled=False,
         time_limit_seconds=request.solver.time_limit_seconds,
+        quality_policy=quality_policy,
     )
     _require_success("single baseline", baseline)
 
@@ -509,6 +578,7 @@ def _run_single_microgrid(
         formulation=request.solver.formulation,
         storage_enabled=request.storage_enabled,
         time_limit_seconds=request.solver.time_limit_seconds,
+        quality_policy=quality_policy,
     )
     _require_success("single optimized", optimized)
 
@@ -517,6 +587,8 @@ def _run_single_microgrid(
     validation = validate_result(case, optimized, names)
     ac_validation = validate_ac_dispatch(case, optimized, names)
     items = _validation_items(request.region, validation, ac_validation)
+    quality_report, quality_checks = _reference_quality(quality_policy, baseline_details, optimized_details)
+    items.extend(quality_checks)
     overall_passed = bool(validation["passed"] and ac_validation["passed"] and all(item.passed for item in items))
 
     _emit(progress_callback, SimulationStage.SERIALIZING, "整理网页结构化结果", 5)
@@ -524,6 +596,7 @@ def _run_single_microgrid(
     points = _timeseries(case, microgrid, baseline, optimized)
     local = validation["microgrids"][request.region]
     result = SimulationResult(
+        computation_quality=quality_report,
         economic_accounting_version=ACCOUNTING_VERSION,
         metadata=SimulationMetadata(
             dataset_id=case.dataset_id,
@@ -663,6 +736,10 @@ def _run_cluster(
     communication_fault: bool,
     input_case: ProjectCase | None = None,
 ) -> SimulationResult:
+    quality_policy = ComputationQualityPolicy() if request.solver.quality_policy else None
+    admm_config = ADMMConfig(
+        max_iterations=request.admm_max_iterations, quality_policy=quality_policy,
+    )
     _emit(progress_callback, SimulationStage.PREPARING_CASE, "构造三区域参数化模拟算例", 1)
     case = apply_physical_events(
         input_case if input_case is not None else build_synthetic_case(steps=request.steps),
@@ -680,6 +757,7 @@ def _run_cluster(
         storage_enabled=False,
         time_limit_seconds=request.solver.time_limit_seconds,
         cluster_coordination=True,
+        quality_policy=quality_policy,
     )
     _require_success("cluster baseline", baseline)
 
@@ -691,6 +769,7 @@ def _run_cluster(
         storage_enabled=capabilities.storage_enabled,
         time_limit_seconds=request.solver.time_limit_seconds,
         cluster_coordination=True,
+        quality_policy=quality_policy,
     )
     _require_success("cluster optimized", optimized)
     loss_calibration = {
@@ -745,7 +824,7 @@ def _run_cluster(
     admm = run_admm_coordination(
         case,
         names,
-        admm_config=ADMMConfig(max_iterations=request.admm_max_iterations),
+        admm_config=admm_config,
         communication_config=communication_config,
         loss_calibration=loss_calibration,
         storage_enabled=capabilities.storage_enabled,
@@ -760,6 +839,10 @@ def _run_cluster(
         for name in names
         for item in _validation_items(name, validation, ac_validation)
     ]
+    quality_report, quality_checks = _reference_quality(
+        quality_policy, baseline_details, optimized_details, admm.quality_budgets,
+    )
+    items.extend(quality_checks)
     plan_times = tuple(float(t * 60) for t in case.time_hours)
     reference_limit = assess_cluster_import(
         stage="admm_reference",
@@ -789,22 +872,39 @@ def _run_cluster(
         ),
         limit_mw=case.cluster_import_limit_mw,
     )
+    execution = run_cluster_execution(
+        case,
+        admm,
+        storage_enabled=capabilities.storage_enabled,
+        time_limit_seconds=request.solver.time_limit_seconds,
+        packaged_inputs=input_case is None,
+        events=request.events,
+        admm_config=admm_config,
+        communication_config=communication_config,
+        loss_calibration=loss_calibration,
+        progress=lambda label: _emit(
+            progress_callback, SimulationStage.VALIDATING, label, 4
+        ),
+        rolling_progress=lambda observation: _emit(
+            progress_callback,
+            SimulationStage.VALIDATING,
+            {
+                "preparing": "滚动协调：更新目标并校核设备计划",
+                "executing": "滚动执行：计算设备响应并反馈电量",
+                "completed": "滚动窗口执行与反馈完成",
+                "stopped": "滚动计算已中止，正在整理已有校核证据",
+            }[observation.phase],
+            4,
+            rolling=observation,
+        ),
+    )
     cluster_validation = summarize_cluster_validation(
         (
             centralized_limit,
             reference_limit,
-            *(
-                assess_cluster_import(
-                    stage=stage,
-                    expected_regions=names,
-                    trajectories=(),
-                    limit_mw=case.cluster_import_limit_mw,
-                    computed=False,
-                )
-                for stage in ("day_ahead", "intraday", "minute")
-            ),
+            *(stage.cluster_import for stage in execution.stages),
         ),
-        scope="reference_only",
+        scope="hierarchical_execution",
     )
     cluster_limit_passed = cluster_validation.assessed_scope_status == "passed"
     items.append(
@@ -844,11 +944,46 @@ def _run_cluster(
                 validation_basis="admm_reference",
             )
         )
+    stage_labels = {"day_ahead": "日前落实", "intraday": "日内更新", "minute": "分钟响应"}
+    for stage in execution.stages:
+        label = stage_labels[stage.stage]
+        items.append(ValidationItem(
+            code=f"EXECUTION_{stage.stage.upper()}", label=f"{label}综合校核",
+            passed=stage.status == "passed", actual=stage.status, limit="passed",
+            scope="cluster", validation_basis=stage.stage, assessment_status=stage.status,
+            explanation=stage.reason or f"{label}：区域设备、网络、目标跟踪与集群受电联合校核；模拟执行。",
+        ))
+        items.append(ValidationItem(
+            code=f"EXECUTION_IMPORT_{stage.stage.upper()}", label=f"{label}集群受电通道",
+            passed=stage.cluster_import.status == "passed", actual=stage.cluster_import.peak_import_mw,
+            limit=stage.cluster_import.limit_mw, unit="MW", scope="cluster",
+            validation_basis=stage.stage, assessment_status=stage.cluster_import.status,
+            explanation="按各区域落实后的同步受电功率重新汇总，未采用 ADMM 目标值替代。",
+        ))
+        for region in stage.regions:
+            if not region.checks:
+                items.append(ValidationItem(
+                    code=f"EXECUTION_{stage.stage.upper()}_UNAVAILABLE", label=f"{label}执行证据",
+                    passed=False, actual=region.status, scope=region.region,
+                    validation_basis=stage.stage, assessment_status=region.status,
+                    explanation=region.reason,
+                ))
+            for check in region.checks:
+                items.append(ValidationItem(
+                    code=f"{stage.stage.upper()}_{check.code}", label=f"{label} · {check.label}",
+                    passed=check.status == "passed", actual=check.actual, limit=check.limit,
+                    unit=check.unit, scope=region.region, validation_basis=stage.stage,
+                    assessment_status=check.status,
+                    explanation=(check.reason or region.reason or "基于本阶段区域计划或模拟设备响应校核。")
+                    + (f" 实际 {check.actual:.6g} {check.unit}，上限 {check.limit:.6g} {check.unit}。"
+                       if check.actual is not None and check.limit is not None else ""),
+                ))
     overall_passed = bool(
         validation["passed"]
         and ac_validation["passed"]
         and admm.converged
         and cluster_limit_passed
+        and execution.status == "passed"
         and all(item.passed for item in items)
     )
 
@@ -868,6 +1003,15 @@ def _run_cluster(
         surrogate_objective_cny=surrogate_objective,
         converged=admm.converged,
     )
+    realization_costs = [r.economic_cost_cny for r in execution.stages[0].regions]
+    available_costs = [cost for cost in realization_costs if cost is not None]
+    reference_economics = replace(
+        reference_economics,
+        realized_regional_economic_cost_cny=sum(available_costs)
+        if len(available_costs) == len(names) else None,
+        realization_status="computed" if len(available_costs) == len(names)
+        else "unavailable" if admm.converged else "not_computed",
+    )
     normalized_comparison = dict(comparison)
     normalized_comparison.update(
         {
@@ -885,8 +1029,10 @@ def _run_cluster(
         )
     scenario_label = "通信故障下集群协调" if communication_fault else "三区域集群协调"
     result = SimulationResult(
+        computation_quality=quality_report,
         reference_economics=reference_economics,
         cluster_validation=cluster_validation,
+        cluster_execution=execution,
         coordination_snapshot=admm.coordination_snapshot,
         economic_accounting_version=ACCOUNTING_VERSION,
         metadata=SimulationMetadata(
@@ -904,7 +1050,7 @@ def _run_cluster(
         request=request,
         executive_summary=ExecutiveSummary(
             overall_passed=overall_passed,
-            headline=f"{scenario_label}：集中式基准与协调参考校核通过（分布式执行未校核）"
+            headline=f"{scenario_label}：协调计划、日内与分钟级模拟执行校核通过"
             if overall_passed
             else f"{scenario_label}存在未通过项",
             economic_improvement_percent=float(comparison["economic_improvement_percent"]),

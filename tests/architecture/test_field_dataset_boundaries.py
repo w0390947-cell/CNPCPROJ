@@ -15,7 +15,7 @@ except ModuleNotFoundError:
 
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = ROOT / "src/oilfield_energy"
-REGISTRY = tomllib.loads((ROOT / "docs3/architecture/modules.toml").read_text(encoding="utf-8"))
+REGISTRY = tomllib.loads((ROOT / "docs/architecture/modules.toml").read_text(encoding="utf-8"))
 PREFIX = "oilfield_energy."
 
 

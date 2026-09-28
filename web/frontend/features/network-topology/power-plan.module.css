@@ -1,0 +1,12 @@
+.wind:global(.single-device) {
+  padding: 8px 12px;
+}
+
+.wind > svg {
+  grid-row: 1;
+}
+
+.power {
+  grid-column: 1 / -1;
+  line-height: 1.45;
+}

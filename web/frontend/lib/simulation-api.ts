@@ -1,4 +1,8 @@
 import type { ReferenceEconomics } from '../shared/api/generated/economics';
+import type { ComputationQualityReport } from '../shared/api/generated/computation-quality';
+import type { JobStatus } from '../shared/api/generated/job-status';
+export type { JobState, JobStatus } from '../shared/api/generated/job-status';
+import type { ClusterExecution } from '../shared/api/generated/cluster-execution';
 import type {
   ClusterValidation,
   CoordinationSnapshot,
@@ -13,23 +17,16 @@ import type {
 } from '../shared/api/generated/study-events';
 export type { ScenarioEvent } from '../shared/api/generated/study-events';
 
-export type SimulationPoint = {
-  time_hour: number;
-  load_mw: number;
-  p_grid_optimized_mw: number;
-  wind_used_mw: number;
-  pv_used_mw: number;
-  storage_charge_mw: number;
-  storage_discharge_mw: number;
-  storage_energy_mwh: number;
-  svg_q_mvar: number;
-};
+export type { TimeSeriesPoint as SimulationPoint } from '../shared/api/generated/timeseries';
+import type { TimeSeriesPoint as SimulationPoint } from '../shared/api/generated/timeseries';
 
 export type SimulationResult = {
+  computation_quality?: ComputationQualityReport | null;
   economic_accounting_version?: string | null;
   reference_economics?: ReferenceEconomics | null;
   cluster_validation?: ClusterValidation | null;
   coordination_snapshot?: CoordinationSnapshot | null;
+  cluster_execution?: ClusterExecution | null;
   metadata: {
     dataset_id?: string | null;
     dataset_revision?: string | null;
@@ -48,7 +45,10 @@ export type SimulationResult = {
     region: SimulationConfiguration['region'];
     steps: number;
     storage_enabled: boolean;
-    solver: { time_limit_seconds: number };
+    solver: {
+      time_limit_seconds: number;
+      quality_policy?: 'quality-first-v1' | null;
+    };
     admm_max_iterations: number;
     communication_loss_probability: number;
     communication_max_delay_iterations: number;
@@ -75,7 +75,19 @@ export type SimulationResult = {
     actual?: number | string | boolean | null;
     limit?: number | string | boolean | null;
     scope?: string;
-    validation_basis?: 'centralized_reference' | 'admm_reference' | null;
+    validation_basis?:
+      | 'centralized_reference'
+      | 'admm_reference'
+      | 'day_ahead'
+      | 'intraday'
+      | 'minute'
+      | null;
+    assessment_status?:
+      | 'passed'
+      | 'violated'
+      | 'unknown'
+      | 'not_computed'
+      | null;
   }>;
   timeseries: SimulationPoint[];
   cluster_timeseries: ClusterTimeSeriesPoint[];
@@ -147,29 +159,6 @@ export type SimulationConfiguration = {
   communicationOutageEndIteration: number;
 };
 
-export type JobState =
-  | 'queued'
-  | 'running'
-  | 'succeeded'
-  | 'failed'
-  | 'cancelled'
-  | 'interrupted';
-
-export type JobStatus = {
-  simulation_id: string;
-  name: string;
-  state: JobState;
-  created_at: string;
-  updated_at: string;
-  stage: string | null;
-  stage_label: string | null;
-  stage_sequence: number | null;
-  total_stages: number;
-  result_available: boolean;
-  error_code: string | null;
-  error_message: string | null;
-};
-
 export class SimulationCancelledError extends Error {
   constructor() {
     super('仿真已取消');
@@ -221,19 +210,38 @@ export function getHealth(): Promise<HealthResponse> {
   return apiRequest<HealthResponse>('/api/health');
 }
 
+/** Backend-managed quality for optimization views; research scenarios stay manual. */
+export function usesQualityPolicy(scenarioType: ScenarioType): boolean {
+  return (
+    scenarioType === 'cluster_coordination' ||
+    scenarioType === 'single_microgrid'
+  );
+}
+
+/** Only cluster tasks override the configured time grid. */
+export function effectiveSimulationSteps(
+  scenarioType: ScenarioType,
+  configuredSteps: number,
+): number {
+  return scenarioType === 'cluster_coordination' ? 96 : configuredSteps;
+}
+
 function simulationPayload(
   scenarioType: ScenarioType,
   configuration: SimulationConfiguration,
   events: ScenarioEvent[],
 ) {
+  const steps = effectiveSimulationSteps(scenarioType, configuration.steps);
   return {
-    name: `${configuration.region} ${configuration.steps}点${scenarioType}网页仿真`,
+    name: `${configuration.region} ${steps}点${scenarioType}网页仿真`,
     scenario_type: scenarioType,
     region: configuration.region,
-    steps: configuration.steps,
+    steps,
     storage_enabled: configuration.storageEnabled,
     events,
-    admm_max_iterations: configuration.admmMaxIterations,
+    ...(usesQualityPolicy(scenarioType)
+      ? {}
+      : { admm_max_iterations: configuration.admmMaxIterations }),
     communication_loss_probability: configuration.communicationLossProbability,
     communication_max_delay_iterations:
       configuration.communicationMaxDelayIterations,
@@ -244,7 +252,9 @@ function simulationPayload(
       configuration.communicationOutageEndIteration,
     solver: {
       formulation: 'misocp',
-      time_limit_seconds: configuration.timeLimitSeconds,
+      ...(usesQualityPolicy(scenarioType)
+        ? { quality_policy: 'quality-first-v1' }
+        : { time_limit_seconds: configuration.timeLimitSeconds }),
     },
   };
 }

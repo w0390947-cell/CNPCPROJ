@@ -5,7 +5,6 @@ import {
   BookOpenText,
   ChevronRight,
   CircleGauge,
-  Gauge,
   Network,
   Zap,
   type LucideIcon,
@@ -29,7 +28,6 @@ export type PlatformNavigationItem = {
 
 const navigationItems: readonly PlatformNavigationItem[] = [
   { id: 'demo_lab', label: '模拟设备演示', href: '/demo-lab', icon: Zap },
-  { id: 'overview', label: '综合态势', href: '/', icon: Gauge },
   {
     id: 'single_microgrid',
     label: '单微网优化',

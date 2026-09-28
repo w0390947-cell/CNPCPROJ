@@ -6,14 +6,25 @@ import numpy as np
 import pytest
 
 from oilfield_energy import admm, cli, service
-from tests.legacy_case_fixture import build_synthetic_case
+from oilfield_energy.bootstrap.adapters.project_dataset import (
+    build_synthetic_case as packaged_case,
+)
 from oilfield_energy.hierarchical import run_hierarchical_control
 from oilfield_energy.hierarchy_types import ADMMConfig, CommunicationConfig
+from tests.legacy_case_fixture import build_synthetic_case
 
 
 def test_disabled_storage_reaches_actual_admm_and_scope_is_explicit():
     captured = []
     original = service.run_admm_coordination
+    # Capability correction now permits execution; keep this authority/contract
+    # test to one hour. The packaged 24-point capability regression is separate.
+    case = packaged_case(4)
+    case = replace(
+        case,
+        time_hours=np.arange(4) / 4,
+        assumptions=replace(case.assumptions, dt_hours=0.25),
+    )
 
     def observe(*args, **kwargs):
         result = original(*args, **kwargs)
@@ -25,13 +36,27 @@ def test_disabled_storage_reaches_actual_admm_and_scope_is_explicit():
             service.SimulationRequest(
                 scenario_type=service.ScenarioType.CLUSTER_COORDINATION,
                 storage_enabled=False,
-                steps=8,
-            )
+                steps=4,
+            ),
+            input_case=case,
         )
-    assert result.executive_summary.overall_passed
-    assert "分布式执行未校核" in result.executive_summary.headline
-    assert result.cluster_validation.scope == "reference_only"
-    assert result.cluster_validation.execution_status == "not_computed"
+    assert result.executive_summary.overall_passed == all(
+        i.passed for i in result.validation_items
+    )
+    assert "分布式执行未校核" not in result.executive_summary.headline
+    assert result.cluster_validation.scope == "hierarchical_execution"
+    assert result.cluster_validation.execution_status != "not_computed"
+    for stage in result.cluster_execution.stages:
+        for region in stage.regions:
+            if region.p_mw:
+                assert max(abs(p) for p in region.storage_power_mw) < 1e-6
+            else:
+                assert region.status != "passed" and region.reason
+    sc = next(r for r in result.cluster_execution.stages[0].regions if r.region == "SC")
+    assert sc.status == "passed"
+    assert len(result.cluster_execution.rolling_updates) == 4
+    assert all(w.adopted for w in result.cluster_execution.rolling_updates)
+    assert all(len(r.p_mw) == 60 for r in result.cluster_execution.stages[2].regions)
     assert result.coordination_snapshot.capabilities.storage_enabled is False
     for schedule in captured[0].schedules.values():
         assert np.max(np.abs(schedule.storage_charge_mw)) < 1e-8
@@ -46,7 +71,10 @@ def test_disabled_storage_reaches_actual_admm_and_scope_is_explicit():
     # Pydantic equality includes model type; verify wire data and revalidation.
     assert type(archived.request) is service.SimulationRequestRecord
     assert archived.model_dump(mode="json") == result.model_dump(mode="json")
-    assert service.SimulationRequest.model_validate(archived.request.model_dump()) == result.request
+    assert (
+        service.SimulationRequest.model_validate(archived.request.model_dump())
+        == result.request
+    )
 
 
 def test_delayed_messages_do_not_regress_accepted_epoch_and_certificate_matches():
@@ -77,11 +105,14 @@ def test_delayed_messages_do_not_regress_accepted_epoch_and_certificate_matches(
     x = np.array([p.p_grid_mw for p in snap.regions])
     q = np.array([p.q_grid_mvar for p in snap.regions])
     primal = np.sqrt(
-        np.sum((x - snap.p_references_mw) ** 2) + np.sum((q - snap.q_references_mvar) ** 2)
+        np.sum((x - snap.p_references_mw) ** 2)
+        + np.sum((q - snap.q_references_mvar) ** 2)
     )
     dual = snap.rho * np.sqrt(
         np.sum((np.array(snap.p_references_mw) - snap.previous_p_references_mw) ** 2)
-        + np.sum((np.array(snap.q_references_mvar) - snap.previous_q_references_mvar) ** 2)
+        + np.sum(
+            (np.array(snap.q_references_mvar) - snap.previous_q_references_mvar) ** 2
+        )
     )
     assert primal == pytest.approx(result.history[-1].primal_residual, abs=1e-12)
     assert dual == pytest.approx(result.history[-1].dual_residual, abs=1e-12)
@@ -99,7 +130,9 @@ def test_total_outage_has_no_certified_snapshot():
     result = admm.run_admm_coordination(
         build_synthetic_case(4),
         admm_config=ADMMConfig(max_iterations=8),
-        communication_config=CommunicationConfig(loss_probability=1, stale_limit_iterations=2),
+        communication_config=CommunicationConfig(
+            loss_probability=1, stale_limit_iterations=2
+        ),
     )
     assert not result.converged
     assert result.coordination_snapshot is None

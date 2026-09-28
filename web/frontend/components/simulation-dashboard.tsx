@@ -3,7 +3,6 @@
 import {
   Activity,
   AlertTriangle,
-  BatteryCharging,
   ChevronRight,
   CircleGauge,
   Download,
@@ -20,7 +19,6 @@ import {
   Settings2,
   Square,
   SunMedium,
-  Wind,
   Zap,
   RefreshCw,
 } from 'lucide-react';
@@ -46,6 +44,9 @@ import {
 } from 'recharts';
 
 import { SingleMicrogridCanvas } from '@/features/network-topology';
+import { ActivePowerChart } from '@/features/active-power-chart';
+import { ComputationQualityDetails } from '@/features/computation-quality';
+import { jobProgressPresentation } from '@/features/simulation-progress';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
@@ -73,12 +74,18 @@ import {
   type RenewableSurgeKind,
 } from '@/features/simulation-events';
 import {
+  baseOptimizationTimeLabel,
   ClusterCoordinationPanel,
+  ClusterExecutionPanel,
+  ClusterWorkspaceViews,
+  type ClusterView,
   type CoordinationMode,
 } from '@/features/cluster-coordination';
 import {
   cancelSimulation,
   createSimulation,
+  effectiveSimulationSteps,
+  usesQualityPolicy,
   SimulationCancelledError,
   getHealth,
   getSimulation,
@@ -135,9 +142,9 @@ const viewConfig: Record<
   { title: string; scenario: ScenarioType; action: string }
 > = {
   overview: {
-    title: '三区域协同运行态势',
+    title: '三区域集群协调',
     scenario: 'cluster_coordination',
-    action: '运行集群快照',
+    action: '运行集群仿真',
   },
   single_microgrid: {
     title: '单微网源网荷储优化',
@@ -145,9 +152,9 @@ const viewConfig: Record<
     action: '运行单微网仿真',
   },
   cluster_coordination: {
-    title: '三区域分布式协调',
+    title: '三区域集群协调',
     scenario: 'cluster_coordination',
-    action: '运行集群协调',
+    action: '运行集群仿真',
   },
   communication_fault: {
     title: '通信失联与自治恢复',
@@ -207,52 +214,6 @@ function MetricCard({
         {note}
       </div>
     </section>
-  );
-}
-
-function RegionNode({
-  region,
-  index,
-  importMw,
-  status = '等待仿真',
-}: {
-  region: (typeof regions)[number];
-  index: number;
-  importMw?: number;
-  status?: string;
-}) {
-  const faulted = status === '失联' || status === '自治降级';
-  return (
-    <article
-      className={`region-node region-${index + 1} ${faulted ? 'faulted' : ''}`}
-    >
-      <div className="region-orbit" aria-hidden="true" />
-      <div className="region-head">
-        <div>
-          <b>{region.displayName}</b>
-        </div>
-        <span className={faulted ? 'fault-dot' : 'node-status'}>{status}</span>
-      </div>
-      <div className="region-flow">
-        <Wind size={17} />
-        <SunMedium size={17} />
-        <BatteryCharging size={17} />
-        <i />
-        <Factory size={18} />
-      </div>
-      <div className="region-stats">
-        <span>
-          控制资源<strong>风 · 光 · 储</strong>
-        </span>
-        <span>
-          PCC 计划<strong>{numberLabel(importMw)} MW</strong>
-        </span>
-      </div>
-      <footer>
-        {faulted ? <Activity size={14} /> : <Network size={14} />}
-        {faulted ? '通信故障回放' : '统一数据集区域模型'}
-      </footer>
-    </article>
   );
 }
 
@@ -318,7 +279,7 @@ function GroupControlCanvas({ record }: { record?: GroupRecord }) {
 }
 
 export default function SimulationDashboard({
-  initialView = 'overview',
+  initialView = 'cluster_coordination',
 }: {
   initialView?: ViewKey;
 }) {
@@ -331,7 +292,13 @@ export default function SimulationDashboard({
   const [serviceStatus, setServiceStatus] = useState<
     'checking' | 'online' | 'offline'
   >('checking');
-  const selectedView = initialView;
+  const selectedView =
+    initialView === 'overview' ? 'cluster_coordination' : initialView;
+  const [clusterView, setClusterView] = useState<ClusterView>('plan');
+  const isExecutionView =
+    selectedView === 'cluster_coordination' && clusterView === 'execution';
+  const showVerdictExtras =
+    selectedView === 'group_control' || selectedView === 'communication_fault';
   const [isPlaying, setIsPlaying] = useState(false);
   const [cursor, setCursor] = useState(0);
   const [coordinationMode, setCoordinationMode] =
@@ -369,10 +336,26 @@ export default function SimulationDashboard({
   const activeView = viewConfig[selectedView];
   const completedSimulation = completedSimulations[activeView.scenario];
   const simulation = completedSimulation?.result ?? null;
+  const configurationTimeLabel =
+    selectedView === 'cluster_coordination'
+      ? `基础优化 ${baseOptimizationTimeLabel(effectiveSimulationSteps(activeView.scenario, configuration.steps))}`
+      : `${configuration.steps} 时段`;
+  const resultTimeLabel = simulation
+    ? selectedView === 'cluster_coordination'
+      ? `基础优化 ${baseOptimizationTimeLabel(simulation.metadata.steps)}`
+      : `${simulation.metadata.steps} 时段`
+    : '';
   const isCoordinationView =
     selectedView === 'communication_fault' ||
     selectedView === 'cluster_coordination';
-  const isIterationView = isCoordinationView && coordinationMode === 'process';
+  const effectiveCoordinationMode =
+    selectedView === 'cluster_coordination'
+      ? clusterView === 'process'
+        ? 'process'
+        : 'plan'
+      : coordinationMode;
+  const isIterationView =
+    isCoordinationView && effectiveCoordinationMode === 'process';
   const resultRegion = simulation?.request.region ?? configuration.region;
   const groupScenarios = Object.keys(
     simulation?.group_control?.scenario_checks ?? {},
@@ -430,6 +413,7 @@ export default function SimulationDashboard({
     [simulation, selectedView],
   );
   const playbackData = useMemo(() => {
+    if (isExecutionView) return [];
     if (selectedView === 'group_control')
       return selectedGroupRecords.map((r) => ({
         ...emptyFrame,
@@ -453,6 +437,7 @@ export default function SimulationDashboard({
     isIterationView,
     isCoordinationView,
     selectedGroupRecords,
+    isExecutionView,
   ]);
 
   const runQuick = useCallback(
@@ -507,14 +492,17 @@ export default function SimulationDashboard({
         }));
         knownSimulationIds[scenario] = created.simulation_id;
         setCoordinationMode('process');
+        setClusterView('plan');
         setCursor(
-          isCoordinationView ? Math.max(0, result.admm_history.length - 1) : 0,
+          selectedView === 'communication_fault'
+            ? Math.max(0, result.admm_history.length - 1)
+            : 0,
         );
         setRunState('success');
         setRunMessage(
           events.length
-            ? `${result.executive_summary.headline} · ${events.at(-1)?.label}`
-            : result.executive_summary.headline,
+            ? `任务已完成 · ${result.executive_summary.headline} · ${events.at(-1)?.label}`
+            : `任务已完成 · ${result.executive_summary.headline}`,
         );
         setLastEventLabel(events.at(-1)?.label ?? '');
         return result;
@@ -536,7 +524,7 @@ export default function SimulationDashboard({
         setIsCancelling(false);
       }
     },
-    [activeView.scenario, configuration, isCoordinationView],
+    [activeView.scenario, configuration, selectedView],
   );
 
   async function cancelRun() {
@@ -562,7 +550,10 @@ export default function SimulationDashboard({
       activeSimulationId.current ||
       serviceStatus !== 'online' ||
       !playbackData.length ||
-      ((kind === 'outage' || kind === 'packet_loss') && !isIterationView)
+      ((kind === 'outage' || kind === 'packet_loss') && !isIterationView) ||
+      ((kind === 'pv_surge' || kind === 'wind_surge') &&
+        selectedView === 'cluster_coordination' &&
+        clusterView !== 'plan')
     )
       return;
     setIsPlaying(false);
@@ -572,7 +563,7 @@ export default function SimulationDashboard({
     if (!baseline) return;
     if (
       (kind === 'pv_surge' || kind === 'wind_surge') &&
-      selectedView === 'overview' &&
+      selectedView === 'cluster_coordination' &&
       !renewableTarget
     )
       return;
@@ -617,9 +608,9 @@ export default function SimulationDashboard({
     const [hours, minutes] = injectionTime.split(':').map(Number);
     const start = hours * 60 + minutes;
     const surgeLabel = renewableSurgeLabels[kind];
-    // Event scope is an explicit action; every other parameter stays with the baseline.
+    // Keep baseline parameters; the web request boundary applies the fixed cluster grid.
     const target =
-      selectedView === 'overview' && renewableTarget
+      selectedView === 'cluster_coordination' && renewableTarget
         ? renewableTarget
         : branchConfig.region;
     await runQuick(
@@ -702,15 +693,15 @@ export default function SimulationDashboard({
         }));
         knownSimulationIds[scenario] = simulationId!;
         setCoordinationMode('process');
+        setClusterView('plan');
         setCursor(
-          initialView === 'cluster_coordination' ||
-            initialView === 'communication_fault'
+          initialView === 'communication_fault'
             ? Math.max(0, result.admm_history.length - 1)
             : 0,
         );
         setIsPlaying(false);
         setRunState('success');
-        setRunMessage(result.executive_summary.headline);
+        setRunMessage(`任务已完成 · ${result.executive_summary.headline}`);
       } catch (error) {
         if (!alive) return;
         setRunState(
@@ -808,10 +799,10 @@ export default function SimulationDashboard({
   const improvement =
     simulation?.executive_summary.economic_improvement_percent;
   const overallPassed = simulation?.executive_summary.overall_passed ?? null;
-  const jobProgress =
-    jobStatus?.stage_sequence == null
-      ? 0
-      : Math.round((jobStatus.stage_sequence / jobStatus.total_stages) * 100);
+  const jobProgress = jobProgressPresentation(
+    jobStatus,
+    runState === 'running',
+  );
   const communication = simulation?.communication;
   const groupControl = simulation?.group_control;
   const scenarioMetrics = useMemo(() => {
@@ -901,10 +892,7 @@ export default function SimulationDashboard({
         },
       ];
     }
-    if (
-      selectedView === 'cluster_coordination' ||
-      selectedView === 'overview'
-    ) {
+    if (selectedView === 'cluster_coordination') {
       return [
         {
           label: isIterationView ? '计划峰值负荷' : '集群总负荷',
@@ -999,7 +987,7 @@ export default function SimulationDashboard({
         label: '储能对照收益',
         value: numberLabel(improvement),
         unit: '%',
-        note: '相对禁储能对照 · 非现场提升',
+        note: '相对禁储能对照',
         icon: Activity,
         accent: '#9d7bff',
       },
@@ -1021,22 +1009,13 @@ export default function SimulationDashboard({
     passed: boolean | null;
     explanation: string;
     scope?: string;
-  }> = simulation?.validation_items ?? [
-    { code: 'ADMM', label: '三区域协调收敛', passed: null, explanation: '' },
-    { code: 'PCC', label: 'PCC 防倒送约束', passed: null, explanation: '' },
-    {
-      code: 'VOLTAGE',
-      label: '节点电压与线路容量',
-      passed: null,
-      explanation: '',
-    },
-    {
-      code: 'STORAGE',
-      label: '储能 SOC 与设备响应',
-      passed: null,
-      explanation: '',
-    },
-  ];
+    assessment_status?:
+      | 'passed'
+      | 'violated'
+      | 'unknown'
+      | 'not_computed'
+      | null;
+  }> = simulation?.validation_items ?? [];
   const conclusion =
     selectedView === 'group_control'
       ? {
@@ -1162,7 +1141,7 @@ export default function SimulationDashboard({
               ? '求解服务离线'
               : '正在检查服务'
         }
-        timeLabel={current.time}
+        timeLabel={isExecutionView ? undefined : current.time}
       />
 
       <PlatformNavigation
@@ -1171,6 +1150,7 @@ export default function SimulationDashboard({
           runState === 'running' && item.id !== 'demo_lab'
         }
         onNavigate={(item) => {
+          if (item.id === selectedView) return;
           if (item.id === 'demo_lab' || item.id === 'case_information') {
             router.push(item.href);
             return;
@@ -1202,14 +1182,20 @@ export default function SimulationDashboard({
                   : runMessage}
               </span>
               <b>
-                {runState === 'running' && jobStatus
-                  ? `任务 ${jobStatus.simulation_id.slice(0, 8)} · ${jobProgress}%`
+                {jobStatus
+                  ? `任务 ${jobStatus.simulation_id.slice(0, 8)} · ${jobProgress.stateLabel} · 流程进度 ${jobProgress.percent}%`
                   : simulation
-                    ? `已计算 · ${simulation.metadata.steps} 时段${lastEventLabel ? ' · 事件分支' : ''}`
+                    ? `已计算 · ${resultTimeLabel}${lastEventLabel ? ' · 事件分支' : ''}`
                     : '选择参数后运行 · 不预填结果'}
               </b>
+              {jobProgress.detail && <div>{jobProgress.detail}</div>}
               {runState === 'running' && (
-                <Progress className="job-progress" value={jobProgress} />
+                <Progress
+                  className="job-progress"
+                  value={jobProgress.percent}
+                  aria-label="仿真流程进度"
+                  aria-valuetext={`${jobProgress.percent}%，流程进度不代表耗时比例`}
+                />
               )}
             </output>
             <Sheet>
@@ -1233,8 +1219,7 @@ export default function SimulationDashboard({
                   </SheetDescription>
                 </SheetHeader>
                 <div className="config-body">
-                  {selectedView === 'overview' ||
-                  selectedView === 'cluster_coordination' ? (
+                  {selectedView === 'cluster_coordination' ? (
                     <div className="config-field config-scope">
                       <span>协调范围</span>
                       <p>
@@ -1278,28 +1263,32 @@ export default function SimulationDashboard({
                       </Select>
                     </div>
                   )}
-                  <div className="config-field">
-                    <Label htmlFor="steps-select">优化时段数</Label>
-                    <Select
-                      value={String(configuration.steps)}
-                      onValueChange={(value) =>
-                        value && updateConfiguration('steps', Number(value))
-                      }
-                    >
-                      <SelectTrigger
-                        className="config-select"
-                        id="steps-select"
+                  {selectedView !== 'cluster_coordination' && (
+                    <div className="config-field">
+                      <Label htmlFor="steps-select">优化时段数</Label>
+                      <Select
+                        value={String(configuration.steps)}
+                        onValueChange={(value) =>
+                          value && updateConfiguration('steps', Number(value))
+                        }
                       >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="4">4 · 集群极速验证</SelectItem>
-                        <SelectItem value="8">8 · 单微网快速演示</SelectItem>
-                        <SelectItem value="24">24 · 标准分析</SelectItem>
-                        <SelectItem value="96">96 · 15分钟完整计算</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                        <SelectTrigger
+                          className="config-select"
+                          id="steps-select"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="4">4 · 集群极速验证</SelectItem>
+                          <SelectItem value="8">8 · 单微网快速演示</SelectItem>
+                          <SelectItem value="24">24 · 标准分析</SelectItem>
+                          <SelectItem value="96">
+                            96 · 15分钟完整计算
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <div className="config-field switch-field">
                     <div>
                       <Label htmlFor="storage-switch">启用储能优化</Label>
@@ -1313,28 +1302,28 @@ export default function SimulationDashboard({
                       }
                     />
                   </div>
-                  <div className="config-field slider-field">
-                    <div>
-                      <Label>单次求解时限</Label>
-                      <b>{configuration.timeLimitSeconds} 秒</b>
+                  {!usesQualityPolicy(activeView.scenario) && (
+                    <div className="config-field slider-field">
+                      <div>
+                        <Label>单次求解时限</Label>
+                        <b>{configuration.timeLimitSeconds} 秒</b>
+                      </div>
+                      <Slider
+                        aria-label="单次求解时限，秒"
+                        min={30}
+                        max={300}
+                        step={30}
+                        value={[configuration.timeLimitSeconds]}
+                        onValueChange={(value) =>
+                          updateConfiguration(
+                            'timeLimitSeconds',
+                            typeof value === 'number' ? value : value[0],
+                          )
+                        }
+                      />
                     </div>
-                    <Slider
-                      aria-label="单次求解时限，秒"
-                      min={30}
-                      max={300}
-                      step={30}
-                      value={[configuration.timeLimitSeconds]}
-                      onValueChange={(value) =>
-                        updateConfiguration(
-                          'timeLimitSeconds',
-                          typeof value === 'number' ? value : value[0],
-                        )
-                      }
-                    />
-                  </div>
-
-                  {(activeView.scenario === 'cluster_coordination' ||
-                    activeView.scenario === 'communication_fault') && (
+                  )}
+                  {activeView.scenario === 'communication_fault' && (
                     <>
                       <div className="config-section-title">集群协调</div>
                       <div className="config-field slider-field">
@@ -1443,10 +1432,13 @@ export default function SimulationDashboard({
                   <div className="configuration-summary">
                     <span>当前方案</span>
                     <b>
-                      {configuration.steps} 时段 ·{' '}
-                      {configuration.timeLimitSeconds} 秒 ·{' '}
-                      {configuration.storageEnabled ? '储能启用' : '储能停用'} ·
-                      MISOCP
+                      {configurationTimeLabel} ·{' '}
+                      {!usesQualityPolicy(activeView.scenario) &&
+                        `${configuration.timeLimitSeconds} 秒 · `}
+                      {configuration.storageEnabled ? '储能启用' : '储能停用'} ·{' '}
+                      {selectedView === 'cluster_coordination'
+                        ? 'MISOCP · ADMM'
+                        : 'MISOCP'}
                     </b>
                   </div>
                   <SheetClose
@@ -1545,6 +1537,9 @@ export default function SimulationDashboard({
               {simulation?.cluster_validation?.scope === 'reference_only' && (
                 <span>校核范围：集中式基准与协调参考；分布式执行未校核</span>
               )}
+              {simulation?.cluster_execution && (
+                <span>校核范围：协调计划、日内与分钟级模拟执行</span>
+              )}
               {simulation &&
                 ['cluster_coordination', 'communication_fault'].includes(
                   simulation.metadata.scenario_type,
@@ -1567,7 +1562,7 @@ export default function SimulationDashboard({
           ) : (
             <span className="result-origin">
               {simulation
-                ? `${regionDisplayName(simulation.metadata.region)} · ${simulation.metadata.steps} 时段 · 结果 ${completedSimulation?.simulationId}${['running', 'error', 'cancelled'].includes(runState) ? ' · 上次完成的结果' : ''}`
+                ? `${regionDisplayName(simulation.metadata.region)} · ${resultTimeLabel} · 结果 ${completedSimulation?.simulationId}${['running', 'error', 'cancelled'].includes(runState) ? ' · 上次完成的结果' : ''}`
                 : '尚无仿真结果'}
             </span>
           )}
@@ -1609,51 +1604,109 @@ export default function SimulationDashboard({
           </div>
         )}
 
-        <div className="metrics-grid">
-          {scenarioMetrics.map((metric) => (
-            <MetricCard key={metric.label} {...metric} />
-          ))}
-        </div>
-
-        {(selectedView === 'overview' ||
-          selectedView === 'single_microgrid') && (
-          <RenewableEventControls
-            scope={selectedView === 'overview' ? 'cluster' : 'single'}
-            resultRegion={resultRegion}
-            timeLabel={current.time}
-            disabledReason={
-              runState === 'running'
-                ? '仿真运行中，完成后可注入事件。'
-                : !simulation
-                  ? '请先运行仿真，生成基线结果。'
-                  : serviceStatus !== 'online'
-                    ? '本地求解服务未连接，暂时无法注入事件。'
-                    : !playbackData.length
-                      ? '当前结果没有可用的回放时刻。'
-                      : null
-            }
-            onInject={(kind, target) => {
-              void runEventBranch(kind, target);
+        {selectedView === 'cluster_coordination' && (
+          <ClusterWorkspaceViews
+            value={clusterView}
+            busy={runState === 'running'}
+            onChange={(view) => {
+              setIsPlaying(false);
+              setClusterView(view);
+              setCursor(
+                view === 'process'
+                  ? Math.max(0, (simulation?.admm_history.length ?? 0) - 1)
+                  : 0,
+              );
             }}
           />
         )}
+        {!isExecutionView && (
+          <div className="metrics-grid">
+            {scenarioMetrics.map((metric) => (
+              <MetricCard key={metric.label} {...metric} />
+            ))}
+          </div>
+        )}
 
-        <div className="dashboard-grid">
-          {isCoordinationView ? (
-            <ClusterCoordinationPanel
-              mode={coordinationMode}
-              onModeChange={(mode) => {
-                setIsPlaying(false);
-                setCoordinationMode(mode);
-                setCursor(
-                  mode === 'process'
-                    ? Math.max(0, (simulation?.admm_history.length ?? 0) - 1)
-                    : 0,
-                );
+        {(selectedView === 'cluster_coordination' ||
+          selectedView === 'single_microgrid') && (
+          <div
+            hidden={
+              selectedView === 'cluster_coordination' && clusterView !== 'plan'
+            }
+          >
+            <RenewableEventControls
+              scope={
+                selectedView === 'cluster_coordination' ? 'cluster' : 'single'
+              }
+              resultRegion={resultRegion}
+              timeLabel={current.time}
+              disabledReason={
+                selectedView === 'cluster_coordination' &&
+                clusterView !== 'plan'
+                  ? '请在运行态势中选择计划时刻后注入事件。'
+                  : runState === 'running'
+                    ? '仿真运行中，完成后可注入事件。'
+                    : !simulation
+                      ? '请先运行仿真，生成基线结果。'
+                      : serviceStatus !== 'online'
+                        ? '本地求解服务未连接，暂时无法注入事件。'
+                        : !playbackData.length
+                          ? '当前结果没有可用的回放时刻。'
+                          : null
+              }
+              onInject={(kind, target) => {
+                void runEventBranch(kind, target);
               }}
+            />
+          </div>
+        )}
+
+        {selectedView === 'single_microgrid' &&
+          simulation?.computation_quality && (
+            <section className="panel" aria-label="单微网求解质量">
+              <ComputationQualityDetails
+                quality={simulation.computation_quality}
+                mode="single"
+              />
+            </section>
+          )}
+        <div
+          className={`dashboard-grid${isExecutionView ? ' execution-grid' : ''}`}
+        >
+          {isExecutionView ? (
+            <ClusterExecutionPanel
+              quality={simulation?.computation_quality}
+              execution={simulation?.cluster_execution}
+              hasResult={simulation != null}
+              busy={runState === 'running'}
+            />
+          ) : isCoordinationView ? (
+            <ClusterCoordinationPanel
+              mode={effectiveCoordinationMode}
+              onModeChange={
+                selectedView === 'communication_fault'
+                  ? (mode) => {
+                      setIsPlaying(false);
+                      setCoordinationMode(mode);
+                      setCursor(
+                        mode === 'process'
+                          ? Math.max(
+                              0,
+                              (simulation?.admm_history.length ?? 0) - 1,
+                            )
+                          : 0,
+                      );
+                    }
+                  : undefined
+              }
               record={iterationRecord}
               planPoint={clusterPoint ?? undefined}
               hasResult={simulation != null}
+              execution={
+                selectedView === 'communication_fault'
+                  ? simulation?.cluster_execution
+                  : undefined
+              }
               busy={runState === 'running'}
               converged={
                 simulation?.validation_items.find(
@@ -1665,6 +1718,7 @@ export default function SimulationDashboard({
               canReplay={(simulation?.admm_history.length ?? 0) > 1}
               playing={playbackActive}
               onReplay={() => {
+                setClusterView('process');
                 setCoordinationMode('process');
                 setCursor(0);
                 setIsPlaying(true);
@@ -1681,64 +1735,18 @@ export default function SimulationDashboard({
                       ? `${current.time} · 原生记录`
                       : selectedView === 'group_control'
                         ? '原生分钟记录'
-                        : '计划回放 · 非设备实绩'}
+                        : selectedView === 'single_microgrid'
+                          ? '计划回放'
+                          : '计划回放 · 非设备实绩'}
                 </em>
               </div>
               {selectedView === 'single_microgrid' ? (
                 <SingleMicrogridCanvas
-                  nodes={simulation?.topology_nodes ?? []}
-                  edges={simulation?.topology_edges ?? []}
+                  current={current}
                   region={resultRegion}
                 />
-              ) : selectedView === 'group_control' ? (
-                <GroupControlCanvas record={currentGroupRecord} />
               ) : (
-                <div className="topology-canvas">
-                  <div className="grid-source">
-                    <Zap size={25} />
-                    <span>上级电网 / 协调层</span>
-                    <b>
-                      {isIterationView
-                        ? 'ADMM 共识'
-                        : `${numberLabel(current.import)} MW`}
-                    </b>
-                  </div>
-                  <div className="trunk trunk-main" />
-                  <div className="trunk trunk-left" />
-                  <div className="trunk trunk-right" />
-                  {regions.map((region, index) => (
-                    <RegionNode
-                      key={region.id}
-                      region={region}
-                      index={index}
-                      importMw={clusterPoint?.regional_import_mw[region.id]}
-                      status={
-                        !simulation
-                          ? '等待仿真'
-                          : iterationRecord?.fallback_regions.includes(
-                                region.id,
-                              )
-                            ? '自治降级'
-                            : outageAtIteration(
-                                  simulation,
-                                  iterationRecord?.iteration ?? -1,
-                                  region.id,
-                                )
-                              ? '失联'
-                              : isIterationView
-                                ? '参与协调'
-                                : '计划回放'
-                      }
-                    />
-                  ))}
-                  {playbackActive && (
-                    <>
-                      <div className="flow-pulse pulse-1" />
-                      <div className="flow-pulse pulse-2" />
-                      <div className="flow-pulse pulse-3" />
-                    </>
-                  )}
-                </div>
+                <GroupControlCanvas record={currentGroupRecord} />
               )}
               <div className="capacity-row">
                 <span>{capacityLabel}</span>
@@ -1766,7 +1774,9 @@ export default function SimulationDashboard({
           >
             <div className="panel-title">
               <h3>运行结论</h3>
-              <ShieldCheck className="verdict-icon" size={26} />
+              {showVerdictExtras && (
+                <ShieldCheck className="verdict-icon" size={26} />
+              )}
             </div>
             <div className="verdict-main">
               <i>
@@ -1828,11 +1838,15 @@ export default function SimulationDashboard({
                           {item.label}
                         </span>
                         <b>
-                          {item.passed == null
-                            ? '待运行'
-                            : item.passed
-                              ? '通过'
-                              : '未通过'}
+                          {item.assessment_status === 'unknown'
+                            ? '无法确认'
+                            : item.assessment_status === 'not_computed'
+                              ? '未执行'
+                              : item.passed == null
+                                ? '待运行'
+                                : item.passed
+                                  ? '通过'
+                                  : '未通过'}
                         </b>
                       </summary>
                       <p>{item.explanation || '本项尚无计算结果。'}</p>
@@ -1846,16 +1860,20 @@ export default function SimulationDashboard({
                   <li className="all-clear">本次算例没有未通过项。</li>
                 )}
             </ul>
-            <div className="cost-gap">
-              <span>{conclusion.label}</span>
-              <strong>
-                {conclusion.value}
-                <small>{conclusion.unit}</small>
-              </strong>
-            </div>
-            <p className="evidence-note">
-              当前结论仅适用于本次参数化算例，不构成现场安全许可。
-            </p>
+            {showVerdictExtras && (
+              <>
+                <div className="cost-gap">
+                  <span>{conclusion.label}</span>
+                  <strong>
+                    {conclusion.value}
+                    <small>{conclusion.unit}</small>
+                  </strong>
+                </div>
+                <p className="evidence-note">
+                  当前结论仅适用于本次参数化算例，不构成现场安全许可。
+                </p>
+              </>
+            )}
             {communication?.event_executions?.map((event) => (
               <p className="evidence-note" key={event.window.event_id}>
                 {event.window.event_id} ·{' '}
@@ -1908,431 +1926,447 @@ export default function SimulationDashboard({
             )}
           </section>
 
-          <section className="panel chart-panel">
-            <div className="panel-title">
-              <h3>
-                {selectedView === 'group_control'
-                  ? '考核点功率与动态三重阈值'
-                  : isIterationView
-                    ? '分布式协调收敛过程'
-                    : '负荷、新能源与 PCC 受电'}
-              </h3>
-              <div className="chart-legend">
-                {selectedView === 'group_control' ? (
-                  <>
-                    <span>
-                      <i className="risk" />
-                      风险限值
-                    </span>
-                    <span>
-                      <i className="load" />
-                      安全阈值
-                    </span>
-                    <span>
-                      <i className="renewable" />
-                      恢复阈值
-                    </span>
-                    <span>
-                      <i className="power" />
-                      PCC
-                    </span>
-                  </>
-                ) : isIterationView ? (
-                  <>
-                    <span>
-                      <i className="load" />
-                      原始残差
-                    </span>
-                    <span>
-                      <i className="renewable" />
-                      对偶残差
-                    </span>
-                    <span>
-                      <i className="power" />
-                      原始容差
-                    </span>
-                    <span>
-                      <i className="dual" />
-                      对偶容差
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span>
-                      <i className="load" />
-                      负荷
-                    </span>
-                    <span>
-                      <i className="renewable" />
-                      新能源
-                    </span>
-                    <span>
-                      <i className="power" />
-                      PCC 受电
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-            <div className="chart-wrap">
-              {mounted &&
-              selectedView === 'group_control' &&
-              groupChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart
-                    accessibilityLayer
-                    data={groupChartData}
-                    margin={{ top: 14, right: 16, bottom: 0, left: 0 }}
-                  >
-                    <CartesianGrid
-                      stroke="#17384b"
-                      strokeDasharray="4 6"
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="time"
-                      stroke="#67879a"
-                      tickLine={false}
-                      axisLine={false}
-                      fontSize={11}
-                    />
-                    <YAxis
-                      stroke="#67879a"
-                      tickLine={false}
-                      axisLine={false}
-                      fontSize={11}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: '#0b2231',
-                        border: '1px solid #245069',
-                        borderRadius: 8,
-                        color: '#dcecf4',
-                      }}
-                    />
-                    <Line
-                      name="风险限值 (MW)"
-                      type="stepAfter"
-                      dataKey="risk"
-                      stroke="#ff6d72"
-                      dot={false}
-                      strokeWidth={1.5}
-                    />
-                    <Line
-                      name="安全阈值 (MW)"
-                      type="stepAfter"
-                      dataKey="safety"
-                      stroke="#778bff"
-                      dot={false}
-                      strokeWidth={1.5}
-                    />
-                    <Line
-                      name="恢复阈值 (MW)"
-                      type="stepAfter"
-                      dataKey="restore"
-                      stroke="#f3c95d"
-                      dot={false}
-                      strokeWidth={1.5}
-                    />
-                    <Line
-                      name="PCC 实绩 (MW)"
-                      type="linear"
-                      dataKey="pcc"
-                      stroke="#39c9ff"
-                      dot={{ r: 2 }}
-                      strokeWidth={2}
-                    />
-                    <ReferenceLine
-                      x={currentGroupRecord?.time_minute}
-                      stroke="#9db2c7"
-                      strokeDasharray="3 3"
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              ) : mounted && isIterationView && admmChartData.length ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart
-                    accessibilityLayer
-                    data={admmChartData}
-                    margin={{ top: 14, right: 16, bottom: 0, left: 0 }}
-                  >
-                    <CartesianGrid
-                      stroke="#17384b"
-                      strokeDasharray="4 6"
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="iteration"
-                      stroke="#67879a"
-                      tickLine={false}
-                      axisLine={false}
-                      fontSize={11}
-                    />
-                    <YAxis
-                      scale="log"
-                      domain={['auto', 'auto']}
-                      stroke="#67879a"
-                      tickLine={false}
-                      axisLine={false}
-                      fontSize={11}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: '#0b2231',
-                        border: '1px solid #245069',
-                        borderRadius: 8,
-                        color: '#dcecf4',
-                      }}
-                    />
-                    <Line
-                      name="原始残差"
-                      type="linear"
-                      dataKey="primal_residual"
-                      stroke="#778bff"
-                      dot={false}
-                      strokeWidth={1.8}
-                    />
-                    <Line
-                      name="对偶残差"
-                      type="linear"
-                      dataKey="dual_residual"
-                      stroke="#f3c95d"
-                      dot={false}
-                      strokeWidth={1.8}
-                    />
-                    <Line
-                      name="原始容差"
-                      type="linear"
-                      dataKey="primal_tolerance"
-                      stroke="#39c9ff"
-                      dot={false}
-                      strokeDasharray="4 4"
-                      strokeWidth={1.3}
-                    />
-                    <Line
-                      name="对偶容差"
-                      type="linear"
-                      dataKey="dual_tolerance"
-                      stroke="#45d6a4"
-                      dot={false}
-                      strokeDasharray="4 4"
-                      strokeWidth={1.3}
-                    />
-                    <ReferenceLine
-                      x={iterationRecord?.iteration}
-                      stroke="#9db2c7"
-                      strokeDasharray="3 3"
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              ) : mounted &&
-                !isIterationView &&
-                selectedView !== 'group_control' &&
-                chartData.length ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart
-                    accessibilityLayer
-                    data={chartData}
-                    margin={{ top: 14, right: 16, bottom: 0, left: 0 }}
-                  >
-                    <defs>
-                      <linearGradient
-                        id="powerFill"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="0%"
-                          stopColor="#39c9ff"
-                          stopOpacity={0.32}
-                        />
-                        <stop
-                          offset="100%"
-                          stopColor="#39c9ff"
-                          stopOpacity={0}
-                        />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid
-                      stroke="#17384b"
-                      strokeDasharray="4 6"
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="time"
-                      stroke="#67879a"
-                      tickLine={false}
-                      axisLine={false}
-                      fontSize={11}
-                    />
-                    <YAxis
-                      stroke="#67879a"
-                      tickLine={false}
-                      axisLine={false}
-                      fontSize={11}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: '#0b2231',
-                        border: '1px solid #245069',
-                        borderRadius: 8,
-                        color: '#dcecf4',
-                      }}
-                    />
-                    <Area
-                      name="PCC 受电 (MW)"
-                      type="linear"
-                      dataKey="import"
-                      stroke="#39c9ff"
-                      fill="url(#powerFill)"
-                      strokeWidth={2}
-                    />
-                    <Line
-                      name="负荷 (MW)"
-                      type="linear"
-                      dataKey="load"
-                      stroke="#778bff"
-                      dot={false}
-                      strokeWidth={1.8}
-                    />
-                    <Line
-                      name="新能源 (MW)"
-                      type="linear"
-                      dataKey="renewable"
-                      stroke="#f3c95d"
-                      dot={false}
-                      strokeWidth={1.8}
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="chart-empty">
-                  <Activity size={32} />
-                  <strong>
-                    {runState === 'running'
-                      ? '正在计算本场景'
-                      : '运行后呈现算法轨迹'}
-                  </strong>
-                  <p>
-                    {runState === 'running'
-                      ? '阶段进度来自后台任务，完成后可逐点回放。'
-                      : '使用上方运行按钮生成结果；此处不使用预设展示曲线。'}
-                  </p>
+          {!isExecutionView &&
+            (selectedView === 'single_microgrid' ? (
+              <ActivePowerChart
+                points={simulation?.timeseries ?? []}
+                mounted={mounted}
+                running={runState === 'running'}
+              />
+            ) : (
+              <section className="panel chart-panel">
+                <div className="panel-title">
+                  <h3>
+                    {selectedView === 'group_control'
+                      ? '考核点功率与动态三重阈值'
+                      : isIterationView
+                        ? '分布式协调收敛过程'
+                        : '负荷、新能源与 PCC 受电'}
+                  </h3>
+                  <div className="chart-legend">
+                    {selectedView === 'group_control' ? (
+                      <>
+                        <span>
+                          <i className="risk" />
+                          风险限值
+                        </span>
+                        <span>
+                          <i className="load" />
+                          安全阈值
+                        </span>
+                        <span>
+                          <i className="renewable" />
+                          恢复阈值
+                        </span>
+                        <span>
+                          <i className="power" />
+                          PCC
+                        </span>
+                      </>
+                    ) : isIterationView ? (
+                      <>
+                        <span>
+                          <i className="load" />
+                          原始残差
+                        </span>
+                        <span>
+                          <i className="renewable" />
+                          对偶残差
+                        </span>
+                        <span>
+                          <i className="power" />
+                          原始容差
+                        </span>
+                        <span>
+                          <i className="dual" />
+                          对偶容差
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span>
+                          <i className="load" />
+                          负荷
+                        </span>
+                        <span>
+                          <i className="renewable" />
+                          新能源
+                        </span>
+                        <span>
+                          <i className="power" />
+                          PCC 受电
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-          </section>
+                <div className="chart-wrap">
+                  {mounted &&
+                  selectedView === 'group_control' &&
+                  groupChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart
+                        accessibilityLayer
+                        data={groupChartData}
+                        margin={{ top: 14, right: 16, bottom: 0, left: 0 }}
+                      >
+                        <CartesianGrid
+                          stroke="#17384b"
+                          strokeDasharray="4 6"
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="time"
+                          stroke="#67879a"
+                          tickLine={false}
+                          axisLine={false}
+                          fontSize={11}
+                        />
+                        <YAxis
+                          stroke="#67879a"
+                          tickLine={false}
+                          axisLine={false}
+                          fontSize={11}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            background: '#0b2231',
+                            border: '1px solid #245069',
+                            borderRadius: 8,
+                            color: '#dcecf4',
+                          }}
+                        />
+                        <Line
+                          name="风险限值 (MW)"
+                          type="stepAfter"
+                          dataKey="risk"
+                          stroke="#ff6d72"
+                          dot={false}
+                          strokeWidth={1.5}
+                        />
+                        <Line
+                          name="安全阈值 (MW)"
+                          type="stepAfter"
+                          dataKey="safety"
+                          stroke="#778bff"
+                          dot={false}
+                          strokeWidth={1.5}
+                        />
+                        <Line
+                          name="恢复阈值 (MW)"
+                          type="stepAfter"
+                          dataKey="restore"
+                          stroke="#f3c95d"
+                          dot={false}
+                          strokeWidth={1.5}
+                        />
+                        <Line
+                          name="PCC 实绩 (MW)"
+                          type="linear"
+                          dataKey="pcc"
+                          stroke="#39c9ff"
+                          dot={{ r: 2 }}
+                          strokeWidth={2}
+                        />
+                        <ReferenceLine
+                          x={currentGroupRecord?.time_minute}
+                          stroke="#9db2c7"
+                          strokeDasharray="3 3"
+                        />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  ) : mounted && isIterationView && admmChartData.length ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart
+                        accessibilityLayer
+                        data={admmChartData}
+                        margin={{ top: 14, right: 16, bottom: 0, left: 0 }}
+                      >
+                        <CartesianGrid
+                          stroke="#17384b"
+                          strokeDasharray="4 6"
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="iteration"
+                          stroke="#67879a"
+                          tickLine={false}
+                          axisLine={false}
+                          fontSize={11}
+                        />
+                        <YAxis
+                          scale="log"
+                          domain={['auto', 'auto']}
+                          stroke="#67879a"
+                          tickLine={false}
+                          axisLine={false}
+                          fontSize={11}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            background: '#0b2231',
+                            border: '1px solid #245069',
+                            borderRadius: 8,
+                            color: '#dcecf4',
+                          }}
+                        />
+                        <Line
+                          name="原始残差"
+                          type="linear"
+                          dataKey="primal_residual"
+                          stroke="#778bff"
+                          dot={false}
+                          strokeWidth={1.8}
+                        />
+                        <Line
+                          name="对偶残差"
+                          type="linear"
+                          dataKey="dual_residual"
+                          stroke="#f3c95d"
+                          dot={false}
+                          strokeWidth={1.8}
+                        />
+                        <Line
+                          name="原始容差"
+                          type="linear"
+                          dataKey="primal_tolerance"
+                          stroke="#39c9ff"
+                          dot={false}
+                          strokeDasharray="4 4"
+                          strokeWidth={1.3}
+                        />
+                        <Line
+                          name="对偶容差"
+                          type="linear"
+                          dataKey="dual_tolerance"
+                          stroke="#45d6a4"
+                          dot={false}
+                          strokeDasharray="4 4"
+                          strokeWidth={1.3}
+                        />
+                        <ReferenceLine
+                          x={iterationRecord?.iteration}
+                          stroke="#9db2c7"
+                          strokeDasharray="3 3"
+                        />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  ) : mounted &&
+                    !isIterationView &&
+                    selectedView !== 'group_control' &&
+                    chartData.length ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart
+                        accessibilityLayer
+                        data={chartData}
+                        margin={{ top: 14, right: 16, bottom: 0, left: 0 }}
+                      >
+                        <defs>
+                          <linearGradient
+                            id="powerFill"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="0%"
+                              stopColor="#39c9ff"
+                              stopOpacity={0.32}
+                            />
+                            <stop
+                              offset="100%"
+                              stopColor="#39c9ff"
+                              stopOpacity={0}
+                            />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid
+                          stroke="#17384b"
+                          strokeDasharray="4 6"
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="time"
+                          stroke="#67879a"
+                          tickLine={false}
+                          axisLine={false}
+                          fontSize={11}
+                        />
+                        <YAxis
+                          stroke="#67879a"
+                          tickLine={false}
+                          axisLine={false}
+                          fontSize={11}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            background: '#0b2231',
+                            border: '1px solid #245069',
+                            borderRadius: 8,
+                            color: '#dcecf4',
+                          }}
+                        />
+                        <Area
+                          name="PCC 受电 (MW)"
+                          type="linear"
+                          dataKey="import"
+                          stroke="#39c9ff"
+                          fill="url(#powerFill)"
+                          strokeWidth={2}
+                        />
+                        <Line
+                          name="负荷 (MW)"
+                          type="linear"
+                          dataKey="load"
+                          stroke="#778bff"
+                          dot={false}
+                          strokeWidth={1.8}
+                        />
+                        <Line
+                          name="新能源 (MW)"
+                          type="linear"
+                          dataKey="renewable"
+                          stroke="#f3c95d"
+                          dot={false}
+                          strokeWidth={1.8}
+                        />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="chart-empty">
+                      <Activity size={32} />
+                      <strong>
+                        {runState === 'running'
+                          ? '正在计算本场景'
+                          : '运行后呈现算法轨迹'}
+                      </strong>
+                      <p>
+                        {runState === 'running'
+                          ? '阶段进度来自后台任务，完成后可逐点回放。'
+                          : '使用上方运行按钮生成结果；此处不使用预设展示曲线。'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            ))}
         </div>
       </section>
 
-      <footer className="playback-bar">
-        <div className="playback-controls">
-          <Button
-            disabled={!playbackData.length}
-            aria-label="回到起点"
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              setCursor(0);
-              setIsPlaying(false);
-            }}
-          >
-            <RotateCcw />
-          </Button>
-          <Button
-            disabled={playbackData.length < 2 || runState === 'running'}
-            aria-label={playbackActive ? '暂停回放' : '开始回放'}
-            className="play-button"
-            size="icon"
-            onClick={() => {
-              if (cursor >= playbackData.length - 1) setCursor(0);
-              setIsPlaying(!playbackActive);
-            }}
-          >
-            {playbackActive ? <Pause /> : <Play />}
-          </Button>
-          <Button
-            disabled={!playbackData.length || cursor >= playbackData.length - 1}
-            aria-label={
-              isIterationView
-                ? '下一轮记录'
-                : isCoordinationView
-                  ? '下一计划时刻'
-                  : '下一分钟记录'
-            }
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              setIsPlaying(false);
-              setCursor((value) =>
-                Math.min(value + 1, playbackData.length - 1),
-              );
-            }}
-          >
-            <FastForward />
-          </Button>
-          <button
-            className="speed-button"
-            aria-label={`回放速度 ${speed} 倍，点击切换`}
-            type="button"
-            disabled={!playbackData.length}
-            onClick={() =>
-              setSpeed((value) =>
-                value === 1 ? 5 : value === 5 ? 15 : value === 15 ? 60 : 1,
-              )
-            }
-          >
-            {speed}×
-          </button>
-        </div>
-        <div className="timeline">
-          <span>{playbackData[0]?.time ?? '—'}</span>
-          <div className="timeline-track">
-            <Slider
-              aria-label={
-                isIterationView
-                  ? '协调迭代回放位置'
-                  : isCoordinationView
-                    ? '计划时刻回放位置'
-                    : '仿真分钟回放位置'
-              }
-              disabled={playbackData.length < 2}
-              min={0}
-              max={Math.max(1, playbackData.length - 1)}
-              step={1}
-              value={[Math.min(cursor, Math.max(0, playbackData.length - 1))]}
-              onValueChange={(value) => {
-                setCursor(typeof value === 'number' ? value : value[0]);
+      {!isExecutionView && (
+        <footer className="playback-bar">
+          <div className="playback-controls">
+            <Button
+              disabled={!playbackData.length}
+              aria-label="回到起点"
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                setCursor(0);
                 setIsPlaying(false);
               }}
-            />
-            {eventMarkerPercent != null &&
-              (!isCoordinationView || isIterationView) && (
-                <em
-                  title="事件分支注入点"
-                  style={{ left: `${eventMarkerPercent}%` }}
-                />
-              )}
+            >
+              <RotateCcw />
+            </Button>
+            <Button
+              disabled={playbackData.length < 2 || runState === 'running'}
+              aria-label={playbackActive ? '暂停回放' : '开始回放'}
+              className="play-button"
+              size="icon"
+              onClick={() => {
+                if (cursor >= playbackData.length - 1) setCursor(0);
+                setIsPlaying(!playbackActive);
+              }}
+            >
+              {playbackActive ? <Pause /> : <Play />}
+            </Button>
+            <Button
+              disabled={
+                !playbackData.length || cursor >= playbackData.length - 1
+              }
+              aria-label={
+                isIterationView
+                  ? '下一轮记录'
+                  : isCoordinationView
+                    ? '下一计划时刻'
+                    : '下一分钟记录'
+              }
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                setIsPlaying(false);
+                setCursor((value) =>
+                  Math.min(value + 1, playbackData.length - 1),
+                );
+              }}
+            >
+              <FastForward />
+            </Button>
+            <button
+              className="speed-button"
+              aria-label={`回放速度 ${speed} 倍，点击切换`}
+              type="button"
+              disabled={!playbackData.length}
+              onClick={() =>
+                setSpeed((value) =>
+                  value === 1 ? 5 : value === 5 ? 15 : value === 15 ? 60 : 1,
+                )
+              }
+            >
+              {speed}×
+            </button>
           </div>
-          <span>{playbackData.at(-1)?.time ?? '—'}</span>
-        </div>
-        <div className="current-time">
-          <span>
-            {isIterationView
-              ? '原生迭代 · 不插值'
-              : isCoordinationView
-                ? '原始计划时刻 · 不插值'
-                : simulation?.group_control
-                  ? '群控原生分钟'
-                  : simulation
-                    ? '区间插值 · 非新增实绩'
-                    : '等待仿真'}
-          </span>
-          <strong>{current.time}</strong>
-        </div>
-      </footer>
+          <div className="timeline">
+            <span>{playbackData[0]?.time ?? '—'}</span>
+            <div className="timeline-track">
+              <Slider
+                aria-label={
+                  isIterationView
+                    ? '协调迭代回放位置'
+                    : isCoordinationView
+                      ? '计划时刻回放位置'
+                      : '仿真分钟回放位置'
+                }
+                disabled={playbackData.length < 2}
+                min={0}
+                max={Math.max(1, playbackData.length - 1)}
+                step={1}
+                value={[Math.min(cursor, Math.max(0, playbackData.length - 1))]}
+                onValueChange={(value) => {
+                  setCursor(typeof value === 'number' ? value : value[0]);
+                  setIsPlaying(false);
+                }}
+              />
+              {eventMarkerPercent != null &&
+                (!isCoordinationView ||
+                  (selectedView === 'cluster_coordination'
+                    ? clusterView === 'plan'
+                    : isIterationView)) && (
+                  <em
+                    title="事件分支注入点"
+                    style={{ left: `${eventMarkerPercent}%` }}
+                  />
+                )}
+            </div>
+            <span>{playbackData.at(-1)?.time ?? '—'}</span>
+          </div>
+          <div className="current-time">
+            <span>
+              {isIterationView
+                ? '原生迭代 · 不插值'
+                : isCoordinationView
+                  ? '原始计划时刻 · 不插值'
+                  : simulation?.group_control
+                    ? '群控原生分钟'
+                    : simulation
+                      ? '区间插值 · 非新增实绩'
+                      : '等待仿真'}
+            </span>
+            <strong>{current.time}</strong>
+          </div>
+        </footer>
+      )}
     </main>
   );
 }

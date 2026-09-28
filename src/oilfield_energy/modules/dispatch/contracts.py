@@ -1,6 +1,7 @@
 """Immutable MW/MWh/CNY values; no solver or transport dependencies."""
 
 from dataclasses import dataclass
+from math import isfinite
 from typing import Annotated, Literal
 
 from pydantic import (
@@ -13,6 +14,252 @@ from pydantic import (
 )
 
 ACCOUNTING_VERSION = "dispatch-economics-v2"
+
+
+class ComputationQualityPolicy(BaseModel):
+    """Bounded offline solve budgets, not physical tolerances or a global optimum claim."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    version: Literal["quality-first-v1"] = "quality-first-v1"
+    solve_seconds: tuple[float, ...] = (180.0, 600.0, 1800.0)
+    admm_iterations: tuple[int, ...] = (360, 720, 1000)
+    relative_gap: float = Field(default=1e-4, gt=0, lt=1)
+
+    @model_validator(mode="after")
+    def bounded_budgets(self) -> "ComputationQualityPolicy":
+        for values, cap in ((self.solve_seconds, 1800), (self.admm_iterations, 1000)):
+            if (
+                not values
+                or len(values) > 3
+                or any(not isfinite(v) or v <= 0 or v > cap for v in values)
+                or any(a >= b for a, b in zip(values, values[1:]))
+            ):
+                raise ValueError(
+                    "quality budgets must be positive, increasing and bounded"
+                )
+        return self
+
+
+class OptimizationAttempt(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    budget_seconds: float = Field(gt=0)
+    solver_status: str
+    feasible: bool
+    objective_cny: float | None = None
+    relative_gap: float | None = Field(default=None, ge=0)
+
+
+class OptimizationQuality(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    status: Literal["satisfied", "budget_exhausted", "infeasible", "stopped"]
+    target_relative_gap: float = Field(gt=0)
+    attempts: tuple[OptimizationAttempt, ...]
+    selected_attempt: int = Field(ge=1)
+
+    @model_validator(mode="after")
+    def selected_evidence(self) -> "OptimizationQuality":
+        if self.selected_attempt > len(self.attempts):
+            raise ValueError("selected optimization attempt is missing")
+        selected = self.attempts[self.selected_attempt - 1]
+        if self.status == "satisfied" and (
+            not selected.feasible
+            or selected.relative_gap is None
+            or selected.relative_gap > self.target_relative_gap
+        ):
+            raise ValueError(
+                "quality requires a feasible solution with sufficient gap evidence"
+            )
+        return self
+
+
+class CoordinationBudgetEvidence(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    iteration_budget: int = Field(ge=1)
+    completed_iterations: int = Field(ge=1)
+    converged: bool
+    primal_residual: float = Field(ge=0)
+    dual_residual: float = Field(ge=0)
+    primal_tolerance: float = Field(ge=0)
+    dual_tolerance: float = Field(ge=0)
+
+
+class ComputationQualityReport(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    policy: ComputationQualityPolicy
+    reference_optimizations: dict[str, tuple[OptimizationQuality, ...]]
+    reference_coordination: tuple[CoordinationBudgetEvidence, ...]
+
+
+class ReactivePlanningPolicy(BaseModel):
+    """Study reserve and transition envelope; never expands physical Q authority."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    version: Literal["reactive-planning-v1"] = "reactive-planning-v1"
+    reserve_fraction: float = Field(default=0.10, ge=0, lt=1)
+    transition_minutes: float = Field(default=5.0, gt=0)
+    source: str = "软件无功规划假设（参数随结果记录）；待现场动态与预测误差校准"
+
+
+@dataclass(frozen=True)
+class ReactivePlanningRow:
+    """a P(t) + b Q(t) + c Q(t-1) <= upper, for one stable resource ID."""
+
+    resource_id: str
+    time_index: int
+    p_coefficient: float
+    q_coefficient: float
+    previous_q_coefficient: float
+    upper: float
+
+    def __post_init__(self) -> None:
+        if (
+            not self.resource_id
+            or type(self.time_index) is not int
+            or self.time_index < 0
+            or any(
+                not isfinite(v)
+                for v in (
+                    self.p_coefficient,
+                    self.q_coefficient,
+                    self.previous_q_coefficient,
+                    self.upper,
+                )
+            )
+            or (self.time_index == 0 and self.previous_q_coefficient != 0)
+        ):
+            raise ValueError("invalid or noncausal reactive planning row")
+
+
+@dataclass(frozen=True)
+class ReactivePlanningResource:
+    """Physical linear facets a*P+b*Q<=upper, with optional observed initial Q."""
+
+    resource_id: str
+    facets: tuple[tuple[float, float, float], ...]
+    initial_q_mvar: float | None
+    controllable: bool
+
+    def __post_init__(self) -> None:
+        if (
+            not self.resource_id
+            or not self.facets
+            or type(self.controllable) is not bool
+            or any(
+                len(facet) != 3 or any(not isfinite(v) for v in facet)
+                for facet in self.facets
+            )
+            or (self.initial_q_mvar is not None and not isfinite(self.initial_q_mvar))
+        ):
+            raise ValueError("invalid reactive planning resource")
+
+
+class StorageReservePolicy(BaseModel):
+    """Explicit study assumptions, not measured forecast-error statistics."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    version: Literal["storage-reserve-v1"] = "storage-reserve-v1"
+    forecast_error_fraction: float = Field(default=0.02, ge=0, lt=1)
+    minimum_error_mw: float = Field(default=0.05, ge=0)
+    support_minutes: int = Field(default=15, ge=1)
+    recovery_minutes: int = Field(default=15, ge=1)
+    trigger_fraction: float = Field(default=0.5, gt=0, le=1)
+    replan_cooldown_minutes: int = Field(default=5, ge=1)
+    source: str = (
+        "软件仿真备用假设（参数随结果记录）；待现场预测误差统计校准，非现场运行定值"
+    )
+
+
+@dataclass(frozen=True)
+class StorageReservePlan:
+    """Planning envelope only; physical energy limits remain available to feedback."""
+
+    up_mw: tuple[float, ...]
+    down_mw: tuple[float, ...]
+    energy_floor_mwh: tuple[float, ...]
+    energy_ceiling_mwh: tuple[float, ...]
+    minimum_power_mw: tuple[float, ...]
+    maximum_power_mw: tuple[float, ...]
+
+    def __post_init__(self) -> None:
+        n = len(self.up_mw)
+        if (
+            not n
+            or any(
+                len(v) != n
+                for v in (
+                    self.down_mw,
+                    self.minimum_power_mw,
+                    self.maximum_power_mw,
+                )
+            )
+            or any(
+                len(v) != n + 1
+                for v in (
+                    self.energy_floor_mwh,
+                    self.energy_ceiling_mwh,
+                )
+            )
+        ):
+            raise ValueError("reserve trajectories must align with planning intervals")
+        if any(
+            not isfinite(x)
+            for v in (
+                self.up_mw,
+                self.down_mw,
+                self.energy_floor_mwh,
+                self.energy_ceiling_mwh,
+                self.minimum_power_mw,
+                self.maximum_power_mw,
+            )
+            for x in v
+        ):
+            raise ValueError("reserve trajectories must be finite")
+        if min(*self.up_mw, *self.down_mw) < 0 or any(
+            lo > hi
+            for lows, highs in (
+                (self.energy_floor_mwh, self.energy_ceiling_mwh),
+                (self.minimum_power_mw, self.maximum_power_mw),
+            )
+            for lo, hi in zip(lows, highs)
+        ):
+            raise ValueError("requested storage reserve exceeds physical capacity")
+
+
+@dataclass(frozen=True)
+class PCCTrackingLimits:
+    """Per-interval PCC absolute errors; positive P/Q mean grid import.
+
+    Solvers enforce p_mw/q_mvar, without adding numerical_tolerance. Independent
+    checks allow only that separately recorded floating-point residual. See ADR 0021.
+    """
+
+    p_mw: float
+    q_mvar: float
+    numerical_tolerance: float
+
+    def __post_init__(self) -> None:
+        if any(
+            not isfinite(v) or v <= 0
+            for v in (self.p_mw, self.q_mvar, self.numerical_tolerance)
+        ):
+            raise ValueError(
+                "PCC tracking limits and numerical tolerance must be finite and positive"
+            )
+        if self.numerical_tolerance >= min(self.p_mw, self.q_mvar):
+            raise ValueError(
+                "numerical tolerance must be smaller than the engineering limits"
+            )
+
+    def accepts_p(self, error_mw: float) -> bool:
+        return (
+            isfinite(error_mw) and 0 <= error_mw <= self.p_mw + self.numerical_tolerance
+        )
+
+    def accepts_q(self, error_mvar: float) -> bool:
+        return (
+            isfinite(error_mvar)
+            and 0 <= error_mvar <= self.q_mvar + self.numerical_tolerance
+        )
 
 
 @dataclass(frozen=True)
@@ -74,8 +321,10 @@ class ReferenceEconomics:
     scope: Literal["aggregate_reference_with_calibrated_losses"] = (
         "aggregate_reference_with_calibrated_losses"
     )
-    realized_regional_economic_cost_cny: None = None
-    realization_status: Literal["not_computed"] = "not_computed"
+    realized_regional_economic_cost_cny: float | None = None
+    realization_status: Literal["not_computed", "computed", "unavailable"] = (
+        "not_computed"
+    )
     formal_ten_percent_requirement_certified: Literal[False] = False
 
 

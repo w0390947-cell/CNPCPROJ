@@ -1,0 +1,120 @@
+.panel {
+  min-width: 0;
+}
+
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.heading h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.badge,
+.note,
+.missing {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #a6bdcb;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 0;
+  margin: 14px 0 4px;
+  list-style: none;
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #c7d8e2;
+  font-size: 12px;
+}
+
+.lineKey,
+.areaKey {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.areaKey {
+  height: 9px;
+}
+
+.chart {
+  height: 270px;
+  min-width: 0;
+}
+
+.note,
+.missing {
+  margin: 8px 0 0;
+}
+
+.missing {
+  color: #efc477;
+}
+
+.tooltip {
+  width: 230px;
+  max-width: 70vw;
+  padding: 12px;
+  border: 1px solid #386078;
+  border-radius: 8px;
+  background: #0b2231;
+  color: #dcecf4;
+  font-size: 12px;
+}
+
+.tooltip dl {
+  margin: 8px 0;
+}
+
+.tooltip dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+}
+
+.tooltip dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltip p {
+  margin: 0;
+  color: #a6bdcb;
+}
+
+.empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #a6bdcb;
+  text-align: center;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .legend {
+    gap: 6px 12px;
+  }
+
+  .chart {
+    height: 250px;
+  }
+}

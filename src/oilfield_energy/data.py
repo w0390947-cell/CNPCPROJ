@@ -6,12 +6,19 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Dict, List
 
 import numpy as np
 
-from .modules.resources.contracts import ResourceIdentity, ResourceKind, SvgCapability
+from .modules.dispatch.contracts import ReactivePlanningRow, StorageReservePlan
+from .modules.resources.contracts import (
+    ResourceIdentity,
+    ResourceKind,
+    SvgCapability,
+    WindReactiveCapability,
+    WindReactivePolicy,
+)
 
 if TYPE_CHECKING:
     from .network_model import NetworkModelV2
@@ -37,6 +44,19 @@ class Storage:
     eta_charge: float
     eta_discharge: float
     s_max_mva: float
+    # Explicit rolling-window endpoint; None retains the daily-cycle convention.
+    e_terminal_mwh: float | None = None
+
+    def __post_init__(self) -> None:
+        if self.e_terminal_mwh is not None and (
+            not np.isfinite(self.e_terminal_mwh)
+            or not self.e_min_mwh <= self.e_terminal_mwh <= self.e_max_mwh
+        ):
+            raise ValueError("terminal storage energy must lie within physical bounds")
+
+    @property
+    def terminal_energy_mwh(self) -> float:
+        return self.e_initial_mwh if self.e_terminal_mwh is None else self.e_terminal_mwh
 
 
 @dataclass(frozen=True)
@@ -74,8 +94,35 @@ class MicrogridData:
     network_operating_mode_id: str | None = None
     resource_identities: tuple[ResourceIdentity, ...] = ()
     svg_s_max_mva: float | None = None
+    wind_q_abs_max_mvar: Dict[str, float] | None = None
+    wind_reactive_policy: str | None = None
+    wind_capacity_provenance: Dict[str, str] | None = None
 
     def __post_init__(self) -> None:
+        if self.wind_q_abs_max_mvar is not None and set(self.wind_q_abs_max_mvar) != set(
+            self.wind_capacity_mw
+        ):
+            raise ValueError("absolute wind Q limits must cover every wind bus")
+        if self.wind_reactive_policy is not None:
+            policy = WindReactivePolicy(self.wind_reactive_policy)
+            if self.wind_q_abs_over_p_max is None or set(self.wind_q_abs_over_p_max) != set(
+                self.wind_capacity_mw
+            ):
+                raise ValueError("explicit wind policy requires per-bus ratios")
+            if any(
+                not np.isfinite(v) or not 0 <= v <= policy.ratio
+                for v in self.wind_q_abs_over_p_max.values()
+            ):
+                raise ValueError("wind ratio exceeds the selected policy")
+            if (
+                self.wind_q_abs_max_mvar is None
+                or self.wind_capacity_provenance is None
+                or set(self.wind_capacity_provenance) != set(self.wind_capacity_mw)
+                or not all(self.wind_capacity_provenance.values())
+            ):
+                raise ValueError("explicit wind policy requires absolute ratings and provenance")
+        for bus in self.wind_capacity_mw:
+            self.wind_reactive_capability(bus)
         if self.resource_identities:
             expected = (
                 {("wind", bus) for bus in self.wind_available_mw}
@@ -114,6 +161,13 @@ class MicrogridData:
             return None
         return self.wind_q_abs_over_p_max.get(bus)
 
+    def wind_reactive_capability(self, bus: str) -> WindReactiveCapability:
+        return WindReactiveCapability(
+            self.wind_capacity_mva[bus],
+            self.wind_q_over_p_limit(bus),
+            None if self.wind_q_abs_max_mvar is None else self.wind_q_abs_max_mvar[bus],
+        )
+
     def pv_can_control_reactive(self, bus: str) -> bool:
         if self.pv_reactive_enabled is None:
             return True
@@ -149,6 +203,20 @@ class ProjectCase:
     dataset_revision: str | None = None
     dataset_sha256: str | None = None
     profile_kind: str | None = None
+    # Planning-only margins; the executor retains the physical Storage envelope.
+    storage_reserves: dict[str, StorageReservePlan] = field(default_factory=dict)
+    reactive_plans: dict[str, tuple[ReactivePlanningRow, ...]] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if set(self.storage_reserves) - {mg.name for mg in self.microgrids} or any(
+            len(plan.up_mw) != len(self.time_hours)
+            for plan in self.storage_reserves.values()
+        ):
+            raise ValueError("storage reserves must match case regions and time axis")
+        if set(self.reactive_plans) - {mg.name for mg in self.microgrids} or any(
+            row.time_index >= len(self.time_hours) for rows in self.reactive_plans.values() for row in rows
+        ):
+            raise ValueError("reactive planning rows must match case regions and time axis")
 
 
 def renewable_active_power_limits(

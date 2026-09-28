@@ -129,6 +129,26 @@ def decode_bundle(raw: bytes) -> Bundle:
                 )
                 if abs(total - capacity) > 1e-8:
                     raise ValueError("device capacity does not match case")
+                if kind == "wind" and mg.wind_reactive_policy is not None:
+                    matching_wind = [
+                        d
+                        for d in bundle.devices
+                        if d.region == mg.name and d.bus_id == bus and d.kind == "wind"
+                    ]
+                    if len(matching_wind) != 1:
+                        raise ValueError(
+                            "explicit wind policy requires one device per modeled resource"
+                        )
+                    wind = matching_wind[0]
+                    if (
+                        wind.q_abs_over_p_max != mg.wind_q_over_p_limit(bus)
+                        or wind.s_max_mva != mg.wind_capacity_mva[bus]
+                        or mg.wind_q_abs_max_mvar is None
+                        or wind.q_max_mvar != mg.wind_q_abs_max_mvar[bus]
+                    ):
+                        raise ValueError(
+                            "wind device capability does not match captured policy and ratings"
+                        )
         for kind, bus in (("storage", mg.storage.bus), ("svg", mg.svg_bus)):
             matching = [d for d in bundle.devices if d.region == mg.name and d.kind == kind]
             if len(matching) != 1 or matching[0].bus_id != bus:
@@ -165,7 +185,9 @@ def case_from_bundle(bundle: Bundle, steps: int) -> ProjectCase:
         raise ValueError("steps must be in 1..288")
     data: dict[str, Any] = cast(dict[str, Any], bundle.case)
     identity_fields = {"dataset_id", "dataset_revision", "dataset_sha256", "profile_kind"}
-    if set(data) - identity_fields != {f.name for f in fields(ProjectCase)} - identity_fields:
+    # Reserve envelopes belong to a computed planning window, not a source bundle.
+    source_fields = {f.name for f in fields(ProjectCase)} - {"storage_reserves", "reactive_plans"}
+    if set(data) - identity_fields != source_fields - identity_fields:
         raise ValueError("unexpected case fields")
     original = np.array(data["time_hours"], dtype=float)
     if len(original) != 96 or not np.allclose(original, np.arange(96) / 4):
@@ -230,7 +252,10 @@ def case_from_bundle(bundle: Bundle, steps: int) -> ProjectCase:
         grids,
         replace(ModelAssumptions(**data["assumptions"]), dt_hours=24.0 / steps),
         float(data["cluster_import_limit_mw"]),
-        **{key: data.get(key) for key in identity_fields},
+        dataset_id=data.get("dataset_id"),
+        dataset_revision=data.get("dataset_revision"),
+        dataset_sha256=data.get("dataset_sha256"),
+        profile_kind=data.get("profile_kind"),
     )
 
 
@@ -270,10 +295,14 @@ def build_bundle() -> Bundle:
                                 kind=kind,
                                 p_min_mw=0.0,
                                 p_max_mw=cap / count,
-                                q_max_mvar=next(
-                                    r.q_max_mvar
-                                    for r in study_recipe(mg.name).resources
-                                    if r.bus_id == bus and r.kind == kind
+                                q_max_mvar=(
+                                    next(
+                                        r.q_max_mvar
+                                        for r in study_recipe(mg.name).resources
+                                        if r.bus_id == bus and r.kind == kind
+                                    )
+                                    if mg.wind_q_abs_max_mvar is None
+                                    else mg.wind_q_abs_max_mvar[bus]
                                 )
                                 if kind == "wind"
                                 else 0.0,
@@ -313,7 +342,7 @@ def build_bundle() -> Bundle:
                 p_min_mw=0.0,
                 p_max_mw=0.0,
                 q_max_mvar=mg.svg_q_max_mvar,
-                s_max_mva=mg.svg_q_max_mvar,
+                s_max_mva=mg.svg_capability().s_max_mva,
                 ramp_mw_per_minute=1.0,
             )
         )
@@ -323,7 +352,7 @@ def build_bundle() -> Bundle:
         synthetic=True,
         start=study_recipe().start,
         source="Deterministic synthetic engineering assumptions; no client files",
-        case=plain(replace(case, microgrids=grids)),
+        case={key: value for key, value in plain(replace(case, microgrids=grids)).items() if key not in {"storage_reserves", "reactive_plans"}},
         devices=tuple(devices),
         plant_profiles={
             name: json.loads(generate_inputs(study_recipe(name))[2].model_dump_json())
@@ -351,9 +380,9 @@ def generate_bundle(output: Path) -> Bundle:
     (output / "bundle.json").write_bytes(raw)
     (output / "bundle.sha256").write_text(hashlib.sha256(raw).hexdigest() + "\n", encoding="ascii")
     (output / "README.md").write_text(
-        "# 合成演示资料\n\n全部为模拟值，未读取甲方文件。\n"
+        "# 合成演示资料\n\n参考项目资料的模拟数据，非现场量测或现场批准台账。\n"
         "由安装包 unified_dataset.json 生成，禁止手工维护第二份台账。\n"
-        "山城七母线，两台 5 MW 风机独立接入；YA_B、YA_C 各五母线。\n"
+        "山城采用35 kV参考接线及模拟扩展，两台5 MW风机独立建模。\n"
         "96 点日前预测覆盖完整一天；正在运行的服务和作业仍使用已捕获的版本。\n",
         encoding="utf-8",
     )

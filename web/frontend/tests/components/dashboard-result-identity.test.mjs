@@ -1,4 +1,5 @@
-/** Real React DOM lifecycle tests in jsdom; charts/widgets and network are ports.
+/** Real React DOM lifecycle tests in jsdom; widgets and network are ports.
+ * Charts are ports by default; the power-chart test uses real Recharts at a fixed size.
  * This exercises actual dashboard hooks, effects, batching and DOM clicks.
  * It is not browser layout or network E2E coverage.
  */
@@ -27,7 +28,99 @@ second.metadata.generated_at = '2026-09-19T00:00:00+00:00';
 const idA = 'a'.repeat(32),
   idB = 'b'.repeat(32);
 
-test('recorded seven-bus connectivity renders both wind and both PV buses', async () => {
+for (const terminal of ['failed', 'cancelled', 'interrupted', 'succeeded']) {
+  test(`restored rolling progress advances and preserves evidence after ${terminal}`, async () => {
+    const running = {
+      simulation_id: idA,
+      state: 'running',
+      stage: 'validating',
+      stage_sequence: 4,
+      total_stages: 6,
+      result_available: false,
+      stage_label: '滚动执行',
+      rolling: {
+        current_window: 2,
+        completed_windows: 1,
+        total_windows: 4,
+        start_minute: 15,
+        end_minute: 30,
+        total_minutes: 60,
+        phase: 'executing',
+      },
+    };
+    const result = structuredClone(first);
+    result.metadata.scenario_type = 'cluster_coordination';
+    result.executive_summary.overall_passed = false;
+    result.executive_summary.headline = '存在未通过项';
+    const app = await mountDashboard({
+      hydrate: true,
+      view: 'cluster_coordination',
+      result,
+      runningStatus: running,
+    });
+    try {
+      const feedback = () =>
+        app.document.querySelector('.run-feedback').textContent;
+      assert.match(feedback(), /当前窗口 2\/4.*已完成 1\/4/);
+      assert.equal(
+        app.document
+          .querySelector('[role="progressbar"]')
+          .getAttribute('aria-valuenow'),
+        '54.2',
+      );
+      const completed = {
+        ...running,
+        rolling: {
+          ...running.rolling,
+          phase: 'completed',
+          completed_windows: 2,
+        },
+      };
+      await app.reportStatus(completed);
+      assert.match(feedback(), /已完成 2\/4/);
+      assert.equal(
+        app.document
+          .querySelector('[role="progressbar"]')
+          .getAttribute('aria-valuenow'),
+        '58.3',
+      );
+      if (terminal === 'succeeded') {
+        await app.reportStatus({
+          ...completed,
+          stage: 'serializing',
+          stage_sequence: 6,
+          stage_label: '正在保存仿真结果',
+        });
+        assert.doesNotMatch(feedback(), /100%|任务已完成/);
+        await app.reportStatus({
+          ...completed,
+          state: terminal,
+          stage: terminal,
+          stage_sequence: 6,
+          result_available: true,
+        });
+        await app.finish('succeeded', result);
+        assert.match(feedback(), /任务已完成.*存在未通过项/);
+        assert.match(feedback(), /100%/);
+      } else {
+        await app.reportStatus({
+          ...completed,
+          state: terminal,
+          stage: terminal,
+          stage_label: `任务${terminal}`,
+        });
+        await app.finish('failed');
+        assert.doesNotMatch(feedback(), /当前窗口|运行中/);
+        assert.match(feedback(), /最后记录窗口 2\/4.*已完成 2\/4/);
+      }
+      assert.equal(app.document.querySelector('[role="progressbar"]'), null);
+    } finally {
+      await app.close();
+    }
+  });
+}
+
+test('seven-bus results retain functional cards and replay regional plan totals', async () => {
   const recorded = structuredClone(first);
   recorded.topology_nodes = [
     'PCC',
@@ -53,16 +146,123 @@ test('recorded seven-bus connectivity renders both wind and both PV buses', asyn
       source: index === 0 ? 'SC_PCC' : 'SC_MAIN',
       target: node.id,
     }));
+  recorded.timeseries = [0, 1, 2].map((minute) => ({
+    ...first.timeseries[0],
+    time_hour: minute / 60,
+    p_grid_optimized_mw: 6 + minute,
+    load_mw: 14 + minute,
+    wind_used_mw: 7 + minute,
+    wind_q_mvar: -0.5 + minute * 0.5,
+    pv_used_mw: 3 + minute,
+    storage_discharge_mw: minute,
+    storage_charge_mw: 1 - minute,
+    svg_q_mvar: -0.5 + minute,
+  }));
   const app = await mountDashboard({ hydrate: true, result: recorded });
   try {
-    const diagram = app.document.querySelector('svg[role="img"]');
+    const diagram = app.document.querySelector('.single-network');
     assert.ok(diagram);
-    assert.equal(diagram.querySelectorAll('rect').length, 7);
-    assert.equal(diagram.querySelectorAll('path').length, 6);
-    for (const name of ['WT1', 'WT2', 'PV1', 'PV2'])
-      assert.ok(diagram.textContent.includes(name));
+    assert.equal(diagram.querySelectorAll('.single-device').length, 5);
+    assert.equal(diagram.querySelectorAll('.single-link').length, 4);
+    assert.match(diagram.getAttribute('aria-label'), /功能分组示意/);
+    const values = () =>
+      [...diagram.querySelectorAll('.single-device b')].map(
+        (element) => element.textContent,
+      );
+    assert.deepEqual(values(), [
+      '6.00 MW',
+      '全网负荷 14.00',
+      'P：7.00 MW / Q：-0.50 Mvar',
+      '3.00 MW',
+      '-1.00 MW / -0.50 Mvar',
+    ]);
+    await app.click('[aria-label="下一分钟记录"]');
+    assert.deepEqual(values(), [
+      '7.00 MW',
+      '全网负荷 15.00',
+      'P：8.00 MW / Q：0.00 Mvar',
+      '4.00 MW',
+      '1.00 MW / 0.50 Mvar',
+    ]);
+    await app.click('[aria-label="下一分钟记录"]');
+    assert.equal(values()[2], 'P：9.00 MW / Q：0.50 Mvar');
+    await app.click('[aria-label="回到起点"]');
+    assert.equal(values()[2], 'P：7.00 MW / Q：-0.50 Mvar');
+    assert.deepEqual((await app.exported()).body, recorded);
   } finally {
     await app.close();
+  }
+});
+
+test('single power chart renders six series and noncumulative tooltip values with real Recharts', async () => {
+  const recorded = structuredClone(first);
+  recorded.timeseries = [0, 1, 2].map((hour) => ({
+    ...first.timeseries[0],
+    time_hour: hour,
+    load_mw: 10,
+    p_grid_optimized_mw: 6.1,
+    wind_used_mw: 4,
+    pv_used_mw: 2,
+    storage_discharge_mw: 0,
+    storage_charge_mw: 2,
+    active_loss_mw: 0.1,
+  }));
+  const app = await mountDashboard({
+    hydrate: true,
+    result: recorded,
+    realCharts: true,
+  });
+  try {
+    const panel = app.document.querySelector('.chart-panel');
+    assert.match(panel.textContent, /负荷、风光储与 PCC 受电/);
+    assert.deepEqual(
+      [...panel.querySelectorAll('li')].map((e) => e.textContent),
+      ['负荷', 'PCC 受电', '风电', '光伏', '储能放电', '储能充电（零轴下方）'],
+    );
+    assert.equal(panel.querySelectorAll('.recharts-area').length, 4);
+    assert.equal(panel.querySelectorAll('.recharts-line').length, 2);
+    const surface = panel.querySelector('svg[role="application"]');
+    assert.ok(surface);
+    await act(async () => surface.focus());
+    const details = [...panel.querySelectorAll('dl > div')].map(
+      (e) => e.textContent,
+    );
+    assert.deepEqual(details, [
+      '负荷10.00 MW',
+      'PCC 受电6.10 MW',
+      '风电4.00 MW',
+      '光伏2.00 MW',
+      '储能放电0.00 MW',
+      '储能充电2.00 MW',
+      '有功网损0.10 MW',
+    ]);
+    assert.deepEqual((await app.exported()).body, recorded);
+  } finally {
+    await app.close();
+  }
+});
+
+test('detailed power panel is single-only and preserves explicit missing-data states', async () => {
+  const recorded = structuredClone(first);
+  delete recorded.timeseries[0].pv_used_mw;
+  delete recorded.timeseries[0].active_loss_mw;
+  const app = await mountDashboard({ hydrate: true, result: recorded });
+  try {
+    assert.match(
+      app.document.querySelector('.chart-panel').textContent,
+      /部分计划数据缺失/,
+    );
+    assert.deepEqual((await app.exported()).body, recorded);
+  } finally {
+    await app.close();
+  }
+  const overview = await mountDashboard({ view: 'overview', hydrate: true });
+  try {
+    const panel = overview.document.querySelector('.chart-panel');
+    assert.match(panel.textContent, /负荷、新能源与 PCC 受电/);
+    assert.doesNotMatch(panel.textContent, /储能充电（零轴下方）/);
+  } finally {
+    await overview.close();
   }
 });
 
@@ -71,6 +271,8 @@ async function mountDashboard({
   view = 'single_microgrid',
   result = first,
   health = 'ok',
+  realCharts = false,
+  runningStatus = null,
 } = {}) {
   const dom = new JSDOM('<div id="root"></div>', {
     url: `http://localhost/${view === 'overview' ? '' : view.replaceAll('_', '-')}${hydrate ? `?simulation=${idA}` : ''}`,
@@ -180,8 +382,14 @@ async function mountDashboard({
             return load('features/simulation-events/index.ts');
           if (name === '@/features/cluster-coordination')
             return load('features/cluster-coordination/index.ts');
+          if (name === '@/features/computation-quality')
+            return load('features/computation-quality/index.ts');
           if (name === '@/features/network-topology')
             return load('features/network-topology/index.ts');
+          if (name === '@/features/active-power-chart')
+            return load('features/active-power-chart/index.ts');
+          if (name === '@/features/simulation-progress')
+            return load('features/simulation-progress/index.ts');
           if (name.endsWith('.module.css'))
             return {
               default: new Proxy({}, { get: (_target, key) => key }),
@@ -197,11 +405,29 @@ async function mountDashboard({
           }
           if (name === 'lucide-react')
             return new Proxy({}, { get: () => Icon });
-          if (name === 'recharts') return new Proxy({}, { get: () => Icon });
+          if (name === 'recharts') {
+            if (realCharts)
+              return {
+                ...require('recharts'),
+                ResponsiveContainer: ({ children }) =>
+                  React.cloneElement(children, { width: 760, height: 270 }),
+              };
+            return new Proxy({}, { get: () => Icon });
+          }
           if (name === '@/components/ui/label')
             return {
               Label: ({ children, htmlFor }) =>
                 React.createElement('label', { htmlFor }, children),
+            };
+          if (name === '@/components/ui/progress')
+            return {
+              Progress: ({ value, className, ...props }) =>
+                React.createElement('div', {
+                  ...props,
+                  className,
+                  role: 'progressbar',
+                  'aria-valuenow': value,
+                }),
             };
           // Model the Select port with a native select so real dashboard callbacks run.
           if (name === '@/components/ui/select')
@@ -244,13 +470,17 @@ async function mountDashboard({
   const api = {
     ...actual,
     getHealth: async () => ({ status: health }),
-    getSimulation: async () => ({ simulation_id: idA, state: 'succeeded' }),
+    getSimulation: async () =>
+      runningStatus ?? { simulation_id: idA, state: 'succeeded' },
     getSimulationResult: async () => structuredClone(result),
     waitForSimulation: async (status, onStatus) => {
       onStatus({ ...status, stage_label: 'Synthetic job', total_stages: 6 });
-      if (count === 1) return structuredClone(result);
+      if (count === 1 && !runningStatus) {
+        onStatus({ ...status, state: 'succeeded', result_available: true });
+        return structuredClone(result);
+      }
       return new Promise((resolve, reject) => {
-        pending = { resolve, reject };
+        pending = { resolve, reject, onStatus };
       });
     },
     cancelSimulation: async () => {
@@ -266,6 +496,9 @@ async function mountDashboard({
   return {
     document: dom.window.document,
     requests,
+    async reportStatus(status) {
+      await act(async () => pending.onStatus(status));
+    },
     async changeSelect(selector, value) {
       const select = dom.window.document.querySelector(selector);
       assert.ok(select, selector);
@@ -278,7 +511,7 @@ async function mountDashboard({
     async click(selector) {
       const button = dom.window.document.querySelector(selector);
       assert.ok(button, selector);
-      assert.equal(button.disabled, false);
+      assert.equal(button.matches(':disabled'), false);
       await act(async () => {
         button.click();
       });
@@ -325,7 +558,17 @@ for (const outcome of ['cancelled', 'failed', 'succeeded']) {
     const app = await mountDashboard();
     try {
       assert.equal(app.document.querySelector('.export-button').disabled, true);
+      assert.deepEqual(
+        [...app.document.querySelectorAll('.single-device b')].map(
+          (element) => element.textContent,
+        ),
+        ['— MW', '全网负荷 —', 'P：— MW / Q：— Mvar', '— MW', '— MW / — Mvar'],
+      );
       await app.click('.run-button');
+      assert.equal(
+        app.document.querySelector('.single-wind b').textContent,
+        `P：${first.timeseries[0].wind_used_mw.toFixed(2)} MW / Q：— Mvar`,
+      );
       assert.deepEqual(await app.exported(), {
         filename: `oilfield-single_microgrid-${idA}.json`,
         body: first,
@@ -371,7 +614,16 @@ test('configuration uses independent controls and reports the actual run limits'
     );
     assert.match(
       app.document.querySelector('.configuration-summary b').textContent,
-      /8 时段\s*·\s*60 秒\s*·\s*储能启用\s*·\s*MISOCP/,
+      /8 时段\s*·\s*储能启用\s*·\s*MISOCP/,
+    );
+    assert.equal(
+      app.document.querySelector('[aria-label="单次求解时限，秒"]'),
+      null,
+    );
+    assert.ok(app.document.querySelector('#steps-select'));
+    assert.equal(
+      app.document.querySelector('[aria-label="求解质量与计算预算"]'),
+      null,
     );
   } finally {
     await app.close();
@@ -396,10 +648,8 @@ test('wind surge button submits a bounded branch event from the current playback
     assert.equal(request.region, first.request.region);
     assert.equal(request.steps, first.request.steps);
     assert.equal(request.storage_enabled, first.request.storage_enabled);
-    assert.equal(
-      request.solver.time_limit_seconds,
-      first.request.solver.time_limit_seconds,
-    );
+    assert.equal(request.solver.time_limit_seconds, undefined);
+    assert.equal(request.solver.quality_policy, 'quality-first-v1');
     assert.equal(request.events.length, 1);
     const { event_id: eventId, ...event } = request.events[0];
     assert.match(eventId, /^[0-9a-f-]{36}$/);
@@ -512,7 +762,67 @@ function coordinationFixture() {
 
 const clusterPanel = '[aria-label="跨区域微电网集群"]';
 
-test('completed coordination opens last round and replays power on an independent planning axis', async () => {
+test('one cluster run presents automatic execution stages and retains unknown evidence', async () => {
+  const result = coordinationFixture();
+  result.executive_summary.overall_passed = false;
+  result.cluster_execution = {
+    version: 'cluster-execution-v1',
+    status: 'unknown',
+    storage_enabled: true,
+    policy: { source: '软件仿真容差：0.05 MW/Mvar' },
+    input_basis: '同版本模拟输入',
+    stages: [
+      { stage: 'day_ahead', status: 'passed' },
+      { stage: 'intraday', status: 'unknown' },
+      { stage: 'minute', status: 'not_computed' },
+    ],
+  };
+  result.validation_items.push(
+    {
+      code: 'INTRADAY',
+      label: '日内执行',
+      passed: false,
+      assessment_status: 'unknown',
+      explanation: '区域求解超时',
+    },
+    {
+      code: 'MINUTE',
+      label: '分钟执行',
+      passed: false,
+      assessment_status: 'not_computed',
+      explanation: '缺少日内计划',
+    },
+  );
+  const app = await mountDashboard({ view: 'cluster_coordination', result });
+  try {
+    await app.click('.run-button');
+    assert.equal(app.requests.length, 1);
+    await app.clickButton('执行校核');
+    const panel = app.document.querySelector('[aria-label="自动执行校核"]');
+    assert.ok(panel);
+    assert.deepEqual(
+      [...panel.querySelectorAll('li b')].map((e) => e.textContent),
+      ['通过', '无法确认', '未执行'],
+    );
+    assert.equal(panel.querySelectorAll('button').length, 0);
+    assert.match(
+      app.document.querySelector('.verdict-panel').textContent,
+      /无法确认/,
+    );
+    assert.match(
+      app.document.querySelector('.verdict-panel').textContent,
+      /未执行/,
+    );
+    assert.deepEqual(
+      (await app.exported()).body.cluster_execution,
+      result.cluster_execution,
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('completed cluster opens plan, then coordination opens last round and replays power on an independent planning axis', async () => {
   const app = await mountDashboard({
     view: 'cluster_coordination',
     result: coordinationFixture(),
@@ -525,16 +835,36 @@ test('completed coordination opens last round and replays power on an independen
     await app.click('.run-button');
     assert.match(
       app.document.querySelector('.current-time').textContent,
+      /00:00/,
+    );
+    await app.clickButton('协调过程');
+    assert.match(
+      app.document.querySelector('.current-time').textContent,
       /第 3 轮/,
     );
     const card = () =>
-      app.document.querySelector(`${clusterPanel} [data-region="SC"]`)
+      app.document.querySelector(`${clusterPanel} details [data-region="SC"]`)
         .textContent;
+    const diagram = app.document.querySelector(
+      `${clusterPanel} .topology-canvas`,
+    );
+    assert.ok(diagram.querySelector('.grid-source'));
+    assert.equal(diagram.querySelectorAll('.trunk').length, 3);
+    assert.equal(diagram.querySelectorAll('.region-node').length, 3);
+    const mainCard = () => diagram.querySelector('[data-region="SC"]');
+    assert.ok(mainCard().querySelector('.region-flow'));
+    assert.match(mainCard().textContent, /协调器参考 P3\.00 MW/);
+    assert.equal(mainCard().textContent.includes('申报 − 参考'), false);
+    const details = app.document.querySelector(`${clusterPanel} details`);
+    assert.equal(details.open, false);
+    await app.click(`${clusterPanel} details > summary`);
+    assert.equal(details.open, true);
     assert.match(card(), /3\.25 MW/);
     assert.match(card(), /3\.00 MW/);
     assert.match(card(), /0\.25 MW/);
     await app.changeSelect('[aria-label="观察计划时刻"]', '3');
     assert.match(card(), /13\.00 MW/);
+    assert.match(mainCard().textContent, /13\.00 MW/);
     assert.match(
       app.document.querySelector('.current-time').textContent,
       /第 3 轮/,
@@ -548,14 +878,23 @@ test('completed coordination opens last round and replays power on an independen
     assert.match(card(), /11\.00 MW/);
     await app.click('[aria-label="下一轮记录"]');
     assert.match(card(), /12\.00 MW/);
+    assert.match(mainCard().textContent, /12\.00 MW/);
     assert.match(
       app.document.querySelector(clusterPanel).textContent,
       /计划时刻 03:00/,
     );
-    await app.clickButton('最终计划');
+    await app.clickButton('运行态势');
     assert.match(card(), /PCC 计划3\.00 MW/);
+    assert.match(mainCard().textContent, /PCC 计划3\.00 MW/);
     await app.click('[aria-label="下一计划时刻"]');
     assert.match(card(), /PCC 计划4\.00 MW/);
+    assert.match(mainCard().textContent, /PCC 计划4\.00 MW/);
+    assert.match(
+      diagram.querySelector('.grid-source').textContent,
+      /15\.00 MW/,
+    );
+    await app.click(`${clusterPanel} details > summary`);
+    assert.equal(details.open, false);
     assert.match(
       app.document.querySelector(clusterPanel).textContent,
       /15\.00 MW \/ 26\.00 MW/,
@@ -581,12 +920,13 @@ test('historical history explicitly lacks per-round power but retains final PCC 
   });
   try {
     const panel = () => app.document.querySelector(clusterPanel).textContent;
+    await app.clickButton('协调过程');
     assert.match(panel(), /本次结果未记录逐轮功率/);
     assert.match(
       app.document.querySelector('.current-time').textContent,
       /第 3 轮/,
     );
-    await app.clickButton('最终计划');
+    await app.clickButton('运行态势');
     assert.match(panel(), /PCC 计划3\.00 MW/);
     assert.equal(panel().includes('本次结果未记录逐轮功率'), false);
   } finally {
@@ -609,7 +949,7 @@ test('nonconverged results retain last references and never claim a converged pl
       app.document.querySelector(clusterPanel).textContent,
       /未收敛 · 最后一轮参考/,
     );
-    await app.clickButton('最终计划');
+    await app.clickButton('运行态势');
     assert.match(
       app.document.querySelector(clusterPanel).textContent,
       /未收敛 · 最后一轮参考/,
@@ -643,9 +983,17 @@ test('communication trace distinguishes stale, outage and fallback; final plan c
   });
   try {
     const text = app.document.querySelector(
-      `${clusterPanel} [data-region="YA_B"]`,
+      `${clusterPanel} details [data-region="YA_B"]`,
     ).textContent;
     assert.match(text, /失联 · 自治降级 · 沿用历史申报/);
+    const faultCard = app.document.querySelector(
+      `${clusterPanel} .region-node[data-region="YA_B"]`,
+    );
+    assert.ok(faultCard.classList.contains('faulted'));
+    assert.match(
+      faultCard.querySelector('.fault-dot').textContent,
+      /失联 · 自治降级/,
+    );
     assert.match(
       app.document.querySelector(clusterPanel).textContent,
       /等待有效区域响应，参考保持/,
@@ -663,27 +1011,250 @@ test('communication trace distinguishes stale, outage and fallback; final plan c
 
 const eventArea = '[aria-label="新能源事件注入"]';
 
-test('cluster coordination declares all regions without a region picker or renewable event controls', async () => {
+for (const qualityView of ['cluster_coordination', 'single_microgrid']) {
+  test(`${qualityView} quality evidence keeps exhaustion distinct and preserves exports`, async () => {
+    const result =
+      qualityView === 'single_microgrid'
+        ? structuredClone(first)
+        : coordinationFixture();
+    result.computation_quality = {
+      policy: {
+        version: 'quality-first-v1',
+        relative_gap: 0.0001,
+        solve_seconds: [180, 600, 1800],
+        admm_iterations: [360, 720, 1000],
+      },
+      reference_optimizations: {
+        optimized: [
+          {
+            status: 'budget_exhausted',
+            target_relative_gap: 0.0001,
+            selected_attempt: 1,
+            attempts: [
+              {
+                budget_seconds: 1800,
+                solver_status: 'timelimit',
+                feasible: true,
+                relative_gap: 0.02,
+              },
+            ],
+          },
+        ],
+      },
+      reference_coordination: [
+        {
+          iteration_budget: 1000,
+          completed_iterations: 1000,
+          converged: false,
+          primal_residual: 1,
+          dual_residual: 2,
+          primal_tolerance: 0.01,
+          dual_tolerance: 0.02,
+        },
+      ],
+    };
+    if (qualityView === 'single_microgrid')
+      result.computation_quality.reference_coordination = [];
+    const app = await mountDashboard({
+      view: qualityView,
+      hydrate: true,
+      result,
+    });
+    try {
+      if (qualityView === 'cluster_coordination')
+        await app.clickButton('执行校核');
+      const text = app.document.querySelector(
+        '[aria-label="求解质量与计算预算"]',
+      ).textContent;
+      assert.match(text, /预算耗尽，尚未达到规定精度/);
+      if (qualityView === 'cluster_coordination')
+        assert.match(text, /1000.*未收敛/);
+      else {
+        assert.match(text, /单微网优化/);
+        assert.doesNotMatch(text, /ADMM|协调分级上限|协调范围|日前协调/);
+      }
+      assert.match(text, /0.01%/);
+      assert.deepEqual((await app.exported()).body, result);
+    } finally {
+      await app.close();
+    }
+  });
+}
+
+for (const view of ['overview', 'cluster_coordination']) {
+  test(`${view} restores one task across plan, coordination and execution without recalculation`, async () => {
+    const result = coordinationFixture();
+    const app = await mountDashboard({ view, hydrate: true, result });
+    try {
+      assert.match(
+        app.document.querySelector('.current-time').textContent,
+        /原始计划时刻.*00:00/,
+      );
+      assert.equal(app.document.querySelector('#steps-select'), null);
+      await app.changeSelect(`${eventArea} select`, 'YA_B');
+      await app.clickButton('协调过程');
+      assert.match(
+        app.document.querySelector('.current-time').textContent,
+        /第 3 轮/,
+      );
+      assert.ok(app.document.querySelector(eventArea).closest('[hidden]'));
+      await app.clickButton('执行校核');
+      assert.match(
+        app.document.querySelector('[aria-label="集群执行校核"]').textContent,
+        /未记录执行校核证据/,
+      );
+      assert.equal(app.document.querySelector('.playback-bar'), null);
+      assert.equal(app.document.querySelector('.chart-panel'), null);
+      assert.equal(app.document.querySelector('.metrics-grid'), null);
+      assert.equal(app.document.querySelectorAll('.verdict-panel').length, 1);
+      assert.equal(app.document.querySelectorAll('.run-button').length, 1);
+      await app.clickButton('运行态势');
+      assert.equal(
+        app.document.querySelector(`${eventArea} select`).value,
+        'YA_B',
+      );
+      assert.equal(app.document.querySelector('#steps-select'), null);
+      assert.match(
+        app.document.querySelector('.result-origin').textContent,
+        new RegExp(`全天 ${result.metadata.steps} 个时段`),
+      );
+      assert.equal(app.requests.length, 0);
+      assert.deepEqual((await app.exported()).body, result);
+    } finally {
+      await app.close();
+    }
+  });
+}
+
+test('execution windows keep stopped and missing feedback distinct from completion', async () => {
+  const result = coordinationFixture();
+  result.cluster_execution = {
+    status: 'unknown',
+    storage_enabled: true,
+    policy: { update_minutes: 15, horizon_minutes: 240 },
+    input_basis: 'Synthetic stopped-window fixture',
+    stages: [],
+    rolling_updates: [
+      {
+        start_minute: 0,
+        end_minute: 15,
+        horizon_end_minute: 240,
+        status: 'passed',
+        adopted: true,
+        actual_end_energy_mwh: { SC: 1, YA_B: 1, YA_C: 1 },
+        admm_iterations: 5,
+      },
+      {
+        start_minute: 15,
+        end_minute: 30,
+        horizon_end_minute: 255,
+        status: 'unknown',
+        adopted: false,
+        actual_end_energy_mwh: {},
+        reason: '区域求解超时',
+      },
+    ],
+  };
+  const app = await mountDashboard({
+    view: 'cluster_coordination',
+    hydrate: true,
+    result,
+  });
+  try {
+    await app.clickButton('执行校核');
+    const panel = app.document.querySelector('[aria-label="集群执行校核"]');
+    assert.match(panel.textContent, /已采用 1 个窗口/);
+    const rows = [...panel.querySelectorAll('tbody tr')].map(
+      (row) => row.textContent,
+    );
+    assert.match(rows[0], /00:00—00:15.*通过已采用已记录5/);
+    assert.match(
+      rows[1],
+      /00:15—00:30.*无法确认未采用未记录未记录区域求解超时/,
+    );
+    assert.equal(app.requests.length, 0);
+    assert.deepEqual((await app.exported()).body, result);
+  } finally {
+    await app.close();
+  }
+});
+
+for (const terminal of ['failed', 'cancelled']) {
+  test(`unified cluster keeps result identity after a new task is ${terminal}`, async () => {
+    const result = coordinationFixture();
+    const app = await mountDashboard({
+      view: 'cluster_coordination',
+      hydrate: true,
+      result,
+    });
+    try {
+      await app.clickButton('执行校核');
+      await app.click('.run-button');
+      for (const button of app.document.querySelectorAll(
+        '[aria-label="集群结果视图"] button',
+      )) {
+        assert.equal(button.disabled, true);
+      }
+      assert.deepEqual((await app.exported()).body, result);
+      if (terminal === 'cancelled') await app.click('.run-button');
+      else await app.finish('failed');
+      await app.clickButton('运行态势');
+      assert.match(
+        app.document.querySelector('.result-origin').textContent,
+        /上次完成的结果/,
+      );
+      assert.deepEqual((await app.exported()).body, result);
+      assert.equal(app.requests.length, 1);
+    } finally {
+      await app.close();
+    }
+  });
+}
+
+test('cluster coordination declares all regions with one navigation entry and renewable controls', async () => {
   const app = await mountDashboard({
     view: 'cluster_coordination',
     result: clusterFixture(),
   });
   try {
+    assert.match(
+      app.document.querySelector('.configuration-summary b').textContent,
+      /^基础优化 15 分钟／时段（全天 96 个时段）\s*·\s*储能启用\s*·\s*MISOCP · ADMM$/,
+    );
     assert.equal(app.document.querySelector('#region-select'), null);
-    assert.equal(app.document.querySelector(eventArea), null);
+    assert.ok(app.document.querySelector(eventArea));
+    assert.equal(
+      app.document.querySelectorAll('nav button[aria-label="集群协调"]').length,
+      1,
+    );
+    assert.equal(
+      app.document.querySelectorAll('nav button[aria-label="综合态势"]').length,
+      0,
+    );
     const text = app.document.querySelector('.config-body').textContent;
     assert.match(text, /协调范围/);
     for (const code of ['SC', 'YA_B', 'YA_C']) assert.ok(text.includes(code));
     assert.equal(text.includes('重点展示区域'), false);
     await app.click('.run-button');
     assert.equal(app.requests[0].scenario_type, 'cluster_coordination');
+    assert.equal(app.requests[0].steps, 96);
+    assert.equal(app.requests[0].solver.quality_policy, 'quality-first-v1');
+    assert.equal(
+      app.document.querySelector('[aria-label="单次求解时限，秒"]'),
+      null,
+    );
+    assert.equal(
+      app.document.querySelector('[aria-label="ADMM 最大迭代轮次"]'),
+      null,
+    );
+    assert.equal(app.document.querySelector('#steps-select'), null);
     assert.equal(app.requests[0].region, 'SC'); // Existing request contract remains intact.
   } finally {
     await app.close();
   }
 });
 
-test('overview chooses an event target immediately while preserving baseline parameters, events and result identity', async () => {
+test('overview event uses the fixed grid while preserving other baseline parameters, events and result identity', async () => {
   const baseline = clusterFixture();
   const app = await mountDashboard({
     hydrate: true,
@@ -697,20 +1268,23 @@ test('overview chooses an event target immediately while preserving baseline par
       'YA_C',
     );
     await app.changeSelect(`${eventArea} select`, 'YA_B');
-    await app.changeSelect('#steps-select', '24');
+    assert.equal(app.document.querySelector('#steps-select'), null);
     assert.equal(app.requests.length, 0);
     assert.deepEqual((await app.exported()).body, baseline);
-    await app.click('[aria-label="下一分钟记录"]');
+    await app.click('[aria-label="下一计划时刻"]');
     await app.clickButton('当前时刻注入光伏大发');
 
     assert.equal(app.requests.length, 1);
     const request = app.requests[0];
+    assert.equal(request.steps, 96);
+    assert.deepEqual(request.solver, {
+      formulation: 'misocp',
+      quality_policy: 'quality-first-v1',
+    });
+    assert.equal(request.admm_max_iterations, undefined);
     for (const field of [
       'region',
-      'steps',
       'storage_enabled',
-      'solver',
-      'admm_max_iterations',
       'communication_loss_probability',
       'communication_max_delay_iterations',
       'communication_outage_region',
@@ -725,14 +1299,14 @@ test('overview chooses an event target immediately while preserving baseline par
       event_type: 'pv_surge',
       target: 'YA_B',
       time_axis: 'clock_minute',
-      start: 1,
-      end: 181,
+      start: 180,
+      end: 360,
       magnitude: 1.35,
-      label: '延安合成微网 B（YA_B）00:01 起光伏大发',
+      label: '延安合成微网 B（YA_B）03:00 起光伏大发',
     });
     assert.match(
       app.document.querySelector('.run-feedback').textContent,
-      /YA_B.*00:01.*光伏大发/,
+      /YA_B.*03:00.*光伏大发/,
     );
     for (const control of app.document.querySelectorAll(
       `${eventArea} select, ${eventArea} button`,
@@ -742,17 +1316,23 @@ test('overview chooses an event target immediately while preserving baseline par
     assert.deepEqual((await app.exported()).body, baseline);
 
     const branch = structuredClone(baseline);
-    branch.request = request;
+    branch.request = {
+      ...baseline.request,
+      ...request,
+      solver: { ...baseline.request.solver, ...request.solver },
+    };
+    branch.metadata.steps = 96;
+    branch.metadata.dt_hours = 0.25;
     await app.finish('succeeded', branch);
     assert.equal(
       app.document.querySelector(`${eventArea} select`).value,
       'YA_B',
     );
-    assert.equal(app.document.querySelector('#steps-select').value, '24');
+    assert.equal(app.document.querySelector('#steps-select'), null);
     assert.deepEqual((await app.exported()).body, branch);
     assert.match(
       app.document.querySelector('.run-feedback').textContent,
-      /YA_B.*00:01.*光伏大发/,
+      /YA_B.*03:00.*光伏大发/,
     );
   } finally {
     await app.close();

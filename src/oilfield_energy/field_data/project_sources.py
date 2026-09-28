@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from oilfield_energy.modules.resources.contracts import WindReactivePolicy
+
 from .contracts import (
     AssetKind,
     ControlCapability,
@@ -10,7 +12,6 @@ from .contracts import (
     MeasurementDirection,
     RenewableAsset,
 )
-
 
 _SOURCE = "西交大-资料提供.doc"
 _SHANCHENG_SOURCE = "山城微电网控制策略逻辑.pdf"
@@ -21,21 +22,21 @@ def build_project_asset_registry() -> FieldAssetRegistry:
     general_wind = ControlCapability(
         active_controllable=True,
         reactive_controllable=True,
-        q_abs_over_p_max=1.0 / 3.0,
+        q_abs_over_p_max=WindReactivePolicy.GENERAL.ratio,
         provenance=_SOURCE,
         note="资料给出的风机无功能力口径为有功的0–33.3%。",
     )
     shancheng_wind = ControlCapability(
         active_controllable=True,
         reactive_controllable=True,
-        q_abs_over_p_max=0.30,
+        q_abs_over_p_max=WindReactivePolicy.SHANCHENG.ratio,
         provenance=_SHANCHENG_SOURCE,
     )
     pv_active_only = ControlCapability(
         active_controllable=True,
         reactive_controllable=False,
         provenance=_SOURCE,
-        note="现有资料只确认光伏有功调节，不能在优化器中默认使用光伏无功。",
+        note="西交大-资料提供.pdf第9页明确光伏纯有功输出，Q=0。",
     )
     assets = (
         RenewableAsset("wind-xinghe", "杏河风电", "杏河", AssetKind.WIND, 30.0,

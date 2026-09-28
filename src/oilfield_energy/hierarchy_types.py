@@ -12,6 +12,8 @@ import numpy as np
 
 from .modules.control.contracts import RestorationEvidence, StorageDynamicsRecord
 from .modules.dispatch.contracts import (
+    ComputationQualityPolicy,
+    CoordinationBudgetEvidence,
     CoordinationIterationTrace,
     CoordinationSnapshot,
     DispatchCapabilities,
@@ -34,6 +36,7 @@ class ADMMConfig:
     local_q_regularization: float = 2.0
     local_ramp_regularization: float = 12.0
     solver: str = "CLARABEL"
+    quality_policy: ComputationQualityPolicy | None = None
 
 
 @dataclass(frozen=True)
@@ -561,6 +564,7 @@ class ADMMResult:
     # None means no complete barrier update was available, never certified.
     coordination_snapshot: CoordinationSnapshot | None = None
     capabilities: DispatchCapabilities = field(default_factory=DispatchCapabilities)
+    quality_budgets: tuple[CoordinationBudgetEvidence, ...] = ()
 
 
 @dataclass

@@ -67,7 +67,7 @@ def test_rearm_never_restores_default_or_historical_targets(fleet, prior_ticks):
     for expected in (1.0, 2.0, 2.0):
         frame = fleet.step()
         assert actual(fleet).p_mw == pytest.approx(expected)
-        assert actual(fleet).q_mvar == pytest.approx(min(0.4, 0.328 * expected))
+        assert actual(fleet).q_mvar == pytest.approx(min(0.4, 0.30 * expected))
         assert all(
             r.p_mw == 0.0 for r in frame.devices if r.kind == "wind" and r.device_id != "SC:wind:SC_WT1"
         )
