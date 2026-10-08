@@ -21,8 +21,8 @@ from oilfield_energy.bootstrap.adapters.project_dataset import (
     study_recipe,
 )
 from oilfield_energy.bootstrap.adapters.simulation_case import make_case
-from oilfield_energy.bootstrap.adapters.simulation_files import load_study
-from oilfield_energy.bootstrap.shancheng_simulation import generate_simulation
+from oilfield_energy.bootstrap.adapters.simulation_files import load_study, validate_json
+from oilfield_energy.bootstrap.study_inputs import generate_study_inputs
 from oilfield_energy.modules.measurements.adapters.local_files import LocalDatasetReader
 from oilfield_energy.modules.measurements.adapters.manifest_json import JsonManifestDecoder
 from oilfield_energy.modules.measurements.api import CaptureDataset
@@ -54,7 +54,7 @@ def test_web_cli_demo_and_study_share_ratings_topology_and_day_ahead_profiles(tm
         projected = make_case(spec, reference.network_model_v2, generate_inputs(spec)[0])
         assert plain(projected.microgrids[0]) == plain(reference)
         np.testing.assert_array_equal(projected.price_cny_per_mwh, direct.price_cny_per_mwh)
-    generate_simulation(None, tmp_path / "field")
+    generate_study_inputs(None, tmp_path / "field")
     captured = CaptureDataset(LocalDatasetReader(), JsonManifestDecoder()).capture(
         tmp_path / "field/manifest.json"
     )
@@ -119,7 +119,9 @@ def test_real_cluster_and_group_use_unified_inputs():
     for scenario in (ScenarioType.CLUSTER_COORDINATION, ScenarioType.GROUP_CONTROL):
         result = run_simulation(SimulationRequest(scenario_type=scenario, steps=8))
         assert result.metadata.dataset_sha256 == load_dataset()[1]
-        assert result.executive_summary.overall_passed == all(i.passed for i in result.validation_items)
+        assert result.executive_summary.overall_passed == all(
+            i.passed for i in result.validation_items
+        )
         if scenario is ScenarioType.CLUSTER_COORDINATION:
             assert len(result.cluster_execution.stages) == 3
             assert result.cluster_execution.dataset_sha256 == load_dataset()[1]
@@ -132,3 +134,25 @@ def test_generated_web_facts_match_authority():
     )
     assert facts["sha256"] == load_dataset()[1]
     assert facts["regions"]["SC"]["loadScaleMw"] == 14.0
+
+
+@pytest.mark.parametrize(
+    "raw", [b'{"seed":1,"seed":2}', b'{"value":NaN}', b'{"outer":{"x":1,"x":2}}']
+)
+def test_duplicate_and_nonstandard_json_rejected(raw):
+    with pytest.raises(ValueError):
+        validate_json(raw)
+
+
+def test_generated_inputs_are_reproducible_and_tampering_is_rejected(tmp_path):
+    for name in ("first", "second"):
+        generate_study_inputs(None, tmp_path / name)
+    first, second = tmp_path / "first", tmp_path / "second"
+    for path in first.iterdir():
+        if path.is_file():
+            assert path.read_bytes() == (second / path.name).read_bytes()
+    (second / "plant.json").write_text("{}", encoding="utf-8")
+    with pytest.raises(ValueError, match="HASH_MISMATCH"):
+        CaptureDataset(LocalDatasetReader(), JsonManifestDecoder()).capture(
+            second / "manifest.json"
+        )

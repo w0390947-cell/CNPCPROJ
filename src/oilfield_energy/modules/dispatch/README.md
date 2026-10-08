@@ -1,5 +1,53 @@
 # Dispatch economics
 
+ADR 0057 adds `PQPlanningInput`, `PQPlanningWitness`, `pq_planning_rows` and
+`pq_witness_violation` for the formal single-microgrid nominal P/Q transition.
+The module reuses only public control value contracts, never control services.
+Actual P/Q and per-minute future ceilings bind independent resource commands;
+PCS interval hold preserves economic energy integration. These witnesses do
+not replace robust execution/AC/tracking certificates. Unsupported backends
+reject joint inputs explicitly. See
+[joint P/Q planning](../../../../docs/modeling/Single_PQ_Planning.md).
+
+ADR 0056 adds `ACRecoveryPolicy`, `ACRecoveryEvidence` and the public
+`run_ac_feasibility_recovery` application. Injected numerical/certification and
+clock ports bound restoration and retain certified incumbents. Original
+optimality is separate from the zero feasibility objective. The numerical
+bridge uses one Branch Flow builder for cone and equality modes. See
+[AC physical recovery](../../../../docs/modeling/AC_Physical_Recovery.md).
+
+ADR 0053 adds `ReserveRecoveryTask`, `ReserveDeliveryPolicy` and `observe_reserve_recovery`. Reserve planning accepts an explicit remaining absolute recovery time. Recovery state is advanced only from observed feedback; planning and numerical retries cannot reset it. See [reserve recovery and delivery](../../../../docs/modeling/Reserve_Recovery_Delivery.md).
+
+ADR 0050 adds `StorageWindowTarget` and `api.storage_window_target`: necessary energy reachability bounds from an absolute task, with a separate soft reference. These bounds are not a joint feasibility certificate. The single workflow reprices admitted feedback candidates through `api.evaluate_economics`; whole-study contractual economics retain their original comparison basis.
+
+ADR 0039 adds `CoordinationRecoveryPolicy` and
+`api.equivalent_coordination_calibration`: bounded retry/stagnation parameters
+and a pure comparison of effective P/Q corrections. It does not certify a
+feasible region. The cross-layer loop belongs to the cluster execution workflow;
+SDK calls stay in composition adapters. Calibration v1 now supports explicit
+same-version JSON round trips while rejecting unknown versions. See
+[Coordination_Feasibility_Recovery.md](../../../../docs/modeling/Coordination_Feasibility_Recovery.md).
+
+ADR 0035 corrects the reactive planning model to `reactive-planning-v2`:
+`api.plan_reactive_envelope` now accepts `execution_step_minutes` (minutes,
+default 1), checks whole-substep grids and initial capability at the current P,
+and bounds the first substep so the constructed constant command never activates
+the shared ramp limiter. This is a conservative reachable inner envelope at
+fixed P, not a guarantee that feedback arbitration follows that witness or that
+the entire AC transition is safe. No initial observation means no certificate
+for the first transition; partial initial coverage is rejected.
+New `ReactivePlanningPolicy()` values default to v2. Explicit v1 remains readable
+and replays the historical endpoint-only rows without acquiring v2 guarantees;
+there is no announced removal date. Returned rows are immutable, solver-free,
+and consumed by all three existing backends. Inputs are unchanged; invalid or
+unsupported grids fail explicitly. See the proof, conservatism and V2 disclosure
+amendment in [Reactive_Tracking.md](../../../../docs/modeling/Reactive_Tracking.md).
+
+ADR 0034 keeps planning model `storage-reserve-v1` and adds the recorded
+`StorageReservePolicy.observation_tolerance_mw` for the workflow's v2 minute
+observation. The observation model and duration are recorded separately;
+planning envelopes are not a continuous reserve-deliverability certificate.
+
 ADR 0031 adds `api.solve_for_quality` and typed quality/budget evidence. Only
 budget exhaustion retries; infeasible/unknown/cancelled paths do not acquire
 success. The numerical AC bridge supplies observations; the pure API owns the
@@ -41,6 +89,17 @@ SCIP/CVXPY, read files, issue commands or certify the customer's 10% requirement
 Public operations: `api.account_renewable`, `api.evaluate_economics`,
 `api.assess_reference_economics`, `api.capture_coordination_snapshot`.
 Immutable values live in `contracts`.
+`CoordinationNetworkCalibration` and `FixedShuntReference` separately preserve
+series losses and signed voltage-dependent fixed-shunt injections. Public APIs
+`build_coordination_calibration`, `coordination_shunt_injection` and
+`slice_coordination_calibration` copy/validate reference evidence and select rolling
+intervals without importing a grid model or solver. Missing compensation evidence
+is rejected when the current resolved network contains nonzero compensation;
+old loss-only calls remain supported for networks with no effective fixed shunt.
+See [calibration model](../../../../docs/modeling/Coordination_Network_Calibration.md)
+and [ADR 0037](../../../../docs/architecture/decisions/0037-coordination-fixed-shunts.md).
+Tests: `tests/unit/dispatch/test_network_calibration.py` and
+`tests/integration/dispatch/test_fixed_shunt_coordination.py`.
 `contracts.PCCTrackingLimits` additionally owns per-interval PCC P/Q bounds and
 the separate numerical comparison allowance (ADR 0021). Legacy linear/MISOCP
 adapters impose the engineering bounds; the workflow injects its recorded policy.
@@ -102,3 +161,42 @@ computed and global optimality is not assessed. Window certificates remain in
 their own result files. The reader preserves historical unversioned archives as
 `LegacyAdoptedScheduleRecord`, whose original objective/cluster scope is unverified;
 this historical type is not an executable schedule. New writes use the new schema.
+# 集群功率因数参考收紧
+
+公开 `cluster_power_factor_tracking_margin` 与 `tighten_cluster_power_factor_reference`，
+以跟踪误差界限制反馈收紧幅度；不执行潮流校核或决定跨层采用。
+见 [模型与证明边界](../../../../docs/modeling/Cluster_Power_Factor.md)、ADR 0042。
+
+## 网络候选反馈增量
+
+公开 `api.select_network_candidates` 及 `contracts.NetworkCandidatePolicy`、
+`RegionalNetworkCandidate`、`NetworkCandidateSelection`。输入为已由工作流认证的
+同窗口完整 P/Q 候选；模块只做有限联合选择，不求解潮流、不调用 SDK、不认证执行。
+维护负责人：优化调度维护负责人；复核：潮流计算维护负责人。
+模型与测试见 [Network_Candidate_Feedback.md](../../../../docs/modeling/Network_Candidate_Feedback.md)、ADR 0045。
+旧恢复策略缺字段保持未启用；新字段及枚举需要严格消费者升级。
+# 单微电网统一算法补充
+
+ADR 0046 的正式单微电网继续使用经济规划和无功动态内近似产生候选；安全采用由统一工作流独立认证。
+`assess_single_economic_requirement` 按已确认的无储能优化方案与选定方案计划综合成本判定至少 10%，不以执行安全替代经济门槛。
+额外规划功率因数余量用于候选质量，失败可按原输入规划目标重试，物理安全门槛保持一致。
+
+## 储能实际有功可达性
+
+公开 `storage_reachability_rows`、`assess_storage_reachability` 和
+`StorageReachabilityInput/Policy/Evidence`。本模块负责纯仿射约束与独立名义证书，
+不读取设备状态、不驱动执行。CVXPY、MILP、MISOCP 后端通过既有桥使用相同约束。
+负责人：优化调度维护负责人；复核：设备控制维护负责人。
+方程、保守性、启动假设及验证入口见
+[Storage_Reachability.md](../../../../docs/modeling/Storage_Reachability.md)、ADR 0047。
+
+## ??????????2026-10-07?
+
+?????? `NetworkCoordinationPolicy`?`JointNetworkTarget`?`JointNetworkEvidence`?
+???????? SOCP ????????????????????/PF????????
+?????????????????????????????????????????
+??? `docs/modeling/Network_Physical_Recovery.md`?ADR 0051??????
+`tests/integration/dispatch/test_network_physical_recovery.py`?
+
+
+ADR 0055：`cluster_import_tracking_margin` 按区域数及 P 工程/数值容差计算参考容量预算；两种集群参考求解方式共用它。该预算不改变物理容量或最终联合检查，且与备用调用余量分开记录。验证：`tests/unit/dispatch/test_cluster_capacity_margin.py`。

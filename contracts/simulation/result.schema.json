@@ -1,5 +1,482 @@
 {
   "$defs": {
+    "ACBoxCertificate": {
+      "additionalProperties": false,
+      "description": "Bounds imply existence and uniqueness only inside the recorded voltage discs.",
+      "properties": {
+        "model": {
+          "const": "radial-ac-disc-v1",
+          "default": "radial-ac-disc-v1",
+          "title": "Model",
+          "type": "string"
+        },
+        "certified": {
+          "title": "Certified",
+          "type": "boolean"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "voltage_center": {
+          "default": [],
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "Voltage Center",
+          "type": "array"
+        },
+        "voltage_radius_pu": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Voltage Radius Pu"
+        },
+        "contraction_upper": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Contraction Upper"
+        },
+        "high_voltage_uniqueness_upper": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "High Voltage Uniqueness Upper"
+        },
+        "voltage_bounds": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Interval"
+          },
+          "title": "Voltage Bounds",
+          "type": "array"
+        },
+        "branch_mva_upper": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "Branch Mva Upper",
+          "type": "array"
+        },
+        "branch_current_pu_bounds": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Interval"
+          },
+          "title": "Branch Current Pu Bounds",
+          "type": "array"
+        },
+        "pcc_p_mw": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "pcc_q_mvar": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "balance_scope": {
+          "default": "independent_bus_box",
+          "enum": [
+            "independent_bus_box",
+            "aggregate_constrained_box"
+          ],
+          "title": "Balance Scope",
+          "type": "string"
+        },
+        "aggregate_p_mw": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "aggregate_q_mvar": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "certified"
+      ],
+      "title": "ACBoxCertificate",
+      "type": "object"
+    },
+    "ACRecoveryAttempt": {
+      "additionalProperties": false,
+      "properties": {
+        "phase": {
+          "enum": [
+            "physical_feasibility",
+            "original_objective"
+          ],
+          "title": "Phase",
+          "type": "string"
+        },
+        "budget_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Budget Seconds",
+          "type": "number"
+        },
+        "elapsed_seconds": {
+          "minimum": 0,
+          "title": "Elapsed Seconds",
+          "type": "number"
+        },
+        "network_physics": {
+          "const": "branch-flow-equality",
+          "default": "branch-flow-equality",
+          "title": "Network Physics",
+          "type": "string"
+        },
+        "objective": {
+          "enum": [
+            "constant_feasibility",
+            "original_economic",
+            "joint_lexicographic"
+          ],
+          "title": "Objective",
+          "type": "string"
+        },
+        "solver_status": {
+          "title": "Solver Status",
+          "type": "string"
+        },
+        "solver_feasible": {
+          "title": "Solver Feasible",
+          "type": "boolean"
+        },
+        "certified": {
+          "title": "Certified",
+          "type": "boolean"
+        },
+        "checks": {
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "title": "Checks",
+          "type": "object"
+        },
+        "metrics": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Metrics",
+          "type": "object"
+        },
+        "original_objective_cny": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Original Objective Cny"
+        },
+        "solver_objective_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Solver Objective Value"
+        },
+        "relative_gap": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Relative Gap"
+        },
+        "target_relative_gap": {
+          "default": 0.0001,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Target Relative Gap",
+          "type": "number"
+        },
+        "reference_distance": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference Distance"
+        },
+        "original_optimality_proven": {
+          "default": false,
+          "title": "Original Optimality Proven",
+          "type": "boolean"
+        },
+        "p_tracking_penalty_cny_per_mw": {
+          "default": 20000.0,
+          "minimum": 0,
+          "title": "P Tracking Penalty Cny Per Mw",
+          "type": "number"
+        },
+        "q_tracking_penalty_cny_per_mvar": {
+          "default": 8000.0,
+          "minimum": 0,
+          "title": "Q Tracking Penalty Cny Per Mvar",
+          "type": "number"
+        },
+        "extra_loss_penalty_cny_per_mwh": {
+          "default": 0.0,
+          "maximum": 0,
+          "minimum": 0,
+          "title": "Extra Loss Penalty Cny Per Mwh",
+          "type": "number"
+        },
+        "voltage_security_margin_pu": {
+          "default": 0.0,
+          "maximum": 0,
+          "minimum": 0,
+          "title": "Voltage Security Margin Pu",
+          "type": "number"
+        },
+        "infeasibility_scope": {
+          "default": "none",
+          "enum": [
+            "none",
+            "original_model",
+            "restricted_model"
+          ],
+          "title": "Infeasibility Scope",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "phase",
+        "budget_seconds",
+        "elapsed_seconds",
+        "objective",
+        "solver_status",
+        "solver_feasible",
+        "certified"
+      ],
+      "title": "ACRecoveryAttempt",
+      "type": "object"
+    },
+    "ACRecoveryEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "ac-feasibility-recovery-v1",
+          "default": "ac-feasibility-recovery-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "policy": {
+          "$ref": "#/$defs/ACRecoveryPolicy"
+        },
+        "trigger": {
+          "title": "Trigger",
+          "type": "string"
+        },
+        "budget_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Budget Seconds",
+          "type": "number"
+        },
+        "elapsed_seconds": {
+          "minimum": 0,
+          "title": "Elapsed Seconds",
+          "type": "number"
+        },
+        "attempts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ACRecoveryAttempt"
+          },
+          "title": "Attempts",
+          "type": "array"
+        },
+        "fast_feedback": {
+          "default": [],
+          "items": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object"
+          },
+          "title": "Fast Feedback",
+          "type": "array"
+        },
+        "selected_attempt": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Selected Attempt"
+        },
+        "outcome": {
+          "enum": [
+            "certified",
+            "model_infeasible",
+            "unresolved"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "original_optimality": {
+          "default": "unproven",
+          "enum": [
+            "proven",
+            "unproven"
+          ],
+          "title": "Original Optimality",
+          "type": "string"
+        }
+      },
+      "required": [
+        "policy",
+        "trigger",
+        "budget_seconds",
+        "elapsed_seconds",
+        "outcome"
+      ],
+      "title": "ACRecoveryEvidence",
+      "type": "object"
+    },
+    "ACRecoveryPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "ac-feasibility-recovery-v1",
+          "default": "ac-feasibility-recovery-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "maximum_seconds": {
+          "default": 60.0,
+          "exclusiveMinimum": 0,
+          "maximum": 1800,
+          "title": "Maximum Seconds",
+          "type": "number"
+        },
+        "feasibility_fraction": {
+          "default": 0.4,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Feasibility Fraction",
+          "type": "number"
+        },
+        "allow_feasible_adoption": {
+          "default": true,
+          "title": "Allow Feasible Adoption",
+          "type": "boolean"
+        }
+      },
+      "title": "ACRecoveryPolicy",
+      "type": "object"
+    },
     "ADMMHistoryPoint": {
       "additionalProperties": false,
       "properties": {
@@ -63,9 +540,252 @@
       "title": "ADMMHistoryPoint",
       "type": "object"
     },
+    "AllocationTrial": {
+      "additionalProperties": false,
+      "properties": {
+        "construction": {
+          "minimum": 0,
+          "title": "Construction",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "certified",
+            "construction_unproven"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "intervention": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intervention"
+        },
+        "economic_cost_cny": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Economic Cost Cny"
+        }
+      },
+      "required": [
+        "construction",
+        "status"
+      ],
+      "title": "AllocationTrial",
+      "type": "object"
+    },
+    "BalancePolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "base": {
+          "$ref": "#/$defs/TubeCommand"
+        },
+        "p_regulator": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "P Regulator"
+        },
+        "q_regulator": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Q Regulator"
+        },
+        "p_participation": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "P Participation",
+          "type": "array"
+        },
+        "q_participation": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "Q Participation",
+          "type": "array"
+        },
+        "net_p_mw": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Net P Mw"
+        },
+        "net_q_mvar": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Net Q Mvar"
+        }
+      },
+      "required": [
+        "base"
+      ],
+      "title": "BalancePolicy",
+      "type": "object"
+    },
+    "BoundedBusLoad": {
+      "additionalProperties": false,
+      "properties": {
+        "bus": {
+          "minLength": 1,
+          "title": "Bus",
+          "type": "string"
+        },
+        "p_mw": {
+          "$ref": "#/$defs/Interval"
+        },
+        "q_mvar": {
+          "$ref": "#/$defs/Interval"
+        }
+      },
+      "required": [
+        "bus",
+        "p_mw",
+        "q_mvar"
+      ],
+      "title": "BoundedBusLoad",
+      "type": "object"
+    },
+    "ClusterContinuation": {
+      "additionalProperties": false,
+      "properties": {
+        "context_id": {
+          "title": "Context Id",
+          "type": "string"
+        },
+        "start_minute": {
+          "title": "Start Minute",
+          "type": "integer"
+        },
+        "initial": {
+          "items": {
+            "$ref": "#/$defs/TubeBox"
+          },
+          "title": "Initial",
+          "type": "array"
+        },
+        "commands": {
+          "items": {
+            "items": {
+              "$ref": "#/$defs/TubeCommand"
+            },
+            "type": "array"
+          },
+          "title": "Commands",
+          "type": "array"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/JointPathCertificate"
+          },
+          "title": "Steps",
+          "type": "array"
+        },
+        "terminal": {
+          "items": {
+            "$ref": "#/$defs/TubeBox"
+          },
+          "title": "Terminal",
+          "type": "array"
+        },
+        "terminal_commands": {
+          "items": {
+            "$ref": "#/$defs/TubeCommand"
+          },
+          "title": "Terminal Commands",
+          "type": "array"
+        },
+        "terminal_proof_digest": {
+          "title": "Terminal Proof Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "context_id",
+        "start_minute",
+        "initial",
+        "commands",
+        "steps",
+        "terminal",
+        "terminal_commands",
+        "terminal_proof_digest"
+      ],
+      "title": "ClusterContinuation",
+      "type": "object"
+    },
     "ClusterExecution": {
       "additionalProperties": false,
       "properties": {
+        "algorithm_version": {
+          "anyOf": [
+            {
+              "enum": [
+                "cluster-rolling-v1",
+                "cluster-rolling-v2",
+                "cluster-rolling-v3",
+                "cluster-rolling-v4",
+                "cluster-rolling-v5",
+                "cluster-rolling-v6"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Algorithm Version"
+        },
         "version": {
           "const": "cluster-execution-v1",
           "default": "cluster-execution-v1",
@@ -134,6 +854,22 @@
           "title": "Minute Reserves",
           "type": "array"
         },
+        "reserve_recovery_history": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ReserveRecoveryTask"
+          },
+          "title": "Reserve Recovery History",
+          "type": "array"
+        },
+        "reserve_observations": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ReserveClusterCertificate"
+          },
+          "title": "Reserve Observations",
+          "type": "array"
+        },
         "reserve_target_adjustments": {
           "default": [],
           "items": {
@@ -141,6 +877,36 @@
           },
           "title": "Reserve Target Adjustments",
           "type": "array"
+        },
+        "day_ahead_recovery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CoordinationRecoveryReport"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "cluster_transitions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ClusterTransitionRecord"
+          },
+          "title": "Cluster Transitions",
+          "type": "array"
+        },
+        "safety": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ClusterSafetyEvidence"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -151,6 +917,39 @@
         "stages"
       ],
       "title": "ClusterExecution",
+      "type": "object"
+    },
+    "ClusterForecast": {
+      "additionalProperties": false,
+      "properties": {
+        "load_p_mw": {
+          "items": {
+            "$ref": "#/$defs/Interval"
+          },
+          "title": "Load P Mw",
+          "type": "array"
+        },
+        "load_q_mvar": {
+          "items": {
+            "$ref": "#/$defs/Interval"
+          },
+          "title": "Load Q Mvar",
+          "type": "array"
+        },
+        "available_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Available Mw",
+          "type": "array"
+        }
+      },
+      "required": [
+        "load_p_mw",
+        "load_q_mvar",
+        "available_mw"
+      ],
+      "title": "ClusterForecast",
       "type": "object"
     },
     "ClusterImportAssessment": {
@@ -228,6 +1027,481 @@
       "title": "ClusterImportAssessment",
       "type": "object"
     },
+    "ClusterPowerFactorAssessment": {
+      "properties": {
+        "stage": {
+          "enum": [
+            "centralized_reference",
+            "admm_reference",
+            "day_ahead",
+            "intraday",
+            "minute"
+          ],
+          "title": "Stage",
+          "type": "string"
+        },
+        "policy": {
+          "$ref": "#/$defs/ClusterPowerFactorPolicy"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "violated",
+            "unknown",
+            "not_computed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "points": {
+          "items": {
+            "$ref": "#/$defs/ClusterPowerFactorPoint"
+          },
+          "title": "Points",
+          "type": "array"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stage",
+        "policy",
+        "status",
+        "points",
+        "reason"
+      ],
+      "title": "ClusterPowerFactorAssessment",
+      "type": "object"
+    },
+    "ClusterPowerFactorPoint": {
+      "properties": {
+        "time_minutes": {
+          "title": "Time Minutes",
+          "type": "number"
+        },
+        "p_mw": {
+          "title": "P Mw",
+          "type": "number"
+        },
+        "q_mvar": {
+          "title": "Q Mvar",
+          "type": "number"
+        },
+        "power_factor": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Power Factor"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "violated",
+            "unknown",
+            "not_computed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "time_minutes",
+        "p_mw",
+        "q_mvar",
+        "power_factor",
+        "status",
+        "reason"
+      ],
+      "title": "ClusterPowerFactorPoint",
+      "type": "object"
+    },
+    "ClusterPowerFactorPolicy": {
+      "description": "Per-slot positive-import plan target, not a contractual time average.",
+      "properties": {
+        "target": {
+          "title": "Target",
+          "type": "number"
+        },
+        "numerical_tolerance": {
+          "default": 1e-09,
+          "title": "Numerical Tolerance",
+          "type": "number"
+        },
+        "version": {
+          "const": "cluster-plan-power-factor-v1",
+          "default": "cluster-plan-power-factor-v1",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "target"
+      ],
+      "title": "ClusterPowerFactorPolicy",
+      "type": "object"
+    },
+    "ClusterRegionDomain": {
+      "additionalProperties": false,
+      "properties": {
+        "region": {
+          "title": "Region",
+          "type": "string"
+        },
+        "network": {
+          "$ref": "#/$defs/RadialEnvelope"
+        },
+        "devices": {
+          "$ref": "#/$defs/TubeDeviceModel"
+        },
+        "forecasts": {
+          "items": {
+            "$ref": "#/$defs/ClusterForecast"
+          },
+          "title": "Forecasts",
+          "type": "array"
+        },
+        "initial": {
+          "$ref": "#/$defs/TubeState"
+        },
+        "required_reserve_mw": {
+          "minimum": 0,
+          "title": "Required Reserve Mw",
+          "type": "number"
+        },
+        "recovery_deadline_minute": {
+          "minimum": 0,
+          "title": "Recovery Deadline Minute",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "region",
+        "network",
+        "devices",
+        "forecasts",
+        "initial",
+        "required_reserve_mw",
+        "recovery_deadline_minute"
+      ],
+      "title": "ClusterRegionDomain",
+      "type": "object"
+    },
+    "ClusterReserveEvent": {
+      "additionalProperties": false,
+      "description": "Acceptance binds a full call envelope to its pre-certified return.",
+      "properties": {
+        "number": {
+          "minimum": 1,
+          "title": "Number",
+          "type": "integer"
+        },
+        "start_minute": {
+          "minimum": 0,
+          "title": "Start Minute",
+          "type": "integer"
+        },
+        "end_minute": {
+          "exclusiveMinimum": 0,
+          "title": "End Minute",
+          "type": "integer"
+        },
+        "certificate": {
+          "$ref": "#/$defs/ReserveClusterCertificate"
+        },
+        "successor": {
+          "$ref": "#/$defs/ClusterContinuation"
+        }
+      },
+      "required": [
+        "number",
+        "start_minute",
+        "end_minute",
+        "certificate",
+        "successor"
+      ],
+      "title": "ClusterReserveEvent",
+      "type": "object"
+    },
+    "ClusterSafetyDomain": {
+      "additionalProperties": false,
+      "properties": {
+        "policy": {
+          "$ref": "#/$defs/ClusterSafetyPolicy"
+        },
+        "regions": {
+          "items": {
+            "$ref": "#/$defs/ClusterRegionDomain"
+          },
+          "title": "Regions",
+          "type": "array"
+        },
+        "import_limit_mw": {
+          "exclusiveMinimum": 0,
+          "title": "Import Limit Mw",
+          "type": "number"
+        },
+        "pf_target": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Pf Target",
+          "type": "number"
+        },
+        "reserve_policy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StorageReservePolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "delivery_policy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReserveDeliveryPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "context_id": {
+          "title": "Context Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "policy",
+        "regions",
+        "import_limit_mw",
+        "pf_target",
+        "context_id"
+      ],
+      "title": "ClusterSafetyDomain",
+      "type": "object"
+    },
+    "ClusterSafetyEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "domain": {
+          "$ref": "#/$defs/ClusterSafetyDomain"
+        },
+        "initial_continuation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ClusterContinuation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "continuations": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ClusterContinuation"
+          },
+          "title": "Continuations",
+          "type": "array"
+        },
+        "steps": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ClusterSafetyStep"
+          },
+          "title": "Steps",
+          "type": "array"
+        },
+        "reserve_events": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ClusterReserveEvent"
+          },
+          "title": "Reserve Events",
+          "type": "array"
+        },
+        "failure": {
+          "default": "",
+          "title": "Failure",
+          "type": "string"
+        }
+      },
+      "required": [
+        "domain"
+      ],
+      "title": "ClusterSafetyEvidence",
+      "type": "object"
+    },
+    "ClusterSafetyPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "cluster-continuation-v1",
+          "default": "cluster-continuation-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "load_relative_error": {
+          "default": 0.025,
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "Load Relative Error",
+          "type": "number"
+        },
+        "wind_nameplate_error": {
+          "default": 0.05,
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "Wind Nameplate Error",
+          "type": "number"
+        },
+        "pv_nameplate_error": {
+          "default": 0.15,
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "Pv Nameplate Error",
+          "type": "number"
+        },
+        "maximum_return_minutes": {
+          "default": 90,
+          "maximum": 240,
+          "minimum": 1,
+          "title": "Maximum Return Minutes",
+          "type": "integer"
+        },
+        "within_minute": {
+          "const": "zero_order_hold",
+          "default": "zero_order_hold",
+          "title": "Within Minute",
+          "type": "string"
+        },
+        "device_intersample": {
+          "const": "linear_all_channels",
+          "default": "linear_all_channels",
+          "title": "Device Intersample",
+          "type": "string"
+        },
+        "initial_condition": {
+          "const": "case_energy_idle_resources",
+          "default": "case_energy_idle_resources",
+          "title": "Initial Condition",
+          "type": "string"
+        },
+        "terminal_boundary": {
+          "const": "last_declared_envelope_persists",
+          "default": "last_declared_envelope_persists",
+          "title": "Terminal Boundary",
+          "type": "string"
+        },
+        "source": {
+          "default": "可配置软件研究边界：负荷±2.5%，风电/光伏可用下界扣除额定5%/15%；非现场定值",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "title": "ClusterSafetyPolicy",
+      "type": "object"
+    },
+    "ClusterSafetyStep": {
+      "additionalProperties": false,
+      "properties": {
+        "minute": {
+          "title": "Minute",
+          "type": "integer"
+        },
+        "source": {
+          "enum": [
+            "economic",
+            "backup",
+            "terminal",
+            "reserve"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "before": {
+          "items": {
+            "$ref": "#/$defs/TubeState"
+          },
+          "title": "Before",
+          "type": "array"
+        },
+        "after": {
+          "items": {
+            "$ref": "#/$defs/TubeState"
+          },
+          "title": "After",
+          "type": "array"
+        },
+        "commands": {
+          "items": {
+            "$ref": "#/$defs/TubeCommand"
+          },
+          "title": "Commands",
+          "type": "array"
+        },
+        "observed": {
+          "items": {
+            "$ref": "#/$defs/ClusterForecast"
+          },
+          "title": "Observed",
+          "type": "array"
+        },
+        "path": {
+          "$ref": "#/$defs/JointPathCertificate"
+        },
+        "reserve": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReserveClusterCertificate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "activation": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ReserveActivationCommand"
+          },
+          "title": "Activation",
+          "type": "array"
+        }
+      },
+      "required": [
+        "minute",
+        "source",
+        "before",
+        "after",
+        "commands",
+        "observed",
+        "path"
+      ],
+      "title": "ClusterSafetyStep",
+      "type": "object"
+    },
     "ClusterTimeSeriesPoint": {
       "additionalProperties": false,
       "properties": {
@@ -273,6 +1547,105 @@
         "regional_import_mw"
       ],
       "title": "ClusterTimeSeriesPoint",
+      "type": "object"
+    },
+    "ClusterTransitionDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "cluster-transition-box-v1",
+          "default": "cluster-transition-box-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "certified",
+            "unproven"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "limit_mw": {
+          "exclusiveMinimum": 0,
+          "title": "Limit Mw",
+          "type": "number"
+        },
+        "requested_upper_mw": {
+          "title": "Requested Upper Mw",
+          "type": "number"
+        },
+        "selected_upper_mw": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Selected Upper Mw"
+        },
+        "proposals": {
+          "items": {
+            "$ref": "#/$defs/RegionalTransitionProposal"
+          },
+          "title": "Proposals",
+          "type": "array"
+        },
+        "selections": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RegionalTransitionSelection"
+          },
+          "title": "Selections",
+          "type": "array"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "limit_mw",
+        "requested_upper_mw",
+        "proposals",
+        "reason"
+      ],
+      "title": "ClusterTransitionDecision",
+      "type": "object"
+    },
+    "ClusterTransitionRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "decision": {
+          "$ref": "#/$defs/ClusterTransitionDecision"
+        },
+        "ready": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RegionalTransitionReady"
+          },
+          "title": "Ready",
+          "type": "array"
+        },
+        "committed": {
+          "default": false,
+          "title": "Committed",
+          "type": "boolean"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "decision"
+      ],
+      "title": "ClusterTransitionRecord",
       "type": "object"
     },
     "ClusterValidation": {
@@ -613,6 +1986,13 @@
           },
           "title": "Reference Coordination",
           "type": "array"
+        },
+        "reference_ac_recovery": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ACRecoveryEvidence"
+          },
+          "title": "Reference Ac Recovery",
+          "type": "object"
         }
       },
       "required": [
@@ -720,6 +2100,363 @@
         "regions"
       ],
       "title": "CoordinationIterationTrace",
+      "type": "object"
+    },
+    "CoordinationNetworkCalibration": {
+      "description": "Immutable chronological reference data, not a network feasibility certificate.\n\nLosses are nonnegative series MW/Mvar. Shunts are separate signed injections\nat the reference voltages. All trajectories have the same interval axis.\nSee docs/modeling/Coordination_Network_Calibration.md.",
+      "properties": {
+        "p_loss_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "P Loss Mw",
+          "type": "array"
+        },
+        "q_loss_mvar": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Q Loss Mvar",
+          "type": "array"
+        },
+        "fixed_shunts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/FixedShuntReference"
+          },
+          "title": "Fixed Shunts",
+          "type": "array"
+        },
+        "version": {
+          "const": "coordination-network-calibration-v1",
+          "default": "coordination-network-calibration-v1",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "p_loss_mw",
+        "q_loss_mvar"
+      ],
+      "title": "CoordinationNetworkCalibration",
+      "type": "object"
+    },
+    "CoordinationRecoveryPolicy": {
+      "additionalProperties": false,
+      "description": "Bounded regional calibration feedback, not a recursive feasibility proof.",
+      "properties": {
+        "version": {
+          "const": "coordination-recovery-v1",
+          "default": "coordination-recovery-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "max_recoordinations": {
+          "default": 3,
+          "maximum": 8,
+          "minimum": 0,
+          "title": "Max Recoordinations",
+          "type": "integer"
+        },
+        "calibration_tolerance_mw": {
+          "default": 1e-06,
+          "exclusiveMinimum": 0,
+          "title": "Calibration Tolerance Mw",
+          "type": "number"
+        },
+        "calibration_tolerance_mvar": {
+          "default": 1e-06,
+          "exclusiveMinimum": 0,
+          "title": "Calibration Tolerance Mvar",
+          "type": "number"
+        }
+      },
+      "title": "CoordinationRecoveryPolicy",
+      "type": "object"
+    },
+    "CoordinationRecoveryReport": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "default": "coordination-recovery-v1",
+          "enum": [
+            "coordination-recovery-v1",
+            "coordination-recovery-v2",
+            "coordination-recovery-v3"
+          ],
+          "title": "Version",
+          "type": "string"
+        },
+        "policy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CoordinationRecoveryPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "power_factor_policy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ClusterPowerFactorPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "network_candidate_policy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NetworkCandidatePolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "network_coordination_policy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NetworkCoordinationPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "accepted": {
+          "title": "Accepted",
+          "type": "boolean"
+        },
+        "stop_reason": {
+          "enum": [
+            "accepted",
+            "disabled",
+            "budget_exhausted",
+            "stagnated",
+            "feedback_unavailable",
+            "regional_unresolved",
+            "coordination_failed",
+            "joint_rejected",
+            "power_factor_rejected",
+            "error"
+          ],
+          "title": "Stop Reason",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "rounds": {
+          "items": {
+            "$ref": "#/$defs/CoordinationRecoveryRound"
+          },
+          "title": "Rounds",
+          "type": "array"
+        }
+      },
+      "required": [
+        "accepted",
+        "stop_reason",
+        "rounds"
+      ],
+      "title": "CoordinationRecoveryReport",
+      "type": "object"
+    },
+    "CoordinationRecoveryRound": {
+      "additionalProperties": false,
+      "properties": {
+        "round": {
+          "minimum": 1,
+          "title": "Round",
+          "type": "integer"
+        },
+        "outcome": {
+          "enum": [
+            "passed",
+            "regional_rejected",
+            "regional_unresolved",
+            "coordination_failed",
+            "joint_rejected",
+            "power_factor_rejected",
+            "error"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "coordination_stop_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Coordination Stop Reason"
+        },
+        "admm_iterations": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Admm Iterations",
+          "type": "integer"
+        },
+        "coordination_quality": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CoordinationBudgetEvidence"
+          },
+          "title": "Coordination Quality",
+          "type": "array"
+        },
+        "p_target_mw": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "P Target Mw",
+          "type": "object"
+        },
+        "q_target_mvar": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Q Target Mvar",
+          "type": "object"
+        },
+        "regions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RegionalExecution"
+          },
+          "title": "Regions",
+          "type": "array"
+        },
+        "cluster_import": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ClusterImportAssessment"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "cluster_power_factor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ClusterPowerFactorAssessment"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "power_factor_margin_mvar": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "Power Factor Margin Mvar",
+          "type": "array"
+        },
+        "import_tracking_margin_mw": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Import Tracking Margin Mw",
+          "type": "number"
+        },
+        "calibration_used": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/CoordinationNetworkCalibration"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Calibration Used"
+        },
+        "feedback": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RegionalCalibrationFeedback"
+          },
+          "title": "Feedback",
+          "type": "array"
+        },
+        "network_candidates_used": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RegionalNetworkCandidate"
+          },
+          "title": "Network Candidates Used",
+          "type": "array"
+        },
+        "candidate_selection": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NetworkCandidateSelection"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reference_method": {
+          "default": "aggregate-admm",
+          "enum": [
+            "aggregate-admm",
+            "network-socp-admm",
+            "joint-network"
+          ],
+          "title": "Reference Method",
+          "type": "string"
+        },
+        "joint_network": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JointNetworkEvidence"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "round",
+        "outcome"
+      ],
+      "title": "CoordinationRecoveryRound",
       "type": "object"
     },
     "CoordinationResiduals": {
@@ -865,6 +2602,83 @@
         "residuals"
       ],
       "title": "CoordinationSnapshot",
+      "type": "object"
+    },
+    "CostRates": {
+      "properties": {
+        "curtailment_cny_per_mwh": {
+          "title": "Curtailment Cny Per Mwh",
+          "type": "number"
+        },
+        "storage_throughput_cny_per_mwh": {
+          "title": "Storage Throughput Cny Per Mwh",
+          "type": "number"
+        },
+        "loss_cny_per_mwh": {
+          "title": "Loss Cny Per Mwh",
+          "type": "number"
+        }
+      },
+      "required": [
+        "curtailment_cny_per_mwh",
+        "storage_throughput_cny_per_mwh",
+        "loss_cny_per_mwh"
+      ],
+      "title": "CostRates",
+      "type": "object"
+    },
+    "DeviceCheckpoint": {
+      "additionalProperties": false,
+      "description": "State before the next SIL minute; contains no future plant observations.",
+      "properties": {
+        "minute": {
+          "minimum": 0,
+          "title": "Minute",
+          "type": "integer"
+        },
+        "storage_energy_mwh": {
+          "title": "Storage Energy Mwh",
+          "type": "number"
+        },
+        "storage_power_mw": {
+          "title": "Storage Power Mw",
+          "type": "number"
+        },
+        "reactive_power_mvar": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Reactive Power Mvar",
+          "type": "object"
+        },
+        "active_power_mw": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Active Power Mw",
+          "type": "object"
+        },
+        "gross_load_p_mw": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Gross Load P Mw",
+          "type": "object"
+        },
+        "gross_load_q_mvar": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Gross Load Q Mvar",
+          "type": "object"
+        }
+      },
+      "required": [
+        "minute",
+        "storage_energy_mwh",
+        "storage_power_mw"
+      ],
+      "title": "DeviceCheckpoint",
       "type": "object"
     },
     "DispatchCapabilities": {
@@ -1113,6 +2927,81 @@
       "title": "EconomicCost",
       "type": "object"
     },
+    "EnergyReturnPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "base": {
+          "$ref": "#/$defs/TubeCommand"
+        },
+        "target_mwh": {
+          "title": "Target Mwh",
+          "type": "number"
+        },
+        "charge_limit_mw": {
+          "minimum": 0,
+          "title": "Charge Limit Mw",
+          "type": "number"
+        },
+        "discharge_limit_mw": {
+          "minimum": 0,
+          "title": "Discharge Limit Mw",
+          "type": "number"
+        }
+      },
+      "required": [
+        "base",
+        "target_mwh",
+        "charge_limit_mw",
+        "discharge_limit_mw"
+      ],
+      "title": "EnergyReturnPolicy",
+      "type": "object"
+    },
+    "EnvelopeBranch": {
+      "additionalProperties": false,
+      "properties": {
+        "parent": {
+          "minimum": 0,
+          "title": "Parent",
+          "type": "integer"
+        },
+        "child": {
+          "minimum": 0,
+          "title": "Child",
+          "type": "integer"
+        },
+        "r_pu": {
+          "minimum": 0,
+          "title": "R Pu",
+          "type": "number"
+        },
+        "x_pu": {
+          "minimum": 0,
+          "title": "X Pu",
+          "type": "number"
+        },
+        "tap": {
+          "exclusiveMinimum": 0,
+          "title": "Tap",
+          "type": "number"
+        },
+        "rating_mva": {
+          "exclusiveMinimum": 0,
+          "title": "Rating Mva",
+          "type": "number"
+        }
+      },
+      "required": [
+        "parent",
+        "child",
+        "r_pu",
+        "x_pu",
+        "tap",
+        "rating_mva"
+      ],
+      "title": "EnvelopeBranch",
+      "type": "object"
+    },
     "EventTimeAxis": {
       "enum": [
         "clock_minute",
@@ -1286,7 +3175,10 @@
         "active_tracking_version": {
           "anyOf": [
             {
-              "const": "active-tracking-allocation-v1",
+              "enum": [
+                "active-tracking-allocation-v1",
+                "cluster-command-projection-v1"
+              ],
               "type": "string"
             },
             {
@@ -1296,10 +3188,59 @@
           "default": null,
           "title": "Active Tracking Version"
         },
+        "device_capability_version": {
+          "anyOf": [
+            {
+              "enum": [
+                "device-capability-v2",
+                "cluster-device-v1"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Device Capability Version"
+        },
         "storage_reserve": {
           "anyOf": [
             {
               "$ref": "#/$defs/StorageReservePolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "cluster_safety": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ClusterSafetyPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reserve_delivery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReserveDeliveryPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "storage_reachability": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StorageReachabilityPolicy"
             },
             {
               "type": "null"
@@ -1321,7 +3262,10 @@
         "reactive_tracking_version": {
           "anyOf": [
             {
-              "const": "reactive-tracking-v1",
+              "enum": [
+                "reactive-tracking-v1",
+                "cluster-command-projection-v1"
+              ],
               "type": "string"
             },
             {
@@ -1331,10 +3275,110 @@
           "default": null,
           "title": "Reactive Tracking Version"
         },
+        "reactive_dynamics_version": {
+          "anyOf": [
+            {
+              "enum": [
+                "reactive-dynamics-v1",
+                "cluster-device-v1"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reactive Dynamics Version"
+        },
+        "single_execution_version": {
+          "anyOf": [
+            {
+              "const": "unified-single-v7",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Single Execution Version"
+        },
         "computation_quality": {
           "anyOf": [
             {
               "$ref": "#/$defs/ComputationQualityPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ac_recovery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ACRecoveryPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "coordination_recovery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CoordinationRecoveryPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "network_candidates": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NetworkCandidatePolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "network_coordination": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NetworkCoordinationPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "cluster_transition_version": {
+          "anyOf": [
+            {
+              "enum": [
+                "cluster-transition-box-v1",
+                "cluster-continuation-v1"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cluster Transition Version"
+        },
+        "cluster_power_factor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ClusterPowerFactorPolicy"
             },
             {
               "type": "null"
@@ -1383,6 +3427,17 @@
         },
         "cluster_import": {
           "$ref": "#/$defs/ClusterImportAssessment"
+        },
+        "cluster_power_factor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ClusterPowerFactorAssessment"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -1450,6 +3505,54 @@
         "maximum_voltage_pu"
       ],
       "title": "ExecutiveSummary",
+      "type": "object"
+    },
+    "FirmGeneration": {
+      "additionalProperties": false,
+      "properties": {
+        "resource_id": {
+          "minLength": 1,
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "minimum_available_mw": {
+          "minimum": 0,
+          "title": "Minimum Available Mw",
+          "type": "number"
+        }
+      },
+      "required": [
+        "resource_id",
+        "minimum_available_mw"
+      ],
+      "title": "FirmGeneration",
+      "type": "object"
+    },
+    "FixedShuntReference": {
+      "description": "One bus's signed nominal and voltage-dependent reference injection, Mvar.\n\nCapacitive injection is positive; inductive injection is negative. Only\nbuses with nonzero resolved nominal injection belong in this value.",
+      "properties": {
+        "bus_id": {
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "nominal_q_mvar": {
+          "title": "Nominal Q Mvar",
+          "type": "number"
+        },
+        "q_mvar": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Q Mvar",
+          "type": "array"
+        }
+      },
+      "required": [
+        "bus_id",
+        "nominal_q_mvar",
+        "q_mvar"
+      ],
+      "title": "FixedShuntReference",
       "type": "object"
     },
     "GroupControlEventRecord": {
@@ -1621,9 +3724,281 @@
       "title": "GroupControlSummary",
       "type": "object"
     },
+    "HardTaskAssessment": {
+      "additionalProperties": false,
+      "properties": {
+        "guarantee": {
+          "enum": [
+            "not_required",
+            "unproven",
+            "maintained",
+            "assumption_violated"
+          ],
+          "title": "Guarantee",
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "not_required",
+            "pending",
+            "met",
+            "missed"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "initial_certified": {
+          "default": false,
+          "title": "Initial Certified",
+          "type": "boolean"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "guarantee",
+        "outcome"
+      ],
+      "title": "HardTaskAssessment",
+      "type": "object"
+    },
+    "Interval": {
+      "additionalProperties": false,
+      "properties": {
+        "low": {
+          "title": "Low",
+          "type": "number"
+        },
+        "high": {
+          "title": "High",
+          "type": "number"
+        }
+      },
+      "required": [
+        "low",
+        "high"
+      ],
+      "title": "Interval",
+      "type": "object"
+    },
+    "JointNetworkEvidence": {
+      "additionalProperties": false,
+      "description": "A bounded solve record; failure never proves original AC infeasibility.",
+      "properties": {
+        "version": {
+          "const": "joint-network-recovery-v1",
+          "default": "joint-network-recovery-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "certified",
+            "model_infeasible",
+            "unresolved",
+            "error"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "time_limit_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Time Limit Seconds",
+          "type": "number"
+        },
+        "elapsed_seconds": {
+          "minimum": 0,
+          "title": "Elapsed Seconds",
+          "type": "number"
+        },
+        "source_p_mw": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Source P Mw",
+          "type": "object"
+        },
+        "source_q_mvar": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Source Q Mvar",
+          "type": "object"
+        },
+        "time_minutes": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Time Minutes",
+          "type": "array"
+        },
+        "pf_margin_mvar": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Pf Margin Mvar",
+          "type": "array"
+        },
+        "deviation": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deviation"
+        },
+        "deviation_bound": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deviation Bound"
+        },
+        "deviation_optimal": {
+          "default": false,
+          "title": "Deviation Optimal",
+          "type": "boolean"
+        },
+        "ac_iterations": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Ac Iterations",
+          "type": "integer"
+        },
+        "ac_recovery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ACRecoveryEvidence"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "storage_integrality_certified": {
+          "default": false,
+          "title": "Storage Integrality Certified",
+          "type": "boolean"
+        },
+        "solver_status": {
+          "default": "",
+          "title": "Solver Status",
+          "type": "string"
+        },
+        "solver_relative_gap": {
+          "default": 1e-07,
+          "exclusiveMinimum": 0,
+          "title": "Solver Relative Gap",
+          "type": "number"
+        },
+        "p_mw": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "P Mw",
+          "type": "object"
+        },
+        "q_mvar": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Q Mvar",
+          "type": "object"
+        }
+      },
+      "required": [
+        "status",
+        "time_limit_seconds",
+        "elapsed_seconds",
+        "source_p_mw",
+        "source_q_mvar",
+        "time_minutes",
+        "pf_margin_mvar"
+      ],
+      "title": "JointNetworkEvidence",
+      "type": "object"
+    },
+    "JointPathCertificate": {
+      "additionalProperties": false,
+      "properties": {
+        "minute": {
+          "minimum": 0,
+          "title": "Minute",
+          "type": "integer"
+        },
+        "endpoints": {
+          "items": {
+            "$ref": "#/$defs/TubeBox"
+          },
+          "title": "Endpoints",
+          "type": "array"
+        },
+        "paths": {
+          "items": {
+            "$ref": "#/$defs/TubeBox"
+          },
+          "title": "Paths",
+          "type": "array"
+        },
+        "networks": {
+          "items": {
+            "$ref": "#/$defs/ACBoxCertificate"
+          },
+          "title": "Networks",
+          "type": "array"
+        },
+        "pcc_p_mw": {
+          "$ref": "#/$defs/Interval"
+        },
+        "pcc_q_mvar": {
+          "$ref": "#/$defs/Interval"
+        }
+      },
+      "required": [
+        "minute",
+        "endpoints",
+        "paths",
+        "networks",
+        "pcc_p_mw",
+        "pcc_q_mvar"
+      ],
+      "title": "JointPathCertificate",
+      "type": "object"
+    },
     "MinuteReserveObservation": {
       "additionalProperties": false,
-      "description": "At a minute boundary, based only on the last completed device state.",
+      "description": "At a minute boundary; missing model_version preserves historical meaning.\n\nV2 availability is a nonnegative increment from storage_power_mw to an\nH-hour constant target, not a dynamic or network deliverability certificate.",
       "properties": {
         "minute": {
           "minimum": 0,
@@ -1661,6 +4036,46 @@
           "title": "Deficient",
           "type": "boolean"
         },
+        "fully_adequate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fully Adequate"
+        },
+        "delivery_status": {
+          "anyOf": [
+            {
+              "enum": [
+                "certified",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Delivery Status"
+        },
+        "recovery_deadline_minute": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recovery Deadline Minute"
+        },
         "action": {
           "default": "monitor",
           "enum": [
@@ -1670,6 +4085,32 @@
           ],
           "title": "Action",
           "type": "string"
+        },
+        "model_version": {
+          "anyOf": [
+            {
+              "const": "storage-reserve-observation-v2",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Version"
+        },
+        "support_hours": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Support Hours"
         }
       },
       "required": [
@@ -1683,6 +4124,126 @@
         "deficient"
       ],
       "title": "MinuteReserveObservation",
+      "type": "object"
+    },
+    "NetworkCandidatePolicy": {
+      "additionalProperties": false,
+      "description": "Finite whole-trajectory search; no convex-hull or completeness claim.",
+      "properties": {
+        "version": {
+          "const": "network-candidates-v1",
+          "default": "network-candidates-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "max_combination_checks": {
+          "default": 4096,
+          "maximum": 100000,
+          "minimum": 1,
+          "title": "Max Combination Checks",
+          "type": "integer"
+        }
+      },
+      "title": "NetworkCandidatePolicy",
+      "type": "object"
+    },
+    "NetworkCandidateSelection": {
+      "additionalProperties": false,
+      "description": "Search evidence, never an execution/adoption certificate.",
+      "properties": {
+        "status": {
+          "enum": [
+            "selected",
+            "no_joint_candidate",
+            "budget_exhausted"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "candidates": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RegionalNetworkCandidate"
+          },
+          "title": "Candidates",
+          "type": "array"
+        },
+        "combinations_checked": {
+          "minimum": 0,
+          "title": "Combinations Checked",
+          "type": "integer"
+        },
+        "total_combinations": {
+          "minimum": 0,
+          "title": "Total Combinations",
+          "type": "integer"
+        },
+        "search_complete": {
+          "title": "Search Complete",
+          "type": "boolean"
+        },
+        "normalized_reference_distance": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Normalized Reference Distance"
+        }
+      },
+      "required": [
+        "status",
+        "combinations_checked",
+        "total_combinations",
+        "search_complete"
+      ],
+      "title": "NetworkCandidateSelection",
+      "type": "object"
+    },
+    "NetworkCoordinationPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "network-physical-coordination-v1",
+          "default": "network-physical-coordination-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "max_joint_attempts": {
+          "default": 2,
+          "maximum": 4,
+          "minimum": 1,
+          "title": "Max Joint Attempts",
+          "type": "integer"
+        },
+        "joint_time_limit_seconds": {
+          "default": 60.0,
+          "exclusiveMinimum": 0,
+          "maximum": 1800,
+          "title": "Joint Time Limit Seconds",
+          "type": "number"
+        },
+        "deviation_tolerance": {
+          "default": 1e-05,
+          "exclusiveMinimum": 0,
+          "maximum": 0.01,
+          "title": "Deviation Tolerance",
+          "type": "number"
+        },
+        "relative_gap": {
+          "default": 1e-07,
+          "exclusiveMinimum": 0,
+          "maximum": 0.0001,
+          "title": "Relative Gap",
+          "type": "number"
+        }
+      },
+      "title": "NetworkCoordinationPolicy",
       "type": "object"
     },
     "OptimizationAttempt": {
@@ -1775,13 +4336,221 @@
       "title": "OptimizationQuality",
       "type": "object"
     },
-    "ReactivePlanningPolicy": {
+    "PQPlanningInput": {
       "additionalProperties": false,
-      "description": "Study reserve and transition envelope; never expands physical Q authority.",
       "properties": {
         "version": {
-          "const": "reactive-planning-v1",
-          "default": "reactive-planning-v1",
+          "const": "single-pq-planning-v2",
+          "default": "single-pq-planning-v2",
+          "title": "Version",
+          "type": "string"
+        },
+        "start_step": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Start Step",
+          "type": "integer"
+        },
+        "devices": {
+          "$ref": "#/$defs/TubeDeviceModel"
+        },
+        "initial": {
+          "$ref": "#/$defs/TubeState"
+        },
+        "planning_steps": {
+          "exclusiveMinimum": 0,
+          "title": "Planning Steps",
+          "type": "integer"
+        },
+        "planning_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Planning Minutes",
+          "type": "integer"
+        },
+        "transition_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Transition Minutes",
+          "type": "integer"
+        },
+        "p_ceiling_mw": {
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "P Ceiling Mw",
+          "type": "array"
+        },
+        "polygon_sides": {
+          "minimum": 4,
+          "title": "Polygon Sides",
+          "type": "integer"
+        },
+        "reserve_fraction": {
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "Reserve Fraction",
+          "type": "number"
+        },
+        "ramp_utilization": {
+          "default": 0.98,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Ramp Utilization",
+          "type": "number"
+        },
+        "settling_utilization": {
+          "default": 0.98,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Settling Utilization",
+          "type": "number"
+        }
+      },
+      "required": [
+        "devices",
+        "initial",
+        "planning_steps",
+        "planning_minutes",
+        "transition_minutes",
+        "p_ceiling_mw",
+        "polygon_sides",
+        "reserve_fraction"
+      ],
+      "title": "PQPlanningInput",
+      "type": "object"
+    },
+    "PQPlanningWitness": {
+      "additionalProperties": false,
+      "properties": {
+        "inputs": {
+          "$ref": "#/$defs/PQPlanningInput"
+        },
+        "commands": {
+          "items": {
+            "items": {
+              "$ref": "#/$defs/TubeCommand"
+            },
+            "type": "array"
+          },
+          "title": "Commands",
+          "type": "array"
+        },
+        "endpoints": {
+          "items": {
+            "$ref": "#/$defs/TubeCommand"
+          },
+          "title": "Endpoints",
+          "type": "array"
+        }
+      },
+      "required": [
+        "inputs",
+        "commands",
+        "endpoints"
+      ],
+      "title": "PQPlanningWitness",
+      "type": "object"
+    },
+    "RadialEnvelope": {
+      "additionalProperties": false,
+      "properties": {
+        "network_id": {
+          "minLength": 1,
+          "title": "Network Id",
+          "type": "string"
+        },
+        "buses": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Buses",
+          "type": "array"
+        },
+        "branches": {
+          "items": {
+            "$ref": "#/$defs/EnvelopeBranch"
+          },
+          "title": "Branches",
+          "type": "array"
+        },
+        "slack": {
+          "minimum": 0,
+          "title": "Slack",
+          "type": "integer"
+        },
+        "base_mva": {
+          "exclusiveMinimum": 0,
+          "title": "Base Mva",
+          "type": "number"
+        },
+        "slack_voltage_pu": {
+          "exclusiveMinimum": 0,
+          "title": "Slack Voltage Pu",
+          "type": "number"
+        },
+        "shunt_q_mvar": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Shunt Q Mvar",
+          "type": "array"
+        },
+        "voltage_min_pu": {
+          "exclusiveMinimum": 0,
+          "title": "Voltage Min Pu",
+          "type": "number"
+        },
+        "voltage_max_pu": {
+          "exclusiveMinimum": 0,
+          "title": "Voltage Max Pu",
+          "type": "number"
+        },
+        "pcc_min_mw": {
+          "minimum": 0,
+          "title": "Pcc Min Mw",
+          "type": "number"
+        },
+        "pcc_max_mw": {
+          "exclusiveMinimum": 0,
+          "title": "Pcc Max Mw",
+          "type": "number"
+        },
+        "pf_min": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Pf Min",
+          "type": "number"
+        }
+      },
+      "required": [
+        "network_id",
+        "buses",
+        "branches",
+        "slack",
+        "base_mva",
+        "slack_voltage_pu",
+        "shunt_q_mvar",
+        "voltage_min_pu",
+        "voltage_max_pu",
+        "pcc_min_mw",
+        "pcc_max_mw",
+        "pf_min"
+      ],
+      "title": "RadialEnvelope",
+      "type": "object"
+    },
+    "ReactivePlanningPolicy": {
+      "additionalProperties": false,
+      "description": "Study Q envelope; v1 is retained for historical endpoint-only replay.\n\nv2 certifies a constant-command transition on the declared execution grid,\nat fixed P and capability. It does not certify feedback tracking or AC paths.",
+      "properties": {
+        "version": {
+          "default": "reactive-planning-v2",
+          "enum": [
+            "reactive-planning-v1",
+            "reactive-planning-v2"
+          ],
           "title": "Version",
           "type": "string"
         },
@@ -1890,6 +4659,37 @@
         "comparison_status"
       ],
       "title": "ReferenceEconomics",
+      "type": "object"
+    },
+    "RegionalCalibrationFeedback": {
+      "additionalProperties": false,
+      "description": "Diagnostic witness only; it deliberately lacks target-tracking certificates.",
+      "properties": {
+        "reference_round": {
+          "minimum": 1,
+          "title": "Reference Round",
+          "type": "integer"
+        },
+        "evidence": {
+          "$ref": "#/$defs/RegionalExecution"
+        },
+        "calibration": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CoordinationNetworkCalibration"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "reference_round",
+        "evidence"
+      ],
+      "title": "RegionalCalibrationFeedback",
       "type": "object"
     },
     "RegionalCoordinationTrace": {
@@ -2017,6 +4817,18 @@
           "title": "Reason",
           "type": "string"
         },
+        "solver_stop_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Solver Stop Reason"
+        },
         "optimization_quality": {
           "default": [],
           "items": {
@@ -2024,6 +4836,27 @@
           },
           "title": "Optimization Quality",
           "type": "array"
+        },
+        "ac_recovery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ACRecoveryEvidence"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "adoption_basis": {
+          "default": "standard",
+          "enum": [
+            "standard",
+            "ac_feasible_recovery",
+            "ac_optimized_recovery"
+          ],
+          "title": "Adoption Basis",
+          "type": "string"
         },
         "checks": {
           "default": [],
@@ -2101,6 +4934,25 @@
           "title": "Storage Energy Mwh",
           "type": "array"
         },
+        "storage_reachability": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StorageReachabilityEvidence"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "storage_reachability_windows": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/StorageReachabilityEvidence"
+          },
+          "title": "Storage Reachability Windows",
+          "type": "array"
+        },
         "resource_p_mw": {
           "additionalProperties": {
             "items": {
@@ -2140,6 +4992,56 @@
         "status"
       ],
       "title": "RegionalExecution",
+      "type": "object"
+    },
+    "RegionalNetworkCandidate": {
+      "additionalProperties": false,
+      "description": "One same-window physical witness projected onto the PCC, MW/Mvar.\n\nCertification and window ownership belong to the calling workflow. This\nvalue never certifies interpolation, extrapolation or time-slice mixing.\nThe loss calibration belongs to THIS witness, not the most recent round.",
+      "properties": {
+        "region": {
+          "minLength": 1,
+          "title": "Region",
+          "type": "string"
+        },
+        "source_round": {
+          "minimum": 1,
+          "title": "Source Round",
+          "type": "integer"
+        },
+        "time_minutes": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Time Minutes",
+          "type": "array"
+        },
+        "p_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "P Mw",
+          "type": "array"
+        },
+        "q_mvar": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Q Mvar",
+          "type": "array"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CoordinationNetworkCalibration"
+        }
+      },
+      "required": [
+        "region",
+        "source_round",
+        "time_minutes",
+        "p_mw",
+        "q_mvar",
+        "calibration"
+      ],
+      "title": "RegionalNetworkCandidate",
       "type": "object"
     },
     "RegionalPlanSnapshot": {
@@ -2254,6 +5156,164 @@
       "title": "RegionalPlanSnapshot",
       "type": "object"
     },
+    "RegionalTransitionProposal": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "cluster-transition-box-v1",
+          "default": "cluster-transition-box-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "region": {
+          "minLength": 1,
+          "title": "Region",
+          "type": "string"
+        },
+        "start_minute": {
+          "minimum": 0,
+          "title": "Start Minute",
+          "type": "integer"
+        },
+        "duration_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Duration Minutes",
+          "type": "number"
+        },
+        "gross_load_upper_mw": {
+          "minimum": 0,
+          "title": "Gross Load Upper Mw",
+          "type": "number"
+        },
+        "loss_upper_mw": {
+          "minimum": 0,
+          "title": "Loss Upper Mw",
+          "type": "number"
+        },
+        "injection_roundoff_mw": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Injection Roundoff Mw",
+          "type": "number"
+        },
+        "loss_basis": {
+          "enum": [
+            "lossless",
+            "thermal-voltage-envelope",
+            "explicit-upper-bound"
+          ],
+          "title": "Loss Basis",
+          "type": "string"
+        },
+        "network_assumptions": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TransitionNetworkAssumptions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "actuators": {
+          "items": {
+            "$ref": "#/$defs/TransitionActuator"
+          },
+          "title": "Actuators",
+          "type": "array"
+        }
+      },
+      "required": [
+        "region",
+        "start_minute",
+        "duration_minutes",
+        "gross_load_upper_mw",
+        "loss_upper_mw",
+        "loss_basis",
+        "actuators"
+      ],
+      "title": "RegionalTransitionProposal",
+      "type": "object"
+    },
+    "RegionalTransitionReady": {
+      "additionalProperties": false,
+      "properties": {
+        "region": {
+          "title": "Region",
+          "type": "string"
+        },
+        "start_minute": {
+          "minimum": 0,
+          "title": "Start Minute",
+          "type": "integer"
+        },
+        "selection": {
+          "$ref": "#/$defs/RegionalTransitionSelection"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "pcc_import_mw": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pcc Import Mw"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "region",
+        "start_minute",
+        "selection",
+        "status"
+      ],
+      "title": "RegionalTransitionReady",
+      "type": "object"
+    },
+    "RegionalTransitionSelection": {
+      "additionalProperties": false,
+      "properties": {
+        "region": {
+          "title": "Region",
+          "type": "string"
+        },
+        "start_minute": {
+          "minimum": 0,
+          "title": "Start Minute",
+          "type": "integer"
+        },
+        "setpoints": {
+          "items": {
+            "$ref": "#/$defs/TransitionSetpoint"
+          },
+          "title": "Setpoints",
+          "type": "array"
+        }
+      },
+      "required": [
+        "region",
+        "start_minute",
+        "setpoints"
+      ],
+      "title": "RegionalTransitionSelection",
+      "type": "object"
+    },
     "RenewableAccounting": {
       "description": "Chronological interval MW. Availability is AFTER the rated-MW bound.\n\nRaw predictions remain diagnostics. Excess above rated availability is not\ncontrollable curtailment. Tuples own their values and cannot mutate callers.",
       "properties": {
@@ -2293,6 +5353,519 @@
         "curtailed_mw"
       ],
       "title": "RenewableAccounting",
+      "type": "object"
+    },
+    "ReserveActivationCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "context_id": {
+          "title": "Context Id",
+          "type": "string"
+        },
+        "requested_pcc_up_mw": {
+          "title": "Requested Pcc Up Mw",
+          "type": "number"
+        },
+        "target_storage_mw": {
+          "title": "Target Storage Mw",
+          "type": "number"
+        },
+        "command_storage_mw": {
+          "title": "Command Storage Mw",
+          "type": "number"
+        },
+        "pcc_response_mw": {
+          "title": "Pcc Response Mw",
+          "type": "number"
+        },
+        "elapsed_minutes": {
+          "minimum": 0,
+          "title": "Elapsed Minutes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "context_id",
+        "requested_pcc_up_mw",
+        "target_storage_mw",
+        "command_storage_mw",
+        "pcc_response_mw",
+        "elapsed_minutes"
+      ],
+      "title": "ReserveActivationCommand",
+      "type": "object"
+    },
+    "ReserveClusterCertificate": {
+      "additionalProperties": false,
+      "properties": {
+        "start_minute": {
+          "title": "Start Minute",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "certified",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "regions": {
+          "items": {
+            "$ref": "#/$defs/ReserveServiceCertificate"
+          },
+          "title": "Regions",
+          "type": "array"
+        },
+        "import_upper_mw": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Import Upper Mw"
+        },
+        "import_limit_mw": {
+          "title": "Import Limit Mw",
+          "type": "number"
+        },
+        "pf_target": {
+          "title": "Pf Target",
+          "type": "number"
+        }
+      },
+      "required": [
+        "start_minute",
+        "status",
+        "regions",
+        "import_limit_mw",
+        "pf_target"
+      ],
+      "title": "ReserveClusterCertificate",
+      "type": "object"
+    },
+    "ReserveDeliveryPolicy": {
+      "additionalProperties": false,
+      "description": "One-minute causal sampled service; see Reserve_Recovery_Delivery.md.",
+      "properties": {
+        "version": {
+          "const": "reserve-delivery-box-v1",
+          "default": "reserve-delivery-box-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "response_minutes": {
+          "const": 1,
+          "default": 1,
+          "title": "Response Minutes",
+          "type": "integer"
+        },
+        "activation_slew_fraction_per_minute": {
+          "default": 1.0,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Activation Slew Fraction Per Minute",
+          "type": "number"
+        },
+        "pcc_tolerance_mw": {
+          "default": 1e-05,
+          "exclusiveMinimum": 0,
+          "maximum": 0.001,
+          "title": "Pcc Tolerance Mw",
+          "type": "number"
+        },
+        "response_roundoff_mw": {
+          "default": 1e-09,
+          "exclusiveMinimum": 0,
+          "maximum": 1e-06,
+          "title": "Response Roundoff Mw",
+          "type": "number"
+        },
+        "correction_rounds": {
+          "default": 2,
+          "maximum": 4,
+          "minimum": 0,
+          "title": "Correction Rounds",
+          "type": "integer"
+        },
+        "source": {
+          "default": "研究要求：一分钟内响应；并非现场核定值",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "title": "ReserveDeliveryPolicy",
+      "type": "object"
+    },
+    "ReserveRecoveryTask": {
+      "additionalProperties": false,
+      "description": "An observed obligation survives every planning window and solver retry.",
+      "properties": {
+        "region": {
+          "minLength": 1,
+          "title": "Region",
+          "type": "string"
+        },
+        "direction": {
+          "enum": [
+            "up",
+            "down"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "first_minute": {
+          "minimum": 0,
+          "title": "First Minute",
+          "type": "integer"
+        },
+        "deadline_minute": {
+          "minimum": 0,
+          "title": "Deadline Minute",
+          "type": "integer"
+        },
+        "last_observed_minute": {
+          "minimum": 0,
+          "title": "Last Observed Minute",
+          "type": "integer"
+        },
+        "required_mw": {
+          "minimum": 0,
+          "title": "Required Mw",
+          "type": "number"
+        },
+        "status": {
+          "enum": [
+            "recovering",
+            "recovered",
+            "violated",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "completed_minute": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Completed Minute"
+        },
+        "breached": {
+          "default": false,
+          "title": "Breached",
+          "type": "boolean"
+        },
+        "deadline_status": {
+          "default": "pending",
+          "enum": [
+            "pending",
+            "met",
+            "missed",
+            "unknown"
+          ],
+          "title": "Deadline Status",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "region",
+        "direction",
+        "first_minute",
+        "deadline_minute",
+        "last_observed_minute",
+        "required_mw",
+        "status"
+      ],
+      "title": "ReserveRecoveryTask",
+      "type": "object"
+    },
+    "ReserveResourceBox": {
+      "additionalProperties": false,
+      "properties": {
+        "resource_id": {
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "p_mw": {
+          "$ref": "#/$defs/Interval"
+        },
+        "q_mvar": {
+          "$ref": "#/$defs/Interval"
+        },
+        "s_mva": {
+          "exclusiveMinimum": 0,
+          "title": "S Mva",
+          "type": "number"
+        },
+        "q_over_p": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Q Over P"
+        }
+      },
+      "required": [
+        "resource_id",
+        "p_mw",
+        "q_mvar",
+        "s_mva"
+      ],
+      "title": "ReserveResourceBox",
+      "type": "object"
+    },
+    "ReserveServiceCertificate": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "const": "reserve-delivery-box-v1",
+          "default": "reserve-delivery-box-v1",
+          "title": "Model",
+          "type": "string"
+        },
+        "inputs": {
+          "$ref": "#/$defs/ReserveServiceInput"
+        },
+        "status": {
+          "enum": [
+            "certified",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "storage_power_mw": {
+          "$ref": "#/$defs/Interval"
+        },
+        "energy_mwh": {
+          "$ref": "#/$defs/Interval"
+        },
+        "command_mw": {
+          "$ref": "#/$defs/Interval"
+        },
+        "maximum_change_mw": {
+          "minimum": 0,
+          "title": "Maximum Change Mw",
+          "type": "number"
+        },
+        "network": {
+          "$ref": "#/$defs/ACBoxCertificate"
+        },
+        "nominal_network": {
+          "$ref": "#/$defs/ACBoxCertificate"
+        },
+        "up_endpoint": {
+          "$ref": "#/$defs/ACBoxCertificate"
+        },
+        "down_endpoint": {
+          "$ref": "#/$defs/ACBoxCertificate"
+        }
+      },
+      "required": [
+        "inputs",
+        "status",
+        "storage_power_mw",
+        "energy_mwh",
+        "command_mw",
+        "maximum_change_mw",
+        "network",
+        "nominal_network",
+        "up_endpoint",
+        "down_endpoint"
+      ],
+      "title": "ReserveServiceCertificate",
+      "type": "object"
+    },
+    "ReserveServiceInput": {
+      "additionalProperties": false,
+      "properties": {
+        "region": {
+          "title": "Region",
+          "type": "string"
+        },
+        "start_minute": {
+          "minimum": 0,
+          "title": "Start Minute",
+          "type": "integer"
+        },
+        "support_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Support Minutes",
+          "type": "integer"
+        },
+        "policy": {
+          "$ref": "#/$defs/ReserveDeliveryPolicy"
+        },
+        "network": {
+          "$ref": "#/$defs/RadialEnvelope"
+        },
+        "demand_p_mw": {
+          "items": {
+            "$ref": "#/$defs/Interval"
+          },
+          "title": "Demand P Mw",
+          "type": "array"
+        },
+        "demand_q_mvar": {
+          "items": {
+            "$ref": "#/$defs/Interval"
+          },
+          "title": "Demand Q Mvar",
+          "type": "array"
+        },
+        "storage_bus": {
+          "minimum": 0,
+          "title": "Storage Bus",
+          "type": "integer"
+        },
+        "baseline_power_mw": {
+          "$ref": "#/$defs/Interval"
+        },
+        "initial_power_mw": {
+          "title": "Initial Power Mw",
+          "type": "number"
+        },
+        "initial_energy_mwh": {
+          "title": "Initial Energy Mwh",
+          "type": "number"
+        },
+        "initial_energy_bounds_mwh": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "minimum_energy_mwh": {
+          "title": "Minimum Energy Mwh",
+          "type": "number"
+        },
+        "maximum_energy_mwh": {
+          "title": "Maximum Energy Mwh",
+          "type": "number"
+        },
+        "maximum_power_mw": {
+          "exclusiveMinimum": 0,
+          "title": "Maximum Power Mw",
+          "type": "number"
+        },
+        "storage_s_mva": {
+          "exclusiveMinimum": 0,
+          "title": "Storage S Mva",
+          "type": "number"
+        },
+        "storage_q_mvar": {
+          "$ref": "#/$defs/Interval"
+        },
+        "eta_charge": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Eta Charge",
+          "type": "number"
+        },
+        "eta_discharge": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Eta Discharge",
+          "type": "number"
+        },
+        "response_alpha": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Response Alpha",
+          "type": "number"
+        },
+        "ramp_mw_per_minute": {
+          "minimum": 0,
+          "title": "Ramp Mw Per Minute",
+          "type": "number"
+        },
+        "required_mw": {
+          "minimum": 0,
+          "title": "Required Mw",
+          "type": "number"
+        },
+        "activation_headroom_mw": {
+          "minimum": 0,
+          "title": "Activation Headroom Mw",
+          "type": "number"
+        },
+        "context_id": {
+          "minLength": 1,
+          "title": "Context Id",
+          "type": "string"
+        },
+        "other_resources": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ReserveResourceBox"
+          },
+          "title": "Other Resources",
+          "type": "array"
+        }
+      },
+      "required": [
+        "region",
+        "start_minute",
+        "support_minutes",
+        "policy",
+        "network",
+        "demand_p_mw",
+        "demand_q_mvar",
+        "storage_bus",
+        "baseline_power_mw",
+        "initial_power_mw",
+        "initial_energy_mwh",
+        "minimum_energy_mwh",
+        "maximum_energy_mwh",
+        "maximum_power_mw",
+        "storage_s_mva",
+        "storage_q_mvar",
+        "eta_charge",
+        "eta_discharge",
+        "response_alpha",
+        "ramp_mw_per_minute",
+        "required_mw",
+        "activation_headroom_mw",
+        "context_id"
+      ],
+      "title": "ReserveServiceInput",
       "type": "object"
     },
     "ReserveTargetAdjustment": {
@@ -2398,10 +5971,62 @@
           "title": "Adopted",
           "type": "boolean"
         },
+        "continuation_available": {
+          "default": false,
+          "title": "Continuation Available",
+          "type": "boolean"
+        },
+        "reserve_tasks": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ReserveRecoveryTask"
+          },
+          "title": "Reserve Tasks",
+          "type": "array"
+        },
+        "reserve_certificates": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ReserveClusterCertificate"
+          },
+          "title": "Reserve Certificates",
+          "type": "array"
+        },
+        "reserve_correction_round": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Reserve Correction Round",
+          "type": "integer"
+        },
+        "reserve_import_margin_mw": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Reserve Import Margin Mw",
+          "type": "number"
+        },
+        "reserve_attempt_certificates": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ReserveClusterCertificate"
+          },
+          "title": "Reserve Attempt Certificates",
+          "type": "array"
+        },
         "reason": {
           "default": "",
           "title": "Reason",
           "type": "string"
+        },
+        "reference_recovery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CoordinationRecoveryReport"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "coordination_quality": {
           "default": [],
@@ -2421,11 +6046,25 @@
           "title": "Optimization Quality",
           "type": "object"
         },
+        "ac_recovery": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ACRecoveryEvidence"
+          },
+          "title": "Ac Recovery",
+          "type": "object"
+        },
         "initial_energy_mwh": {
           "additionalProperties": {
             "type": "number"
           },
           "title": "Initial Energy Mwh",
+          "type": "object"
+        },
+        "initial_storage_power_mw": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Initial Storage Power Mw",
           "type": "object"
         },
         "initial_reactive_mvar": {
@@ -2669,7 +6308,7 @@
       "additionalProperties": false,
       "properties": {
         "schema_version": {
-          "default": "1.7.0",
+          "default": "1.26.0",
           "title": "Schema Version",
           "type": "string"
         },
@@ -2858,9 +6497,425 @@
           "maxItems": 20,
           "title": "Events",
           "type": "array"
+        },
+        "single_boundary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SingleBoundaryRequest"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "single_research": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SingleResearchPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "title": "SimulationRequestRecord",
+      "type": "object"
+    },
+    "SingleBoundaryRequest": {
+      "additionalProperties": false,
+      "description": "Absolute envelopes remain valid through execution AND terminal continuation.\n\nThese inputs override research forecasts within the same unified algorithm.\nFixed topology, authority and the declared unified response model apply.",
+      "properties": {
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "loads": {
+          "items": {
+            "$ref": "#/$defs/BoundedBusLoad"
+          },
+          "title": "Loads",
+          "type": "array"
+        },
+        "generation": {
+          "items": {
+            "$ref": "#/$defs/FirmGeneration"
+          },
+          "title": "Generation",
+          "type": "array"
+        },
+        "target_p_mw": {
+          "title": "Target P Mw",
+          "type": "number"
+        },
+        "target_q_mvar": {
+          "title": "Target Q Mvar",
+          "type": "number"
+        },
+        "initial_state": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TubeState"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "initial_resource_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Initial Resource Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "source",
+        "loads",
+        "generation",
+        "target_p_mw",
+        "target_q_mvar"
+      ],
+      "title": "SingleBoundaryRequest",
+      "type": "object"
+    },
+    "SingleEconomicProposal": {
+      "additionalProperties": false,
+      "properties": {
+        "start_step": {
+          "minimum": 0,
+          "title": "Start Step",
+          "type": "integer"
+        },
+        "initial": {
+          "$ref": "#/$defs/TubeState"
+        },
+        "command": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TubeCommand"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "target_p_mw": {
+          "title": "Target P Mw",
+          "type": "number"
+        },
+        "target_q_mvar": {
+          "title": "Target Q Mvar",
+          "type": "number"
+        },
+        "result": {
+          "$ref": "#/$defs/RegionalExecution"
+        },
+        "planning_pf_targets": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "Planning Pf Targets",
+          "type": "array"
+        },
+        "pq_witness": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PQPlanningWitness"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "target_origin": {
+          "default": "economic",
+          "enum": [
+            "economic",
+            "external"
+          ],
+          "title": "Target Origin",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start_step",
+        "initial",
+        "target_p_mw",
+        "target_q_mvar",
+        "result"
+      ],
+      "title": "SingleEconomicProposal",
+      "type": "object"
+    },
+    "SingleExecution": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "single-execution-v9",
+          "title": "Version",
+          "type": "string"
+        },
+        "scope": {
+          "const": "synthetic_execution",
+          "default": "synthetic_execution",
+          "title": "Scope",
+          "type": "string"
+        },
+        "region": {
+          "title": "Region",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "violated",
+            "unknown",
+            "not_computed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "storage_enabled": {
+          "title": "Storage Enabled",
+          "type": "boolean"
+        },
+        "policy": {
+          "$ref": "#/$defs/ExecutionPolicy"
+        },
+        "input_basis": {
+          "title": "Input Basis",
+          "type": "string"
+        },
+        "initialization": {
+          "default": "declared_safe_state",
+          "enum": [
+            "declared_actual_state",
+            "declared_safe_state"
+          ],
+          "title": "Initialization",
+          "type": "string"
+        },
+        "startup_transition_assessed": {
+          "const": false,
+          "default": false,
+          "title": "Startup Transition Assessed",
+          "type": "boolean"
+        },
+        "initial_state": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceCheckpoint"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "last_completed_state": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceCheckpoint"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "total_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Total Minutes",
+          "type": "integer"
+        },
+        "completed_minutes": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Completed Minutes",
+          "type": "integer"
+        },
+        "unified": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UnifiedExecution"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "version",
+        "region",
+        "status",
+        "storage_enabled",
+        "policy",
+        "input_basis",
+        "total_minutes"
+      ],
+      "title": "SingleExecution",
+      "type": "object"
+    },
+    "SingleForecastEnvelope": {
+      "additionalProperties": false,
+      "properties": {
+        "loads": {
+          "items": {
+            "$ref": "#/$defs/BoundedBusLoad"
+          },
+          "title": "Loads",
+          "type": "array"
+        },
+        "generation": {
+          "items": {
+            "$ref": "#/$defs/FirmGeneration"
+          },
+          "title": "Generation",
+          "type": "array"
+        }
+      },
+      "required": [
+        "loads",
+        "generation"
+      ],
+      "title": "SingleForecastEnvelope",
+      "type": "object"
+    },
+    "SingleResearchPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "single-research-v3",
+          "default": "single-research-v3",
+          "title": "Version",
+          "type": "string"
+        },
+        "source": {
+          "default": "Configurable research bounds for the seeded synthetic study; not field-validated limits",
+          "title": "Source",
+          "type": "string"
+        },
+        "load_relative_error": {
+          "default": 0.025,
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "Load Relative Error",
+          "type": "number"
+        },
+        "wind_nameplate_error": {
+          "default": 0.05,
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "Wind Nameplate Error",
+          "type": "number"
+        },
+        "pv_nameplate_error": {
+          "default": 0.15,
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "Pv Nameplate Error",
+          "type": "number"
+        },
+        "settling_resolution": {
+          "default": 0.0001,
+          "exclusiveMinimum": 0,
+          "maximum": 0.001,
+          "title": "Settling Resolution",
+          "type": "number"
+        },
+        "backup_maximum_steps": {
+          "default": 90,
+          "maximum": 240,
+          "minimum": 10,
+          "title": "Backup Maximum Steps",
+          "type": "integer"
+        },
+        "planning_pf_tangent_fraction": {
+          "default": 0.6,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Planning Pf Tangent Fraction",
+          "type": "number"
+        },
+        "forecast_interpolation": {
+          "default": "linear",
+          "enum": [
+            "linear",
+            "hold"
+          ],
+          "title": "Forecast Interpolation",
+          "type": "string"
+        },
+        "storage_tracking_reserve_mwh": {
+          "default": 0.002,
+          "minimum": 0,
+          "title": "Storage Tracking Reserve Mwh",
+          "type": "number"
+        },
+        "energy_reference_cost_cny_per_mwh": {
+          "default": 50,
+          "minimum": 0,
+          "title": "Energy Reference Cost Cny Per Mwh",
+          "type": "number"
+        },
+        "certified_economic_candidates": {
+          "default": 3,
+          "maximum": 8,
+          "minimum": 1,
+          "title": "Certified Economic Candidates",
+          "type": "integer"
+        },
+        "allocation_search_budget": {
+          "default": 6,
+          "maximum": 32,
+          "minimum": 1,
+          "title": "Allocation Search Budget",
+          "type": "integer"
+        },
+        "renewable_command_reserve_mw": {
+          "default": 0.02,
+          "minimum": 0,
+          "title": "Renewable Command Reserve Mw",
+          "type": "number"
+        },
+        "reactive_regulator_reference_fraction": {
+          "default": 0.7,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Reactive Regulator Reference Fraction",
+          "type": "number"
+        },
+        "terminal_persistence": {
+          "const": "last_forecast_envelope",
+          "default": "last_forecast_envelope",
+          "title": "Terminal Persistence",
+          "type": "string"
+        },
+        "within_step_disturbance": {
+          "const": "zero_order_hold",
+          "default": "zero_order_hold",
+          "title": "Within Step Disturbance",
+          "type": "string"
+        }
+      },
+      "title": "SingleResearchPolicy",
       "type": "object"
     },
     "SolverFormulation": {
@@ -2900,6 +6955,211 @@
         }
       },
       "title": "SolverOptions",
+      "type": "object"
+    },
+    "StorageReachabilityEvidence": {
+      "additionalProperties": false,
+      "description": "Nominal command witness, not a certificate that feedback follows it.",
+      "properties": {
+        "version": {
+          "const": "storage-reachability-v1",
+          "default": "storage-reachability-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "inputs": {
+          "$ref": "#/$defs/StorageReachabilityInput"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "violated"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "p_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "P Mw",
+          "type": "array"
+        },
+        "energy_mwh": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Energy Mwh",
+          "type": "array"
+        },
+        "first_command_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "First Command Mw",
+          "type": "array"
+        },
+        "maximum_power_violation_mw": {
+          "minimum": 0,
+          "title": "Maximum Power Violation Mw",
+          "type": "number"
+        },
+        "maximum_energy_violation_mwh": {
+          "minimum": 0,
+          "title": "Maximum Energy Violation Mwh",
+          "type": "number"
+        }
+      },
+      "required": [
+        "inputs",
+        "status",
+        "p_mw",
+        "energy_mwh",
+        "first_command_mw",
+        "maximum_power_violation_mw",
+        "maximum_energy_violation_mwh"
+      ],
+      "title": "StorageReachabilityEvidence",
+      "type": "object"
+    },
+    "StorageReachabilityInput": {
+      "additionalProperties": false,
+      "description": "Owned same-window initial state, physical parameters and execution clock.",
+      "properties": {
+        "policy": {
+          "$ref": "#/$defs/StorageReachabilityPolicy"
+        },
+        "resource_id": {
+          "minLength": 1,
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "start_minute": {
+          "minimum": 0,
+          "title": "Start Minute",
+          "type": "number"
+        },
+        "steps": {
+          "minimum": 1,
+          "title": "Steps",
+          "type": "integer"
+        },
+        "planning_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Planning Minutes",
+          "type": "number"
+        },
+        "execution_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Execution Minutes",
+          "type": "number"
+        },
+        "time_constant_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Time Constant Minutes",
+          "type": "number"
+        },
+        "ramp_mw_per_minute": {
+          "minimum": 0,
+          "title": "Ramp Mw Per Minute",
+          "type": "number"
+        },
+        "maximum_power_mw": {
+          "minimum": 0,
+          "title": "Maximum Power Mw",
+          "type": "number"
+        },
+        "initial_power_mw": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Initial Power Mw"
+        },
+        "initial_energy_mwh": {
+          "title": "Initial Energy Mwh",
+          "type": "number"
+        },
+        "minimum_energy_mwh": {
+          "title": "Minimum Energy Mwh",
+          "type": "number"
+        },
+        "maximum_energy_mwh": {
+          "title": "Maximum Energy Mwh",
+          "type": "number"
+        },
+        "terminal_energy_mwh": {
+          "title": "Terminal Energy Mwh",
+          "type": "number"
+        },
+        "terminal_tolerance_mwh": {
+          "minimum": 0,
+          "title": "Terminal Tolerance Mwh",
+          "type": "number"
+        },
+        "eta_charge": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Eta Charge",
+          "type": "number"
+        },
+        "eta_discharge": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Eta Discharge",
+          "type": "number"
+        }
+      },
+      "required": [
+        "policy",
+        "resource_id",
+        "start_minute",
+        "steps",
+        "planning_minutes",
+        "execution_minutes",
+        "time_constant_minutes",
+        "ramp_mw_per_minute",
+        "maximum_power_mw",
+        "initial_power_mw",
+        "initial_energy_mwh",
+        "minimum_energy_mwh",
+        "maximum_energy_mwh",
+        "terminal_energy_mwh",
+        "terminal_tolerance_mwh",
+        "eta_charge",
+        "eta_discharge"
+      ],
+      "title": "StorageReachabilityInput",
+      "type": "object"
+    },
+    "StorageReachabilityPolicy": {
+      "additionalProperties": false,
+      "description": "Nominal held-response inner envelope; not disturbance/override immunity.",
+      "properties": {
+        "version": {
+          "const": "storage-reachability-v1",
+          "default": "storage-reachability-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "power_tolerance_mw": {
+          "default": 1e-06,
+          "exclusiveMinimum": 0,
+          "title": "Power Tolerance Mw",
+          "type": "number"
+        },
+        "energy_tolerance_mwh": {
+          "default": 1e-06,
+          "exclusiveMinimum": 0,
+          "title": "Energy Tolerance Mwh",
+          "type": "number"
+        }
+      },
+      "title": "StorageReachabilityPolicy",
       "type": "object"
     },
     "StorageReservePolicy": {
@@ -2944,6 +7204,12 @@
           "title": "Trigger Fraction",
           "type": "number"
         },
+        "observation_tolerance_mw": {
+          "default": 1e-09,
+          "minimum": 0,
+          "title": "Observation Tolerance Mw",
+          "type": "number"
+        },
         "replan_cooldown_minutes": {
           "default": 5,
           "minimum": 1,
@@ -2957,6 +7223,316 @@
         }
       },
       "title": "StorageReservePolicy",
+      "type": "object"
+    },
+    "TargetAdmission": {
+      "additionalProperties": false,
+      "properties": {
+        "start_step": {
+          "minimum": 0,
+          "title": "Start Step",
+          "type": "integer"
+        },
+        "end_step": {
+          "exclusiveMinimum": 0,
+          "title": "End Step",
+          "type": "integer"
+        },
+        "origin": {
+          "enum": [
+            "economic",
+            "external",
+            "retained"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "requested_p_mw": {
+          "title": "Requested P Mw",
+          "type": "number"
+        },
+        "requested_q_mvar": {
+          "title": "Requested Q Mvar",
+          "type": "number"
+        },
+        "nominal": {
+          "$ref": "#/$defs/TubeCommand"
+        },
+        "attempted_targets": {
+          "default": [],
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "Attempted Targets",
+          "type": "array"
+        },
+        "plan": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UnifiedPlanCertificate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "candidate_economic_costs_cny": {
+          "default": [],
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Candidate Economic Costs Cny",
+          "type": "array"
+        },
+        "candidate_outcomes": {
+          "default": [],
+          "items": {
+            "enum": [
+              "certified",
+              "construction_unproven"
+            ],
+            "type": "string"
+          },
+          "title": "Candidate Outcomes",
+          "type": "array"
+        },
+        "candidate_reasons": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Candidate Reasons",
+          "type": "array"
+        },
+        "selected_candidate": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Selected Candidate"
+        },
+        "economic_scope": {
+          "const": "firm_forecast_midpoint_feedback_prefix",
+          "default": "firm_forecast_midpoint_feedback_prefix",
+          "title": "Economic Scope",
+          "type": "string"
+        },
+        "selection_rule": {
+          "const": "original_target_then_intervention_then_cost",
+          "default": "original_target_then_intervention_then_cost",
+          "title": "Selection Rule",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start_step",
+        "end_step",
+        "origin",
+        "requested_p_mw",
+        "requested_q_mvar",
+        "nominal"
+      ],
+      "title": "TargetAdmission",
+      "type": "object"
+    },
+    "TargetTrackingCertificate": {
+      "additionalProperties": false,
+      "properties": {
+        "scope": {
+          "const": "finite_forecast_box_feedback",
+          "default": "finite_forecast_box_feedback",
+          "title": "Scope",
+          "type": "string"
+        },
+        "target_p_mw": {
+          "title": "Target P Mw",
+          "type": "number"
+        },
+        "target_q_mvar": {
+          "title": "Target Q Mvar",
+          "type": "number"
+        },
+        "deadline_step": {
+          "minimum": 0,
+          "title": "Deadline Step",
+          "type": "integer"
+        },
+        "guaranteed_until_step": {
+          "exclusiveMinimum": 0,
+          "title": "Guaranteed Until Step",
+          "type": "integer"
+        },
+        "nominal": {
+          "$ref": "#/$defs/TubeCommand"
+        },
+        "construction": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Construction",
+          "type": "integer"
+        },
+        "allocation_trials": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AllocationTrial"
+          },
+          "title": "Allocation Trials",
+          "type": "array"
+        },
+        "policies": {
+          "items": {
+            "$ref": "#/$defs/BalancePolicy"
+          },
+          "title": "Policies",
+          "type": "array"
+        },
+        "tubes": {
+          "items": {
+            "$ref": "#/$defs/TubeBox"
+          },
+          "title": "Tubes",
+          "type": "array"
+        },
+        "pcc_p_mw": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Interval"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Pcc P Mw",
+          "type": "array"
+        },
+        "pcc_q_mvar": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Interval"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Pcc Q Mvar",
+          "type": "array"
+        }
+      },
+      "required": [
+        "target_p_mw",
+        "target_q_mvar",
+        "deadline_step",
+        "guaranteed_until_step",
+        "nominal",
+        "policies",
+        "tubes",
+        "pcc_p_mw",
+        "pcc_q_mvar"
+      ],
+      "title": "TargetTrackingCertificate",
+      "type": "object"
+    },
+    "TaskContinuation": {
+      "additionalProperties": false,
+      "properties": {
+        "task": {
+          "$ref": "#/$defs/TerminalEnergyTask"
+        },
+        "recovery_start_step": {
+          "minimum": 0,
+          "title": "Recovery Start Step",
+          "type": "integer"
+        },
+        "policies": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EnergyReturnPolicy"
+          },
+          "title": "Policies",
+          "type": "array"
+        },
+        "tubes": {
+          "items": {
+            "$ref": "#/$defs/TubeBox"
+          },
+          "title": "Tubes",
+          "type": "array"
+        },
+        "deadline_energy_mwh": {
+          "$ref": "#/$defs/Interval"
+        }
+      },
+      "required": [
+        "task",
+        "recovery_start_step",
+        "tubes",
+        "deadline_energy_mwh"
+      ],
+      "title": "TaskContinuation",
+      "type": "object"
+    },
+    "TerminalEnergyTask": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "deadline_step": {
+          "exclusiveMinimum": 0,
+          "title": "Deadline Step",
+          "type": "integer"
+        },
+        "energy_mwh": {
+          "$ref": "#/$defs/Interval"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "deadline_step",
+        "energy_mwh",
+        "source"
+      ],
+      "title": "TerminalEnergyTask",
       "type": "object"
     },
     "TimeSeriesPoint": {
@@ -3289,6 +7865,744 @@
       "title": "TrackingTransition",
       "type": "object"
     },
+    "TransitionActuator": {
+      "additionalProperties": false,
+      "properties": {
+        "actuator": {
+          "minLength": 1,
+          "title": "Actuator",
+          "type": "string"
+        },
+        "previous_mw": {
+          "title": "Previous Mw",
+          "type": "number"
+        },
+        "proposed_mw": {
+          "title": "Proposed Mw",
+          "type": "number"
+        },
+        "defer_to_mw": {
+          "title": "Defer To Mw",
+          "type": "number"
+        }
+      },
+      "required": [
+        "actuator",
+        "previous_mw",
+        "proposed_mw",
+        "defer_to_mw"
+      ],
+      "title": "TransitionActuator",
+      "type": "object"
+    },
+    "TransitionBranchAssumption": {
+      "additionalProperties": false,
+      "properties": {
+        "branch_id": {
+          "minLength": 1,
+          "title": "Branch Id",
+          "type": "string"
+        },
+        "r_pu": {
+          "minimum": 0,
+          "title": "R Pu",
+          "type": "number"
+        },
+        "receiving_apparent_power_max_mva": {
+          "exclusiveMinimum": 0,
+          "title": "Receiving Apparent Power Max Mva",
+          "type": "number"
+        }
+      },
+      "required": [
+        "branch_id",
+        "r_pu",
+        "receiving_apparent_power_max_mva"
+      ],
+      "title": "TransitionBranchAssumption",
+      "type": "object"
+    },
+    "TransitionNetworkAssumptions": {
+      "additionalProperties": false,
+      "properties": {
+        "network_id": {
+          "minLength": 1,
+          "title": "Network Id",
+          "type": "string"
+        },
+        "operating_mode_id": {
+          "minLength": 1,
+          "title": "Operating Mode Id",
+          "type": "string"
+        },
+        "base_mva": {
+          "exclusiveMinimum": 0,
+          "title": "Base Mva",
+          "type": "number"
+        },
+        "minimum_voltage_pu": {
+          "exclusiveMinimum": 0,
+          "title": "Minimum Voltage Pu",
+          "type": "number"
+        },
+        "branches": {
+          "items": {
+            "$ref": "#/$defs/TransitionBranchAssumption"
+          },
+          "title": "Branches",
+          "type": "array"
+        }
+      },
+      "required": [
+        "network_id",
+        "operating_mode_id",
+        "base_mva",
+        "minimum_voltage_pu",
+        "branches"
+      ],
+      "title": "TransitionNetworkAssumptions",
+      "type": "object"
+    },
+    "TransitionSetpoint": {
+      "additionalProperties": false,
+      "properties": {
+        "actuator": {
+          "title": "Actuator",
+          "type": "string"
+        },
+        "p_mw": {
+          "title": "P Mw",
+          "type": "number"
+        }
+      },
+      "required": [
+        "actuator",
+        "p_mw"
+      ],
+      "title": "TransitionSetpoint",
+      "type": "object"
+    },
+    "TubeBox": {
+      "additionalProperties": false,
+      "properties": {
+        "p_mw": {
+          "items": {
+            "$ref": "#/$defs/Interval"
+          },
+          "title": "P Mw",
+          "type": "array"
+        },
+        "q_mvar": {
+          "items": {
+            "$ref": "#/$defs/Interval"
+          },
+          "title": "Q Mvar",
+          "type": "array"
+        },
+        "energy_mwh": {
+          "$ref": "#/$defs/Interval"
+        }
+      },
+      "required": [
+        "p_mw",
+        "q_mvar",
+        "energy_mwh"
+      ],
+      "title": "TubeBox",
+      "type": "object"
+    },
+    "TubeCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "p_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "P Mw",
+          "type": "array"
+        },
+        "q_mvar": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Q Mvar",
+          "type": "array"
+        }
+      },
+      "required": [
+        "p_mw",
+        "q_mvar"
+      ],
+      "title": "TubeCommand",
+      "type": "object"
+    },
+    "TubeDeviceModel": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "default": "unified-device-v1",
+          "enum": [
+            "unified-device-v1",
+            "cluster-device-v1"
+          ],
+          "title": "Version",
+          "type": "string"
+        },
+        "resources": {
+          "items": {
+            "$ref": "#/$defs/TubeResource"
+          },
+          "title": "Resources",
+          "type": "array"
+        },
+        "alpha_q": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Alpha Q",
+          "type": "number"
+        },
+        "aggregate_q_ramp_mvar": {
+          "minimum": 0,
+          "title": "Aggregate Q Ramp Mvar",
+          "type": "number"
+        },
+        "step_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Step Minutes",
+          "type": "number"
+        },
+        "energy_mwh": {
+          "$ref": "#/$defs/Interval"
+        },
+        "eta_charge": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Eta Charge",
+          "type": "number"
+        },
+        "eta_discharge": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Eta Discharge",
+          "type": "number"
+        },
+        "context_id": {
+          "minLength": 1,
+          "title": "Context Id",
+          "type": "string"
+        },
+        "settling_resolution": {
+          "default": 0.0001,
+          "exclusiveMinimum": 0,
+          "maximum": 0.001,
+          "title": "Settling Resolution",
+          "type": "number"
+        }
+      },
+      "required": [
+        "resources",
+        "alpha_q",
+        "aggregate_q_ramp_mvar",
+        "step_minutes",
+        "energy_mwh",
+        "eta_charge",
+        "eta_discharge",
+        "context_id"
+      ],
+      "title": "TubeDeviceModel",
+      "type": "object"
+    },
+    "TubeResource": {
+      "additionalProperties": false,
+      "properties": {
+        "resource_id": {
+          "minLength": 1,
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "bus": {
+          "minLength": 1,
+          "title": "Bus",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "wind",
+            "pv",
+            "storage",
+            "svg"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "p": {
+          "$ref": "#/$defs/Interval"
+        },
+        "q": {
+          "$ref": "#/$defs/Interval"
+        },
+        "s_mva": {
+          "exclusiveMinimum": 0,
+          "title": "S Mva",
+          "type": "number"
+        },
+        "q_over_p": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Q Over P"
+        },
+        "alpha_p": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Alpha P",
+          "type": "number"
+        },
+        "ramp_p_mw": {
+          "minimum": 0,
+          "title": "Ramp P Mw",
+          "type": "number"
+        }
+      },
+      "required": [
+        "resource_id",
+        "bus",
+        "kind",
+        "p",
+        "q",
+        "s_mva",
+        "alpha_p",
+        "ramp_p_mw"
+      ],
+      "title": "TubeResource",
+      "type": "object"
+    },
+    "TubeState": {
+      "additionalProperties": false,
+      "properties": {
+        "p_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "P Mw",
+          "type": "array"
+        },
+        "q_mvar": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Q Mvar",
+          "type": "array"
+        },
+        "energy_mwh": {
+          "title": "Energy Mwh",
+          "type": "number"
+        }
+      },
+      "required": [
+        "p_mw",
+        "q_mvar",
+        "energy_mwh"
+      ],
+      "title": "TubeState",
+      "type": "object"
+    },
+    "UnifiedDomain": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "unified-single-v7",
+          "default": "unified-single-v7",
+          "title": "Version",
+          "type": "string"
+        },
+        "research": {
+          "$ref": "#/$defs/SingleResearchPolicy"
+        },
+        "bound_source": {
+          "default": "Explicit research domain",
+          "minLength": 1,
+          "title": "Bound Source",
+          "type": "string"
+        },
+        "network": {
+          "$ref": "#/$defs/RadialEnvelope"
+        },
+        "devices": {
+          "$ref": "#/$defs/TubeDeviceModel"
+        },
+        "forecasts": {
+          "items": {
+            "$ref": "#/$defs/SingleForecastEnvelope"
+          },
+          "title": "Forecasts",
+          "type": "array"
+        },
+        "terminal_command": {
+          "$ref": "#/$defs/TubeCommand"
+        },
+        "p_band_mw": {
+          "exclusiveMinimum": 0,
+          "title": "P Band Mw",
+          "type": "number"
+        },
+        "q_band_mvar": {
+          "exclusiveMinimum": 0,
+          "title": "Q Band Mvar",
+          "type": "number"
+        },
+        "response_steps": {
+          "minimum": 1,
+          "title": "Response Steps",
+          "type": "integer"
+        },
+        "context_id": {
+          "title": "Context Id",
+          "type": "string"
+        },
+        "energy_task": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TerminalEnergyTask"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "economic_prices_cny_per_mwh": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "Economic Prices Cny Per Mwh",
+          "type": "array"
+        },
+        "economic_rates": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CostRates"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "research",
+        "network",
+        "devices",
+        "forecasts",
+        "terminal_command",
+        "p_band_mw",
+        "q_band_mvar",
+        "response_steps",
+        "context_id"
+      ],
+      "title": "UnifiedDomain",
+      "type": "object"
+    },
+    "UnifiedExecution": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "unified-single-v7",
+          "default": "unified-single-v7",
+          "title": "Version",
+          "type": "string"
+        },
+        "domain": {
+          "$ref": "#/$defs/UnifiedDomain"
+        },
+        "initial": {
+          "$ref": "#/$defs/TubeState"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "unproven",
+            "assumption_violated"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "requested_steps": {
+          "minimum": 1,
+          "title": "Requested Steps",
+          "type": "integer"
+        },
+        "update_steps": {
+          "default": 15,
+          "minimum": 1,
+          "title": "Update Steps",
+          "type": "integer"
+        },
+        "steps": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/UnifiedStep"
+          },
+          "title": "Steps",
+          "type": "array"
+        },
+        "plans": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/UnifiedPlanCertificate"
+          },
+          "title": "Plans",
+          "type": "array"
+        },
+        "terminal_proof_digest": {
+          "title": "Terminal Proof Digest",
+          "type": "string"
+        },
+        "tracking_status": {
+          "enum": [
+            "passed",
+            "violated",
+            "not_assessed"
+          ],
+          "title": "Tracking Status",
+          "type": "string"
+        },
+        "tracking_scope": {
+          "const": "completed_cycle_pcc",
+          "default": "completed_cycle_pcc",
+          "title": "Tracking Scope",
+          "type": "string"
+        },
+        "economic_proposals": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SingleEconomicProposal"
+          },
+          "title": "Economic Proposals",
+          "type": "array"
+        },
+        "target_admissions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/TargetAdmission"
+          },
+          "title": "Target Admissions",
+          "type": "array"
+        },
+        "target_admission_status": {
+          "default": "not_assessed",
+          "enum": [
+            "passed",
+            "rejected",
+            "not_assessed"
+          ],
+          "title": "Target Admission Status",
+          "type": "string"
+        },
+        "hard_task": {
+          "$ref": "#/$defs/HardTaskAssessment",
+          "default": {
+            "guarantee": "not_required",
+            "outcome": "not_required",
+            "initial_certified": false,
+            "reason": ""
+          }
+        }
+      },
+      "required": [
+        "domain",
+        "initial",
+        "status",
+        "requested_steps",
+        "terminal_proof_digest",
+        "tracking_status"
+      ],
+      "title": "UnifiedExecution",
+      "type": "object"
+    },
+    "UnifiedPlanCertificate": {
+      "additionalProperties": false,
+      "properties": {
+        "start_step": {
+          "minimum": 0,
+          "title": "Start Step",
+          "type": "integer"
+        },
+        "initial": {
+          "$ref": "#/$defs/TubeBox"
+        },
+        "commands": {
+          "items": {
+            "$ref": "#/$defs/TubeCommand"
+          },
+          "title": "Commands",
+          "type": "array"
+        },
+        "terminal": {
+          "$ref": "#/$defs/TubeBox"
+        },
+        "network_proof_digest": {
+          "title": "Network Proof Digest",
+          "type": "string"
+        },
+        "tracking": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TargetTrackingCertificate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "task_continuation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TaskContinuation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "task_reason": {
+          "default": "",
+          "title": "Task Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start_step",
+        "initial",
+        "commands",
+        "terminal",
+        "network_proof_digest"
+      ],
+      "title": "UnifiedPlanCertificate",
+      "type": "object"
+    },
+    "UnifiedStep": {
+      "additionalProperties": false,
+      "properties": {
+        "step": {
+          "minimum": 0,
+          "title": "Step",
+          "type": "integer"
+        },
+        "before": {
+          "$ref": "#/$defs/TubeState"
+        },
+        "after": {
+          "$ref": "#/$defs/TubeState"
+        },
+        "command": {
+          "$ref": "#/$defs/TubeCommand"
+        },
+        "proposed_command": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TubeCommand"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "candidate_fraction": {
+          "default": 0,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Candidate Fraction",
+          "type": "number"
+        },
+        "observed": {
+          "$ref": "#/$defs/SingleForecastEnvelope"
+        },
+        "disposition": {
+          "enum": [
+            "economic",
+            "retained_feedback",
+            "backup",
+            "terminal"
+          ],
+          "title": "Disposition",
+          "type": "string"
+        },
+        "proposal_reason": {
+          "default": "",
+          "title": "Proposal Reason",
+          "type": "string"
+        },
+        "plan_index": {
+          "minimum": 0,
+          "title": "Plan Index",
+          "type": "integer"
+        },
+        "plan_offset": {
+          "minimum": 0,
+          "title": "Plan Offset",
+          "type": "integer"
+        },
+        "requested_p_mw": {
+          "title": "Requested P Mw",
+          "type": "number"
+        },
+        "requested_q_mvar": {
+          "title": "Requested Q Mvar",
+          "type": "number"
+        },
+        "deadline_step": {
+          "minimum": 0,
+          "title": "Deadline Step",
+          "type": "integer"
+        },
+        "pcc_p_mw": {
+          "$ref": "#/$defs/Interval"
+        },
+        "pcc_q_mvar": {
+          "$ref": "#/$defs/Interval"
+        },
+        "tracking_certified": {
+          "title": "Tracking Certified",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "step",
+        "before",
+        "after",
+        "command",
+        "observed",
+        "disposition",
+        "plan_index",
+        "plan_offset",
+        "requested_p_mw",
+        "requested_q_mvar",
+        "deadline_step",
+        "pcc_p_mw",
+        "pcc_q_mvar",
+        "tracking_certified"
+      ],
+      "title": "UnifiedStep",
+      "type": "object"
+    },
     "ValidationItem": {
       "additionalProperties": false,
       "properties": {
@@ -3551,6 +8865,17 @@
       "anyOf": [
         {
           "$ref": "#/$defs/ClusterExecution"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "single_execution": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SingleExecution"
         },
         {
           "type": "null"

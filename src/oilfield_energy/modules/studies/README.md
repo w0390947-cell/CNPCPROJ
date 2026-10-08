@@ -26,4 +26,4 @@
 模式由 `tools/export_network_scenario_contract.py` 与旧计算结果类型共同生成。
 新增字段、输入未知语义及旧消费者迁移见 ADR 0009。
 
-公式、参数假设与运行说明见 [完整模拟指南](../../../../docs/guides/Shancheng_Complete_Simulation.md)。测试：`python -m pytest tests/unit/studies tests/workflows/test_shancheng_simulation.py -q --import-mode=importlib`。
+公式、参数假设与运行说明见 [统一算法说明](../../../../docs/modeling/Single_Microgrid_Execution.md)。测试：`python -m pytest tests/unit/studies tests/integration/studies/test_unified_dataset.py -q --import-mode=importlib`。

@@ -402,7 +402,13 @@ class PccSafetyConstraint:
 
 @dataclass(frozen=True)
 class SafetyAllocationResult:
-    """Traceable allocation of a PCC safety deficit across PV and wind/storage."""
+    """Allocation against the supplied PCC snapshot, not achieved device output.
+
+    ``command_accepted`` refers only to a new command submitted in this call;
+    no-command observations set it to false. ``fully_allocated`` describes the
+    allocation arithmetic, not satisfaction of all retained safety constraints
+    or confirmed PCC safety. A later renewal does not refresh this snapshot.
+    """
 
     decision_id: str
     minimum_import_mw: float

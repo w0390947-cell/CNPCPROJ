@@ -25,8 +25,10 @@ from .modules.dispatch.api import capture_coordination_snapshot
 from .modules.dispatch.contracts import (
     CoordinationBudgetEvidence,
     CoordinationIterationTrace,
+    CoordinationNetworkCalibration,
     DispatchCapabilities,
     RegionalCoordinationTrace,
+    RegionalNetworkCandidate,
     RegionalPlanSnapshot,
 )
 from .planning_security import resolve_security_floors
@@ -104,7 +106,8 @@ class CoordinationWorkspace:
         config: ADMMConfig,
         capabilities: DispatchCapabilities,
         floors: Mapping[str, np.ndarray],
-        losses: Mapping[str, Mapping[str, np.ndarray]] | None,
+        losses: Mapping[str, CoordinationNetworkCalibration | Mapping[str, np.ndarray]] | None,
+        network_candidates: Mapping[str, RegionalNetworkCandidate] | None = None,
     ) -> tuple[dict[str, RegionalConvexController], ClusterProjectionController]:
         # Retain every static field, mapping, network and input-version identity.
         # Only data refreshed by update_window is excluded. These bytes are an
@@ -112,7 +115,11 @@ class CoordinationWorkspace:
         static_case = replace(
             case,
             storage_reserves={},
-            reactive_plans={n: tuple(replace(row, upper=0.0) for row in rows) for n, rows in case.reactive_plans.items()},
+            storage_reachability={},
+            reactive_plans={
+                n: tuple(replace(row, upper=0.0) for row in rows)
+                for n, rows in case.reactive_plans.items()
+            },
             time_hours=np.zeros(len(case.time_hours)),
             price_cny_per_mwh=np.zeros(0),
             microgrids=[
@@ -137,7 +144,17 @@ class CoordinationWorkspace:
             ],
         )
         key = dumps(
-            ("coordination-workspace-v1", static_case, config, capabilities), protocol=5
+            (
+                "coordination-workspace-v3",
+                static_case,
+                config,
+                capabilities,
+                tuple(case.storage_reachability.get(m.name) for m in microgrids),
+                tuple(network_candidates[m.name] for m in microgrids)
+                if network_candidates
+                else None,
+            ),
+            protocol=5,
         )
         try:
             if key != self._key or self.coordinator is None:
@@ -146,16 +163,17 @@ class CoordinationWorkspace:
                         case,
                         mg,
                         config,
-                        loss_calibration=losses.get(mg.name)
-                        if losses is not None
-                        else None,
+                        loss_calibration=losses.get(mg.name) if losses is not None else None,
                         p_grid_security_floor_mw=floors[mg.name],
                         capabilities=capabilities,
+                        network_candidate=network_candidates[mg.name]
+                        if network_candidates
+                        else None,
                     )
                     for mg in microgrids
                 }
                 coordinator = ClusterProjectionController(
-                    case, microgrids, config, floors
+                    case, microgrids, config, floors, network_candidates
                 )
                 self.controllers, self.coordinator = controllers, coordinator
                 self._key = key
@@ -182,13 +200,23 @@ def run_admm_coordination(
     *,
     admm_config: ADMMConfig | None = None,
     communication_config: CommunicationConfig | None = None,
-    loss_calibration: Mapping[str, Mapping[str, np.ndarray]] | None = None,
+    loss_calibration: Mapping[str, CoordinationNetworkCalibration | Mapping[str, np.ndarray]]
+    | None = None,
     p_grid_security_floors_mw: Mapping[str, np.ndarray] | None = None,
     group_control_config: GroupControlConfig | None = None,
     storage_enabled: bool = True,
     workspace: CoordinationWorkspace | None = None,
+    network_candidates: Mapping[str, RegionalNetworkCandidate] | None = None,
 ) -> ADMMResult:
-    """运行逻辑隔离的区域控制器和集群协调器。"""
+    """运行逻辑隔离的区域控制器和集群协调器。
+
+    ``loss_calibration`` accepts immutable CoordinationNetworkCalibration values
+    built through dispatch.api.build_coordination_calibration. Legacy loss-only
+    mappings remain supported only for regions without resolved fixed shunts.
+    Missing or mismatched shunt evidence raises ValueError before coordination.
+    Reference-voltage calibration does not certify AC feasibility or refresh
+    after forecast changes; regional realization remains independently checked.
+    """
     config = admm_config or ADMMConfig()
     comm_config = communication_config or CommunicationConfig()
     capabilities = DispatchCapabilities(storage_enabled=storage_enabled)
@@ -203,6 +231,20 @@ def run_admm_coordination(
     if len(set(names)) != len(names):
         raise ValueError("ADMM region names must be unique")
     microgrids: list[MicrogridData] = [lookup[name] for name in names]
+    if network_candidates is not None:
+        axis = tuple(float(t * 60) for t in case.time_hours)
+        if (
+            set(network_candidates) != set(names)
+            or loss_calibration is None
+            or any(
+                c.region != name
+                or c.time_minutes != axis
+                or c.calibration != loss_calibration.get(name)
+                for name, c in network_candidates.items()
+            )
+        ):
+            raise ValueError("network candidates must bind this window and their own calibration")
+        network_candidates = dict(network_candidates)
     security_floors = resolve_security_floors(
         case,
         microgrids,
@@ -216,6 +258,7 @@ def run_admm_coordination(
         capabilities,
         security_floors,
         loss_calibration,
+        network_candidates,
     )
     channel = SimulatedCommunicationChannel(comm_config)
     M, T = len(names), len(case.time_hours)
@@ -229,8 +272,7 @@ def run_admm_coordination(
     u_q = np.zeros((M, T))
     coordination_epoch = 0
     cached_signals = {
-        name: _signal(z_p, z_q, u_p, u_q, m, coordination_epoch)
-        for m, name in enumerate(names)
+        name: _signal(z_p, z_q, u_p, u_q, m, coordination_epoch) for m, name in enumerate(names)
     }
     signal_cursors = {name: MessageCursor(0, 0) for name in names}
     response_cursors = {name: MessageCursor(-1, -1) for name in names}
@@ -244,7 +286,9 @@ def run_admm_coordination(
     coordination_updates = 0
     snapshot = None
 
-    budgets = config.quality_policy.admm_iterations if config.quality_policy else (config.max_iterations,)
+    budgets = (
+        config.quality_policy.admm_iterations if config.quality_policy else (config.max_iterations,)
+    )
     budget_index = 0
     quality_budgets: list[CoordinationBudgetEvidence] = []
     for k in range(1, budgets[-1] + 1):
@@ -261,9 +305,7 @@ def run_admm_coordination(
             messages = channel.receive(name, k)
             accepted = False
             for message in messages:
-                cursor = MessageCursor(
-                    message.payload.iteration, message.sent_iteration
-                )
+                cursor = MessageCursor(message.payload.iteration, message.sent_iteration)
                 if accept_coordination_message(
                     signal_cursors[name],
                     cursor,
@@ -298,9 +340,7 @@ def run_admm_coordination(
                 if schedule.used_fallback:
                     if (
                         message.sent_iteration > previous.sent_tick
-                        and 0
-                        <= k - message.sent_iteration
-                        <= comm_config.stale_limit_iterations
+                        and 0 <= k - message.sent_iteration <= comm_config.stale_limit_iterations
                     ):
                         response_cursors[message.sender] = MessageCursor(
                             previous.epoch, message.sent_iteration
@@ -310,9 +350,7 @@ def run_admm_coordination(
                     else:
                         channel.metrics.rejected_stale_messages += 1
                     continue
-                cursor = MessageCursor(
-                    schedule.signal_iteration, message.sent_iteration
-                )
+                cursor = MessageCursor(schedule.signal_iteration, message.sent_iteration)
                 if not accept_coordination_message(
                     previous,
                     cursor,
@@ -343,9 +381,7 @@ def run_admm_coordination(
                 epoch=coordination_epoch,
                 communication_tick=k,
                 capabilities=capabilities,
-                regions=tuple(
-                    _snapshot_plan(pending_responses[name]) for name in names
-                ),
+                regions=tuple(_snapshot_plan(pending_responses[name]) for name in names),
                 p_references_mw=z_p,
                 q_references_mvar=z_q,
                 previous_p_references_mw=z_p_previous,
@@ -368,10 +404,7 @@ def run_admm_coordination(
         dual = (
             float(
                 config.rho
-                * np.sqrt(
-                    np.sum((z_p - z_p_previous) ** 2)
-                    + np.sum((z_q - z_q_previous) ** 2)
-                )
+                * np.sqrt(np.sum((z_p - z_p_previous) ** 2) + np.sum((z_q - z_q_previous) ** 2))
             )
             if global_updated
             else 0.0
@@ -387,9 +420,7 @@ def run_admm_coordination(
         )
         eps_dual = float(
             np.sqrt(dimension) * config.absolute_tolerance
-            + config.relative_tolerance
-            * config.rho
-            * np.sqrt(np.sum(u_p**2) + np.sum(u_q**2))
+            + config.relative_tolerance * config.rho * np.sqrt(np.sum(u_p**2) + np.sum(u_q**2))
         )
         if global_updated:
             assert snapshot is not None
@@ -398,9 +429,7 @@ def run_admm_coordination(
             eps_primal = snapshot.residuals.primal_tolerance
             eps_dual = snapshot.residuals.dual_tolerance
         fully_fresh = global_updated
-        residuals_met = (
-            k >= config.min_iterations and primal <= eps_primal and dual <= eps_dual
-        )
+        residuals_met = k >= config.min_iterations and primal <= eps_primal and dual <= eps_dual
         if global_updated:
             if residuals_met and fully_fresh:
                 convergence_streak += 1
@@ -441,9 +470,7 @@ def run_admm_coordination(
                             fresh=name in fresh_regions,
                             outage=channel.region_outage_at(name, k),
                             fallback=name in fallback_regions,
-                            proposal_p_mw=tuple(
-                                float(v) for v in latest_schedules[name].p_grid_mw
-                            )
+                            proposal_p_mw=tuple(float(v) for v in latest_schedules[name].p_grid_mw)
                             if name in latest_proposal_sent
                             else None,
                             proposal_q_mvar=tuple(
@@ -461,11 +488,17 @@ def run_admm_coordination(
         )
         reached_quality = convergence_streak >= config.consecutive_convergence_iterations
         if config.quality_policy and (reached_quality or k == budgets[budget_index]):
-            quality_budgets.append(CoordinationBudgetEvidence(
-                iteration_budget=budgets[budget_index], completed_iterations=k,
-                converged=reached_quality, primal_residual=primal, dual_residual=dual,
-                primal_tolerance=eps_primal, dual_tolerance=eps_dual,
-            ))
+            quality_budgets.append(
+                CoordinationBudgetEvidence(
+                    iteration_budget=budgets[budget_index],
+                    completed_iterations=k,
+                    converged=reached_quality,
+                    primal_residual=primal,
+                    dual_residual=dual,
+                    primal_tolerance=eps_primal,
+                    dual_tolerance=eps_dual,
+                )
+            )
             if not reached_quality and budget_index < len(budgets) - 1:
                 # Continue the same iterates, duals, channel and convergence streak.
                 budget_index += 1
@@ -478,13 +511,12 @@ def run_admm_coordination(
     references_q = {name: z_q[m].copy() for m, name in enumerate(names)}
     if snapshot is not None:
         snapshot = replace(snapshot, converged=converged)
-        published_schedules = {
-            plan.name: _legacy_plan(plan) for plan in snapshot.regions
-        }
+        published_schedules = {plan.name: _legacy_plan(plan) for plan in snapshot.regions}
     else:
         published_schedules = latest_schedules
     channel.metrics.event_executions = channel.event_executions()
     return ADMMResult(
+        network_model=config.network_model,
         converged=converged,
         stop_reason=stop_reason,
         iterations=len(history),

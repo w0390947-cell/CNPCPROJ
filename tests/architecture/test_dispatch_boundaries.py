@@ -27,6 +27,7 @@ def forbidden_dependency(module: str) -> bool:
     } or (
         module.startswith("oilfield_energy.")
         and not module.startswith("oilfield_energy.modules.dispatch.")
+        and module not in {"oilfield_energy.kernel.enclosures", "oilfield_energy.kernel.intervals", "oilfield_energy.modules.control.contracts"}
     )
 
 
@@ -55,7 +56,7 @@ def test_legacy_consumers_only_use_dispatch_public_boundary():
 
 @pytest.mark.parametrize(
     "module",
-    ["pyscipopt", "cvxpy", "scipy.optimize", "pathlib", "oilfield_energy.model", "tests.support"],
+    ["pyscipopt", "cvxpy", "scipy.optimize", "pathlib", "oilfield_energy.model", "tests.support", "oilfield_energy.modules.control.api"],
 )
 def test_negative_boundary_examples(module):
     assert forbidden_dependency(module)

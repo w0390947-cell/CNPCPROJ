@@ -1,12 +1,6 @@
-"""Typed projection to the existing optimization input; no synthetic fallback.
+"""Project sealed study inputs into the shared numerical case contract."""
 
-The legacy OptimizationResult stores untyped dictionaries. Any is confined to
-this compatibility adapter and its sibling numerical runner, not new contracts.
-"""
-# pyright: reportUnknownMemberType=false, reportUnknownArgumentType=false, reportUnknownVariableType=false
-
-from datetime import datetime, timedelta
-from typing import Any, cast
+from datetime import timedelta
 
 import numpy as np
 
@@ -17,22 +11,10 @@ from oilfield_energy.data import (
     ProjectCase,
     Storage,
 )
-from oilfield_energy.model import OptimizationResult
 from oilfield_energy.modules.control.contracts import PlantInputs
-from oilfield_energy.modules.dispatch.api import (
-    adopt_first_steps,
-    slice_adopted_schedule,
-)
-from oilfield_energy.modules.dispatch.contracts import (
-    AdoptedOrigin,
-    AdoptedSchedule,
-    FirstStepDecision,
-    ResourceTrajectory,
-)
 from oilfield_energy.modules.resources.contracts import ResourceIdentity
 from oilfield_energy.modules.studies.contracts import StudySpec
 from oilfield_energy.network_model import NetworkModelV2
-from oilfield_energy.resource_control_contracts import ResourceSchedule
 
 
 def make_case(
@@ -138,46 +120,3 @@ def make_case(
         ModelAssumptions(dt_hours=0.25, pf_min=spec.pf_min, no_reverse_margin_mw=spec.pcc_min_mw),
         spec.pcc_max_mw,
     )
-
-
-def join_first_steps(
-    results: list[OptimizationResult], *, start: datetime, step_minutes: int = 15
-) -> AdoptedSchedule:
-    """Translate legacy numerical outputs; assembly rules belong to dispatch."""
-    if not results or any(not r.success for r in results):
-        raise ValueError("cannot assemble an incomplete rolling schedule")
-    decisions: list[FirstStepDecision] = []
-    for index, result in enumerate(results):
-        row = cast(dict[str, Any], result.microgrids["SC"])
-        schedules: tuple[ResourceSchedule, ...] = row["resource_schedules"]
-        decisions.append(
-            FirstStepDecision(
-                origin=AdoptedOrigin(
-                    interval_index=index,
-                    window_start_interval=index,
-                    window_end_interval=index + len(row["p_grid_mw"]),
-                ),
-                p_grid_mw=float(row["p_grid_mw"][0]),
-                q_grid_mvar=float(row["q_grid_mvar"][0]),
-                wind_available_mw=float(row["wind_available_mw"][0]),
-                resources=tuple(
-                    ResourceTrajectory.model_validate(
-                        dict(
-                            resource_id=r.resource_id,
-                            bus_id=r.bus_id,
-                            resource_type=r.resource_type.value,
-                            active_power_mw=(float(r.active_power_mw[0]),),
-                            reactive_power_mvar=(float(r.reactive_power_mvar[0]),),
-                        )
-                    )
-                    for r in schedules
-                ),
-            )
-        )
-    return adopt_first_steps(
-        tuple(decisions), microgrid_id="SC", start=start, step_minutes=step_minutes
-    )
-
-
-def slice_schedule(result: AdoptedSchedule, start: int, stop: int) -> AdoptedSchedule:
-    return slice_adopted_schedule(result, start, stop)

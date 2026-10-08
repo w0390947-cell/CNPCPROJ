@@ -20,8 +20,10 @@ from .modules.dispatch.contracts import (
     EconomicCost,
     RenewableAccounting,
 )
-from .modules.power_flow.contracts import ClusterValidation
-from .modules.studies.contracts import CommunicationEventExecution, CommunicationFaultWindow
+from .modules.studies.contracts import (
+    CommunicationEventExecution,
+    CommunicationFaultWindow,
+)
 
 
 @dataclass(frozen=True)
@@ -37,6 +39,26 @@ class ADMMConfig:
     local_ramp_regularization: float = 12.0
     solver: str = "CLARABEL"
     quality_policy: ComputationQualityPolicy | None = None
+    # Window-specific sufficient margin, Mvar, applied to both signed Q faces.
+    aggregate_pf_margin_mvar: tuple[float, ...] = ()
+    network_model: str = "aggregate-v1"
+
+    def __post_init__(self) -> None:
+        if self.network_model not in {"aggregate-v1", "branch-flow-socp-v1"}:
+            raise ValueError("unsupported coordination network model")
+        if (
+            isinstance(self.aggregate_pf_target, bool)
+            or not isfinite(self.aggregate_pf_target)
+            or not 0 < self.aggregate_pf_target <= 1
+        ):
+            raise ValueError("aggregate PF target must be in (0, 1]")
+        if not isinstance(self.aggregate_pf_margin_mvar, tuple) or any(
+            isinstance(v, bool) or not isfinite(v) or v < 0
+            for v in self.aggregate_pf_margin_mvar
+        ):
+            raise ValueError(
+                "aggregate PF margins must be immutable finite nonnegative Mvar"
+            )
 
 
 @dataclass(frozen=True)
@@ -76,7 +98,10 @@ class TimeScaleConfig:
             or self.device_step_minutes <= 0
         ):
             raise ValueError("device_step_minutes must be a positive integer")
-        for value in (self.device_time_constant_minutes, self.pv_device_time_constant_minutes):
+        for value in (
+            self.device_time_constant_minutes,
+            self.pv_device_time_constant_minutes,
+        ):
             if isinstance(value, bool) or not isfinite(value) or value <= 0:
                 raise ValueError("device time constants must be finite and positive")
         for value in (
@@ -85,14 +110,19 @@ class TimeScaleConfig:
         ):
             if isinstance(value, bool) or not isfinite(value) or value < 0:
                 raise ValueError("device ramps must be finite and nonnegative")
-        if not isfinite(self.hard_release_hysteresis_mw) or self.hard_release_hysteresis_mw < 0.0:
+        if (
+            not isfinite(self.hard_release_hysteresis_mw)
+            or self.hard_release_hysteresis_mw < 0.0
+        ):
             raise ValueError("hard_release_hysteresis_mw must be nonnegative")
         if (
             isinstance(self.hard_release_confirmation_cycles, bool)
             or not isinstance(self.hard_release_confirmation_cycles, Integral)
             or self.hard_release_confirmation_cycles <= 0
         ):
-            raise ValueError("hard_release_confirmation_cycles must be a positive integer")
+            raise ValueError(
+                "hard_release_confirmation_cycles must be a positive integer"
+            )
 
 
 class GroupControlState(str, Enum):
@@ -190,7 +220,8 @@ class GroupControlConfig:
             "planning_pv_forecast_std_ratio": self.planning_pv_forecast_std_ratio,
         }
         non_real = [
-            name for name, value in real_values.items()
+            name
+            for name, value in real_values.items()
             if isinstance(value, bool) or not isinstance(value, Real)
         ]
         if non_real:
@@ -198,11 +229,12 @@ class GroupControlConfig:
                 f"group-control parameters must be real numbers: {', '.join(non_real)}"
             )
         non_finite = [
-            name for name, value in real_values.items()
-            if not isfinite(float(value))
+            name for name, value in real_values.items() if not isfinite(float(value))
         ]
         if non_finite:
-            raise ValueError(f"group-control parameters must be finite: {', '.join(non_finite)}")
+            raise ValueError(
+                f"group-control parameters must be finite: {', '.join(non_finite)}"
+            )
 
         positive_values = {
             "load_change_denominator_floor_ratio": self.load_change_denominator_floor_ratio,
@@ -231,7 +263,9 @@ class GroupControlConfig:
         if self.planning_pv_forecast_std_ratio < 0.0:
             raise ValueError("planning_pv_forecast_std_ratio must be nonnegative")
         if self.minimum_risk_buffer_ratio > self.maximum_risk_buffer_ratio:
-            raise ValueError("minimum_risk_buffer_ratio cannot exceed maximum_risk_buffer_ratio")
+            raise ValueError(
+                "minimum_risk_buffer_ratio cannot exceed maximum_risk_buffer_ratio"
+            )
         if self.minimum_restore_buffer_ratio > self.maximum_restore_buffer_ratio:
             raise ValueError(
                 "minimum_restore_buffer_ratio cannot exceed maximum_restore_buffer_ratio"
@@ -263,7 +297,8 @@ class GroupControlConfig:
             "planning_scenario_count": self.planning_scenario_count,
         }
         non_integers = [
-            name for name, value in integer_values.items()
+            name
+            for name, value in integer_values.items()
             if isinstance(value, bool) or not isinstance(value, Integral)
         ]
         if non_integers:
@@ -271,16 +306,22 @@ class GroupControlConfig:
                 f"group-control interval and count parameters must be integers: "
                 f"{', '.join(non_integers)}"
             )
-        non_positive_integers = [name for name, value in integer_values.items() if value <= 0]
+        non_positive_integers = [
+            name for name, value in integer_values.items() if value <= 0
+        ]
         if non_positive_integers:
             raise ValueError(
                 f"group-control interval and count parameters must be positive: "
                 f"{', '.join(non_positive_integers)}"
             )
         if self.feature_interval_minutes % self.decision_interval_minutes != 0:
-            raise ValueError("decision_interval_minutes must divide feature_interval_minutes")
+            raise ValueError(
+                "decision_interval_minutes must divide feature_interval_minutes"
+            )
         if self.recovery_pause_minutes % self.decision_interval_minutes != 0:
-            raise ValueError("decision_interval_minutes must divide recovery_pause_minutes")
+            raise ValueError(
+                "decision_interval_minutes must divide recovery_pause_minutes"
+            )
         if self.risk_probability_horizon_minutes % self.decision_interval_minutes != 0:
             raise ValueError(
                 "decision_interval_minutes must divide risk_probability_horizon_minutes"
@@ -292,9 +333,13 @@ class GroupControlConfig:
         ):
             raise ValueError("planning_random_seed must be a nonnegative integer")
         if self.consecutive_trigger_count > self.observation_window_size:
-            raise ValueError("consecutive_trigger_count cannot exceed observation_window_size")
+            raise ValueError(
+                "consecutive_trigger_count cannot exceed observation_window_size"
+            )
         if self.observation_trigger_count > self.observation_window_size:
-            raise ValueError("observation_trigger_count cannot exceed observation_window_size")
+            raise ValueError(
+                "observation_trigger_count cannot exceed observation_window_size"
+            )
 
 
 @dataclass(frozen=True)
@@ -452,7 +497,9 @@ class PVStationControlInput:
             "is_controllable": self.is_controllable,
         }
         invalid_booleans = [
-            name for name, value in boolean_values.items() if not isinstance(value, bool)
+            name
+            for name, value in boolean_values.items()
+            if not isinstance(value, bool)
         ]
         if invalid_booleans:
             raise ValueError(
@@ -565,6 +612,20 @@ class ADMMResult:
     coordination_snapshot: CoordinationSnapshot | None = None
     capabilities: DispatchCapabilities = field(default_factory=DispatchCapabilities)
     quality_budgets: tuple[CoordinationBudgetEvidence, ...] = ()
+    network_model: str = "aggregate-v1"
+
+
+@dataclass
+class PhysicalCoordinationReference:
+    """PCC references from certified joint restoration; no ADMM convergence claim."""
+
+    p_references_mw: Dict[str, np.ndarray]
+    q_references_mvar: Dict[str, np.ndarray]
+    history: tuple[ADMMIteration, ...] = ()
+    quality_budgets: tuple[CoordinationBudgetEvidence, ...] = ()
+
+
+ClusterReference = ADMMResult | PhysicalCoordinationReference
 
 
 @dataclass
@@ -586,13 +647,17 @@ class DeviceTrackingResult:
     network_security_passed: bool = False
     network_invalid_steps: int = 0
     network_violation_steps: int = 0
-    network_recovery_blocked: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=bool))
+    network_recovery_blocked: np.ndarray = field(
+        default_factory=lambda: np.empty(0, dtype=bool)
+    )
     wind_command_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
     wind_available_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
     wind_actual_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
     execution_evidence_version: str | None = None
     wind_resource_actual_mw: Dict[str, np.ndarray] = field(default_factory=dict)
-    wind_availability_limited_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
+    wind_availability_limited_mw: np.ndarray = field(
+        default_factory=lambda: np.empty(0)
+    )
     pv_availability_limited_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
     group_restoration_evidence: tuple[RestorationEvidence, ...] = ()
     pv_plan_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
@@ -609,7 +674,9 @@ class DeviceTrackingResult:
     reactive_resource_actual_mvar: Dict[str, np.ndarray] = field(default_factory=dict)
     wind_reactive_actual_mvar: np.ndarray = field(default_factory=lambda: np.empty(0))
     pv_reactive_actual_mvar: np.ndarray = field(default_factory=lambda: np.empty(0))
-    storage_reactive_actual_mvar: np.ndarray = field(default_factory=lambda: np.empty(0))
+    storage_reactive_actual_mvar: np.ndarray = field(
+        default_factory=lambda: np.empty(0)
+    )
     svg_reactive_actual_mvar: np.ndarray = field(default_factory=lambda: np.empty(0))
     reactive_dispatch_unserved_mvar: np.ndarray = field(
         default_factory=lambda: np.empty(0)
@@ -620,25 +687,29 @@ class DeviceTrackingResult:
     reactive_execution_known: np.ndarray = field(
         default_factory=lambda: np.empty(0, dtype=bool)
     )
-    hard_wind_storage_target_mw: np.ndarray = field(
-        default_factory=lambda: np.empty(0)
-    )
-    hard_safety_unserved_mw: np.ndarray = field(
-        default_factory=lambda: np.empty(0)
-    )
+    hard_wind_storage_target_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
+    hard_safety_unserved_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
     hard_wind_storage_command_accepted: np.ndarray = field(
         default_factory=lambda: np.empty(0, dtype=bool)
     )
-    group_control_state: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=str))
-    group_control_action: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=str))
-    group_control_reason: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=str))
+    group_control_state: np.ndarray = field(
+        default_factory=lambda: np.empty(0, dtype=str)
+    )
+    group_control_action: np.ndarray = field(
+        default_factory=lambda: np.empty(0, dtype=str)
+    )
+    group_control_reason: np.ndarray = field(
+        default_factory=lambda: np.empty(0, dtype=str)
+    )
     group_risk_limit_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
     group_safety_threshold_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
     group_restore_threshold_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
     group_current_net_load_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
     group_load_change_rate: np.ndarray = field(default_factory=lambda: np.empty(0))
     group_pv_penetration: np.ndarray = field(default_factory=lambda: np.empty(0))
-    group_reverse_flow_probability: np.ndarray = field(default_factory=lambda: np.empty(0))
+    group_reverse_flow_probability: np.ndarray = field(
+        default_factory=lambda: np.empty(0)
+    )
     group_observed_reverse_flow_probability: np.ndarray = field(
         default_factory=lambda: np.empty(0)
     )
@@ -646,12 +717,24 @@ class DeviceTrackingResult:
         default_factory=lambda: np.empty(0, dtype=bool)
     )
     group_risk_index: np.ndarray = field(default_factory=lambda: np.empty(0))
-    group_required_curtailment_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
-    group_requested_curtailment_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
-    group_unserved_curtailment_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
-    group_requested_restoration_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
-    group_achieved_restoration_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
-    group_remaining_curtailment_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
+    group_required_curtailment_mw: np.ndarray = field(
+        default_factory=lambda: np.empty(0)
+    )
+    group_requested_curtailment_mw: np.ndarray = field(
+        default_factory=lambda: np.empty(0)
+    )
+    group_unserved_curtailment_mw: np.ndarray = field(
+        default_factory=lambda: np.empty(0)
+    )
+    group_requested_restoration_mw: np.ndarray = field(
+        default_factory=lambda: np.empty(0)
+    )
+    group_achieved_restoration_mw: np.ndarray = field(
+        default_factory=lambda: np.empty(0)
+    )
+    group_remaining_curtailment_mw: np.ndarray = field(
+        default_factory=lambda: np.empty(0)
+    )
     group_recovery_dwell_remaining_minutes: np.ndarray = field(
         default_factory=lambda: np.empty(0)
     )
@@ -663,7 +746,9 @@ class DeviceTrackingResult:
     )
     measured_pv_curtailment_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
     pcc_before_local_safety_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
-    local_reverse_flow_reduction_mw: np.ndarray = field(default_factory=lambda: np.empty(0))
+    local_reverse_flow_reduction_mw: np.ndarray = field(
+        default_factory=lambda: np.empty(0)
+    )
     group_hard_override_active: np.ndarray = field(
         default_factory=lambda: np.empty(0, dtype=bool)
     )
@@ -682,21 +767,3 @@ class DeviceTrackingResult:
     group_recovery_aborts: int = 0
     local_reverse_flow_interventions: int = 0
     local_power_factor_interventions: int = 0
-
-
-@dataclass
-class HierarchicalResult:
-    admm: ADMMResult
-    centralized_reference: object
-    local_milp_results: Dict[str, object]
-    intraday_milp_results: Dict[str, object]
-    tracking: Dict[str, DeviceTrackingResult]
-    comparison: Dict[str, float | bool]
-    centralized_ac_consistency: object | None = None
-    local_ac_consistency: Dict[str, object] = field(default_factory=dict)
-    intraday_ac_consistency: Dict[str, object] = field(default_factory=dict)
-    network_formulation: str = "MISOCP Branch Flow"
-    legacy_centralized_reference: object | None = None
-    day_ahead_security: Dict[str, PlanningSecurityTrajectory] = field(default_factory=dict)
-    intraday_security: Dict[str, PlanningSecurityTrajectory] = field(default_factory=dict)
-    cluster_validation: ClusterValidation | None = None

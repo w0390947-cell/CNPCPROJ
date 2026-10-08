@@ -13,7 +13,12 @@ from typing import Mapping
 from .actuation_arbiter import ActuationArbiter
 from .control_contracts import CapIntentAction, SignalValidity, StationCapIntent
 from .network_model import NetworkModelV2, assess_network_model
-from .network_scenarios import NetworkSecurityLimits, PointFlowResult, ScenarioStatus, evaluate_operating_point
+from .network_scenarios import (
+    NetworkSecurityLimits,
+    PointFlowResult,
+    ScenarioStatus,
+    evaluate_operating_point,
+)
 from .power_flow_comparison import (
     FixedStateSnapshot,
     build_operating_point,
@@ -26,6 +31,9 @@ class MinuteNetworkConfig:
     max_age_seconds: float = 60.0
     require_field_approval: bool = False
     safe_confirmation_cycles: int = 2
+    # Legacy fixed-state callers may still inspect partially declared inputs.
+    # Candidate-adoption callers must enable this explicit evidence requirement.
+    require_device_capabilities: bool = False
 
     def __post_init__(self):
         if isinstance(self.max_age_seconds, bool) or not isfinite(self.max_age_seconds) or self.max_age_seconds < 0:
@@ -34,6 +42,8 @@ class MinuteNetworkConfig:
             raise ValueError("at least two distinct safe cycles are required")
         if type(self.require_field_approval) is not bool:
             raise ValueError("require_field_approval must be boolean")
+        if type(self.require_device_capabilities) is not bool:
+            raise ValueError("require_device_capabilities must be boolean")
 
 
 @dataclass(frozen=True)
@@ -95,6 +105,14 @@ class MinuteNetworkEvaluator:
             return failed("invalid_input", "NETWORK_MODEL_MISSING")
         if {d.resource_id: d.bus_id for d in snapshot.devices} != self.device_buses:
             return failed("invalid_input", "NETWORK_DEVICE_MAPPING_MISMATCH")
+        if self.config.require_device_capabilities:
+            missing = tuple(
+                f"DEVICE_CAPABILITY_MISSING:{d.resource_id}"
+                for d in snapshot.devices
+                if not d.capability_complete
+            )
+            if missing:
+                return failed("invalid_input", *missing)
         readiness = assess_network_model(self.network, operating_mode_id,
                                          require_field_approval=self.config.require_field_approval)
         if not readiness.structurally_valid:

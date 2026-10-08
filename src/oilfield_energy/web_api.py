@@ -125,6 +125,11 @@ def get_simulation_result(simulation_id: str, job_manager: Jobs) -> SimulationRe
         ) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="结果不符合当前契约；历史单微电网结果请通过归档环境读取",
+        ) from exc
 
 
 @router.websocket("/api/simulations/{simulation_id}/stream")

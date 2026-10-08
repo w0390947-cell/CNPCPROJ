@@ -17,14 +17,44 @@ import ts from 'typescript';
 
 const frontend = fileURLToPath(new URL('../../', import.meta.url));
 const require = createRequire(import.meta.url);
+// JSON export normalizes IEEE negative zero; compare transport semantics.
 const first = JSON.parse(
-  fs.readFileSync(
-    new URL('../fixtures/synthetic-single-result.json', import.meta.url),
-    'utf8',
+  JSON.stringify(
+    JSON.parse(
+      fs.readFileSync(
+        new URL('../fixtures/synthetic-single-result.json', import.meta.url),
+        'utf8',
+      ),
+    ),
   ),
 );
 const second = structuredClone(first);
 second.metadata.generated_at = '2026-09-19T00:00:00+00:00';
+
+test('single execution separates retained target feedback from failed economic planning', async () => {
+  const result = structuredClone(first);
+  const u = result.single_execution.unified;
+  u.target_admissions[1].origin = 'retained';
+  u.economic_proposals[1].command = null;
+  u.economic_proposals[1].result.status = 'violated';
+  for (const row of u.steps.slice(15)) row.disposition = 'retained_feedback';
+  const app = await mountDashboard({ hydrate: true, result });
+  try {
+    const panel = app.document.querySelector('[aria-label="单微电网执行反馈"]');
+    assert.ok(panel);
+    assert.match(panel.textContent, /原目标续接认证 1 个/);
+    assert.match(panel.textContent, /原目标反馈续接 15 次/);
+    assert.match(panel.textContent, /其中 1 次未取得可执行方案/);
+    assert.match(panel.textContent, /原目标续接不计作经济规划成功/);
+    const sources = [...panel.querySelectorAll('details table tbody tr')].map(
+      (row) => row.children[1].textContent,
+    );
+    assert.deepEqual(sources, ['内部规划', '原目标续接']);
+    assert.deepEqual((await app.exported()).body, result);
+  } finally {
+    await app.close();
+  }
+});
 const idA = 'a'.repeat(32),
   idB = 'b'.repeat(32);
 
@@ -390,6 +420,8 @@ async function mountDashboard({
             return load('features/active-power-chart/index.ts');
           if (name === '@/features/simulation-progress')
             return load('features/simulation-progress/index.ts');
+          if (name === '@/features/single-execution')
+            return load('features/single-execution/index.ts');
           if (name.endsWith('.module.css'))
             return {
               default: new Proxy({}, { get: (_target, key) => key }),
@@ -567,7 +599,7 @@ for (const outcome of ['cancelled', 'failed', 'succeeded']) {
       await app.click('.run-button');
       assert.equal(
         app.document.querySelector('.single-wind b').textContent,
-        `P：${first.timeseries[0].wind_used_mw.toFixed(2)} MW / Q：— Mvar`,
+        `P：${first.timeseries[0].wind_used_mw.toFixed(2)} MW / Q：${first.timeseries[0].wind_q_mvar.toFixed(2)} Mvar`,
       );
       assert.deepEqual(await app.exported(), {
         filename: `oilfield-single_microgrid-${idA}.json`,
@@ -1116,7 +1148,7 @@ for (const view of ['overview', 'cluster_coordination']) {
       assert.equal(app.document.querySelector('#steps-select'), null);
       assert.match(
         app.document.querySelector('.result-origin').textContent,
-        new RegExp(`全天 ${result.metadata.steps} 个时段`),
+        new RegExp(`全天 ${result.metadata.steps} 个基础优化时段`),
       );
       assert.equal(app.requests.length, 0);
       assert.deepEqual((await app.exported()).body, result);

@@ -98,7 +98,6 @@ def test_real_service_preserves_reference_cost_when_regional_targets_are_infeasi
         result = original(*args, **kwargs)
         captured["result"] = result
         captured["case"] = args[0]
-        captured["loss"] = kwargs["loss_calibration"]
         return result
 
     with (
@@ -130,13 +129,23 @@ def test_real_service_preserves_reference_cost_when_regional_targets_are_infeasi
         available += sum(
             np.minimum(v, mg.pv_capacity_mw[b]) for b, v in mg.pv_available_mw.items()
         )
+        # Network coordination prices solved physical losses, independently
+        # reconstructed here from PCC conservation rather than calibration.
+        losses = (
+            schedule.p_grid_mw
+            + schedule.renewable_used_mw
+            + schedule.storage_discharge_mw
+            - schedule.storage_charge_mw
+            - sum(mg.load_p_mw.values())
+        )
+        assert np.min(losses) >= -1e-6
         expected += a.dt_hours * (
             np.dot(case.price_cny_per_mwh, schedule.p_grid_mw)
             + np.sum(np.maximum(0, available - schedule.renewable_used_mw))
             * a.curtailment_cost_cny_per_mwh
             + np.sum(schedule.storage_charge_mw + schedule.storage_discharge_mw)
             * a.storage_degradation_cny_per_mwh
-            + np.sum(captured["loss"][mg.name]["p_loss_mw"]) * a.loss_value_cny_per_mwh
+            + np.sum(losses) * a.loss_value_cny_per_mwh
         )
     assert assessment.reference.economic_cost_cny == pytest.approx(expected, abs=0.002)
     assert abs(assessment.surrogate_objective_cny - expected) > 100

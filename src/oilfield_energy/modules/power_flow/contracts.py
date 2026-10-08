@@ -4,6 +4,11 @@ from dataclasses import dataclass
 from math import isfinite
 from typing import Literal
 
+from .contracts_envelope import (
+    ACBoxCertificate as ACBoxCertificate, EnvelopeBranch as EnvelopeBranch,
+    PowerInterval as PowerInterval, RadialEnvelope as RadialEnvelope,
+)
+
 AssessmentStatus = Literal["passed", "violated", "unknown", "not_computed"]
 ClusterStage = Literal["centralized_reference", "admm_reference", "day_ahead", "intraday", "minute"]
 
@@ -96,3 +101,51 @@ class ClusterValidation:
     execution_status: AssessmentStatus
     stages: tuple[ClusterImportAssessment, ...]
     version: Literal["cluster-validation-v1"] = "cluster-validation-v1"
+
+
+@dataclass(frozen=True)
+class ClusterPowerFactorPolicy:
+    """Per-slot positive-import plan target, not a contractual time average."""
+
+    target: float
+    numerical_tolerance: float = 1e-9  # Dimensionless PF comparison tolerance.
+    version: Literal["cluster-plan-power-factor-v1"] = "cluster-plan-power-factor-v1"
+
+    def __post_init__(self) -> None:
+        if isinstance(self.target, bool) or not isfinite(self.target) or not 0 < self.target <= 1:
+            raise ValueError("power factor target must be in (0, 1]")
+        if (
+            isinstance(self.numerical_tolerance, bool)
+            or not isfinite(self.numerical_tolerance)
+            or not 0 <= self.numerical_tolerance < self.target
+            or self.version != "cluster-plan-power-factor-v1"
+        ):
+            raise ValueError("invalid power factor numerical policy")
+
+
+@dataclass(frozen=True)
+class RegionalPCCPower:
+    name: str
+    time_minutes: tuple[float, ...]
+    p_mw: tuple[float, ...]
+    q_mvar: tuple[float, ...]  # Signed PCC import; sum before taking magnitude.
+    valid: tuple[bool, ...]
+
+
+@dataclass(frozen=True)
+class ClusterPowerFactorPoint:
+    time_minutes: float
+    p_mw: float
+    q_mvar: float
+    power_factor: float | None
+    status: AssessmentStatus
+    reason: str
+
+
+@dataclass(frozen=True)
+class ClusterPowerFactorAssessment:
+    stage: ClusterStage
+    policy: ClusterPowerFactorPolicy
+    status: AssessmentStatus
+    points: tuple[ClusterPowerFactorPoint, ...]
+    reason: str

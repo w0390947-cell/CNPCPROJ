@@ -11,8 +11,27 @@ from oilfield_energy.service import SimulationRequest, SimulationResult, run_sim
     [("SC", 8, True), ("SC", 96, True), ("YA_B", 24, False), ("YA_C", 24, True)],
 )
 def test_single_quality_uses_backend_budgets_and_preserves_sufficient_budget_results(
-    region, steps, storage
+    monkeypatch, region, steps, storage
 ):
+    # This test compares full-resolution reference solve budgets. Continuous
+    # execution is exercised by the real single-entry tests and full-day replay
+    # tool; running eight additional full days adds no budget-policy coverage.
+    import oilfield_energy.service as service
+    from oilfield_energy.workflows.single_execution.contracts import SingleExecution
+
+    def planning_only(case, reference, region, **kwargs):
+        return SingleExecution(
+            version="single-execution-v9",
+            region=region,
+            status="not_computed",
+            reason="quality-policy test: execution assessed separately",
+            storage_enabled=kwargs["storage_enabled"],
+            policy=kwargs["policy"],
+            input_basis="reference quality test",
+            total_minutes=1440,
+        )
+
+    monkeypatch.setattr(service, "run_single_execution", planning_only)
     request = SimulationRequest(
         region=region,
         steps=steps,
@@ -31,7 +50,13 @@ def test_single_quality_uses_backend_budgets_and_preserves_sufficient_budget_res
             }
         )
     )
-    assert managed.executive_summary.overall_passed
+    assert managed.single_execution is not None
+    assert managed.executive_summary.overall_passed == all(
+        c.passed for c in managed.validation_items
+    )
+    assert all(c.passed for c in managed.validation_items if not c.code.startswith("SINGLE_"))
+    assert managed.single_execution.policy.computation_quality is not None
+    assert managed.single_execution.status == "not_computed"
     assert managed.cluster_execution is None
     quality = managed.computation_quality
     assert quality is not None and not quality.reference_coordination
@@ -47,10 +72,10 @@ def test_single_quality_uses_backend_budgets_and_preserves_sufficient_budget_res
     )
     old = manual.model_dump(mode="json")
     old.pop("computation_quality")
+    old.pop("single_execution")
     old["request"]["solver"].pop("quality_policy")
-    restored = SimulationResult.model_validate(old)
-    assert restored.computation_quality is None
-    assert restored.request.solver.quality_policy is None
+    with pytest.raises(ValueError, match="current unified execution evidence"):
+        SimulationResult.model_validate(old)
 
 
 def test_feasible_single_result_with_insufficient_quality_is_preserved_but_not_passed(
@@ -88,6 +113,4 @@ def test_feasible_single_result_with_insufficient_quality_is_preserved_but_not_p
 @pytest.mark.parametrize("scenario", ["communication_fault", "group_control"])
 def test_other_research_scenarios_cannot_silently_enable_this_policy(scenario):
     with pytest.raises(ValueError, match="quality-first"):
-        SimulationRequest(
-            scenario_type=scenario, solver={"quality_policy": "quality-first-v1"}
-        )
+        SimulationRequest(scenario_type=scenario, solver={"quality_policy": "quality-first-v1"})

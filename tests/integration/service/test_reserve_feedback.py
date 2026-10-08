@@ -1,85 +1,89 @@
-"""Exercise actual short-window coordination and prospective command adoption."""
+"""V6 feedback uses actual execution and the full product, never a legacy flag."""
 
 from dataclasses import replace
 
-import numpy as np
 import pytest
 
 from oilfield_energy.bootstrap.adapters import cluster_rolling
-from oilfield_energy.bootstrap.adapters.project_dataset import build_synthetic_case
-from oilfield_energy.service import SimulationRequest, SimulationResult, run_simulation
+from oilfield_energy.bootstrap.adapters.cluster_execution import execution_inputs
+from oilfield_energy.bootstrap.adapters.cluster_safety import ClusterSafetyPort
+from oilfield_energy.modules.control.contracts import DynamicTrackingPolicy
+from oilfield_energy.modules.dispatch.contracts import (
+    StorageReservePolicy,
+    ReserveDeliveryPolicy,
+)
+from oilfield_energy.workflows.cluster_execution.contracts import (
+    ExecutionPolicy,
+    ClusterSafetyPolicy,
+)
+from tests.support.reserve_case import stationary_reserve_case
 
 
-@pytest.mark.parametrize("rejected", [False, True])
-def test_minute_feedback_replans_only_unexecuted_targets_and_preserves_failure(
-    monkeypatch, rejected
-):
-    case = build_synthetic_case(4)
+def port(energy=2.0):
+    case = stationary_reserve_case()
     case = replace(
         case,
-        time_hours=np.arange(4) / 4,
-        assumptions=replace(case.assumptions, dt_hours=0.25),
+        microgrids=[
+            replace(m, storage=replace(m.storage, e_initial_mwh=energy))
+            for m in case.microgrids
+        ],
     )
-    observed = cluster_rolling.observe_storage_reserve
-    coordinate = cluster_rolling.run_admm_coordination
-    horizons = []
-
-    def trigger(**kwargs):
-        row = observed(**kwargs)
-        # Force a single feedback event; reserve arithmetic is tested separately.
-        return row.model_copy(
-            update={"deficient": row.minute == 7 and row.region == "SC"}
-        )
-
-    def replan(window, *args, **kwargs):
-        if window.assumptions.dt_hours == 1 / 60:
-            horizons.append(tuple(window.time_hours * 60))
-            if rejected:
-                raise RuntimeError("injected minute reserve infeasibility")
-        return coordinate(window, *args, **kwargs)
-
-    monkeypatch.setattr(cluster_rolling, "observe_storage_reserve", trigger)
-    monkeypatch.setattr(cluster_rolling, "run_admm_coordination", replan)
-    result = run_simulation(
-        SimulationRequest(scenario_type="cluster_coordination", steps=4),
-        input_case=case,
+    _, plants, _ = execution_inputs(case, packaged=False, events=[])
+    policy = ExecutionPolicy(
+        cluster_safety=ClusterSafetyPolicy(),
+        dynamic_tracking=DynamicTrackingPolicy(),
+        storage_reserve=StorageReservePolicy(),
+        reserve_delivery=ReserveDeliveryPolicy(),
     )
-    execution = result.cluster_execution
-    assert execution is not None
-    assert horizons == [tuple(range(7, 15))]
-    assert len(execution.reserve_target_adjustments) == 1
-    change = execution.reserve_target_adjustments[0]
-    assert change.minute == 7 and change.trigger_regions == ("SC",)
-    assert change.update.adopted is not rejected
-    assert len(change.original_p_mw["SC"]) == 8
-    first = execution.rolling_updates[0]
-    for region in execution.stages[2].regions:
-        np.testing.assert_allclose(
-            region.p_target_mw[:7], first.adopted_p_mw[region.region], atol=1e-10
+    return ClusterSafetyPort(case, policy, True, plants)
+
+
+@pytest.mark.parametrize("energy", [0.5, 2.0])
+def test_actual_feedback_preserves_original_deadlines_without_legacy_observation(
+    monkeypatch, energy
+):
+    def forbidden(**kwargs):
+        raise AssertionError("legacy constant-power observer is not v6 admission")
+
+    monkeypatch.setattr(cluster_rolling, "observe_storage_reserve", forbidden)
+    p = port(energy)
+    for _ in range(20):
+        p.advance("economic optimizer unavailable")
+    assert all(c.minute == 20 for c in p.checkpoints().values())
+    assert all(
+        c.status == "certified"
+        for c in p.controller.observations
+        if c.start_minute >= 15
+    )
+    if energy == 0.5:
+        assert p.controller.task_history
+        assert all(t.deadline_minute == 15 for t in p.controller.task_history)
+        assert all(
+            t.status == "recovered" and t.completed_minute <= 15
+            for t in p.controller.tasks.values()
         )
-        if rejected:
-            assert len(region.p_mw) == 7
-            assert not first.actual_end_energy_mwh
-            assert "injected minute" in first.reason
-        else:
-            assert len(region.p_mw) == 60
-            np.testing.assert_array_equal(
-                region.p_target_mw[7:15], change.adopted_p_mw[region.region]
-            )
-            assert all(
-                check.status == "passed"
-                for check in change.update.regional_checks[region.region]
-            )
-    if not rejected:
-        assert (
-            max(
-                sum(values[t] for values in change.adopted_p_mw.values())
-                for t in range(8)
-            )
-            <= case.cluster_import_limit_mw + 1e-6
-        )
-        assert all(row.actual_end_energy_mwh for row in execution.rolling_updates)
+    evidence = p.minute_evidence(p.domain.regions[0].region, 20)
+    assert not evidence.p_target_mw  # No manufactured zero-error economic target.
     assert (
-        SimulationResult.model_validate_json(result.model_dump_json()).cluster_execution
-        == execution
+        next(c for c in evidence.checks if c.code == "CLUSTER_INTERVAL_SAFETY").status
+        == "passed"
     )
+    assert (
+        next(c for c in evidence.checks if c.code == "ECONOMIC_TRACKING").status
+        == "unknown"
+    )
+
+
+def test_explicit_calls_use_the_same_formal_port_and_actual_state():
+    p = port()
+    event = p.controller.accept_reserve_event()
+    for minute in range(event.end_minute):
+        p.advance(
+            reserve_requests=tuple(r.required_reserve_mw for r in p.domain.regions)
+        )
+    assert len(p.controller.steps) == 16
+    assert all(s.source == "reserve" for s in p.controller.steps)
+    assert len(p.outputs[p.domain.regions[0].region]) == 16
+    assert not p.controller.reserve_call_ready
+    with pytest.raises(ValueError, match="locked"):
+        p.controller.accept_reserve_event()

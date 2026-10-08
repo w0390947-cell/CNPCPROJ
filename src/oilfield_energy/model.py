@@ -21,7 +21,11 @@ from scipy.optimize import Bounds, LinearConstraint, milp
 from scipy.sparse import coo_matrix
 
 from .data import MicrogridData, ProjectCase, renewable_active_power_limits
-from .modules.dispatch.api import account_renewable, evaluate_economics
+from .modules.dispatch.api import (
+    account_renewable,
+    evaluate_economics,
+    storage_reachability_rows,
+)
 from .modules.dispatch.contracts import ACCOUNTING_VERSION, CostRates, PCCTrackingLimits
 from .network_model import validate_legacy_network_alignment
 from .resource_control_contracts import (
@@ -162,6 +166,8 @@ def solve_case(
     time_limit_seconds: float = 180.0,
 ) -> OptimizationResult:
     """建立并求解单微网或多微网协同模型。"""
+    if case.joint_pq_plans:
+        raise ValueError("joint single P/Q planning requires the MISOCP backend")
     selected = _selected_microgrids(case, microgrid_names)
     if not selected:
         raise ValueError("at least one microgrid is required")
@@ -476,6 +482,16 @@ def solve_case(
                 },
                 lb=0.0, ub=0.0, name=f"{mg.name}.energy_balance[{t}]",
             )
+
+        reachability = case.storage_reachability.get(mg.name) if storage_enabled else None
+        if reachability is not None:
+            for i, row in enumerate(storage_reachability_rows(reachability)):
+                t = row.time_index
+                terms = {r["p_dis"][t]: row.coefficient, r["p_ch"][t]: -row.coefficient}
+                if row.previous_coefficient:
+                    terms[r["p_dis"][t - 1]] = row.previous_coefficient
+                    terms[r["p_ch"][t - 1]] = -row.previous_coefficient
+                model.constraint(terms, ub=row.upper, name=f"{mg.name}.storage_reachability[{i}]")
 
         for i, row in enumerate(case.reactive_plans.get(mg.name, ())):
             t = row.time_index

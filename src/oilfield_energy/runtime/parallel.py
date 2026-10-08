@@ -29,7 +29,7 @@ def _initialize_worker() -> None:
 
 
 def _execute_isolated(function: Callable[[Input], Output], value: Input) -> Output:
-    from threadpoolctl import threadpool_limits
+    from threadpoolctl import threadpool_limits  # pyright: ignore[reportMissingTypeStubs]
 
     # Unpickling the callable has now imported its numerical backend. Limiting
     # pools in the initializer could run before NumPy/SCIP have been imported.

@@ -11,7 +11,13 @@ from typing import TYPE_CHECKING, Dict, List
 
 import numpy as np
 
-from .modules.dispatch.contracts import ReactivePlanningRow, StorageReservePlan
+from .modules.dispatch.contracts import (
+    PQPlanningInput,
+    ReactivePlanningRow,
+    StorageReachabilityInput,
+    StorageReservePlan,
+    StorageWindowTarget,
+)
 from .modules.resources.contracts import (
     ResourceIdentity,
     ResourceKind,
@@ -206,15 +212,67 @@ class ProjectCase:
     # Planning-only margins; the executor retains the physical Storage envelope.
     storage_reserves: dict[str, StorageReservePlan] = field(default_factory=dict)
     reactive_plans: dict[str, tuple[ReactivePlanningRow, ...]] = field(default_factory=dict)
+    storage_reachability: dict[str, StorageReachabilityInput] = field(default_factory=dict)
+    storage_window_targets: dict[str, StorageWindowTarget] = field(default_factory=dict)
+    joint_pq_plans: dict[str, PQPlanningInput] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        grids = {mg.name: mg for mg in self.microgrids}
+        if set(self.joint_pq_plans) - set(grids):
+            raise ValueError("joint P/Q plan contains an unknown region")
+        for name, item in self.joint_pq_plans.items():
+            if (
+                item.planning_steps != len(self.time_hours)
+                or item.planning_minutes != self.assumptions.dt_hours * 60
+                or not np.allclose(
+                    self.time_hours,
+                    self.time_hours[0]
+                    + np.arange(item.planning_steps) * self.assumptions.dt_hours,
+                    rtol=0,
+                    atol=1e-10,
+                )
+                or self.reactive_plans.get(name)
+                or item.initial.energy_mwh != grids[name].storage.e_initial_mwh
+            ):
+                raise ValueError(
+                    "joint P/Q input must bind the exact window and replace fixed-P rows"
+                )
+        if set(self.storage_window_targets) - set(grids):
+            raise ValueError("storage window target contains an unknown region")
+        if set(self.storage_reachability) - set(grids):
+            raise ValueError("storage reachability contains an unknown region")
+        for name, item in self.storage_reachability.items():
+            mg = grids[name]
+            st = mg.storage
+            if (
+                item.steps != len(self.time_hours)
+                or item.start_minute != float(self.time_hours[0] * 60)
+                or item.planning_minutes != self.assumptions.dt_hours * 60
+                or not np.allclose(
+                    self.time_hours,
+                    self.time_hours[0] + np.arange(item.steps) * self.assumptions.dt_hours,
+                    rtol=0,
+                    atol=1e-10,
+                )
+                or item.resource_id != mg.resource_id("storage", st.bus)
+                or item.maximum_power_mw != st.p_max_mw
+                or item.initial_energy_mwh != st.e_initial_mwh
+                or item.minimum_energy_mwh != st.e_min_mwh
+                or item.maximum_energy_mwh != st.e_max_mwh
+                or item.terminal_energy_mwh != st.terminal_energy_mwh
+                or item.terminal_tolerance_mwh != self.assumptions.terminal_energy_tolerance_mwh
+                or item.eta_charge != st.eta_charge
+                or item.eta_discharge != st.eta_discharge
+            ):
+                raise ValueError("storage reachability must bind the exact planning window")
         if set(self.storage_reserves) - {mg.name for mg in self.microgrids} or any(
-            len(plan.up_mw) != len(self.time_hours)
-            for plan in self.storage_reserves.values()
+            len(plan.up_mw) != len(self.time_hours) for plan in self.storage_reserves.values()
         ):
             raise ValueError("storage reserves must match case regions and time axis")
         if set(self.reactive_plans) - {mg.name for mg in self.microgrids} or any(
-            row.time_index >= len(self.time_hours) for rows in self.reactive_plans.values() for row in rows
+            row.time_index >= len(self.time_hours)
+            for rows in self.reactive_plans.values()
+            for row in rows
         ):
             raise ValueError("reactive planning rows must match case regions and time axis")
 

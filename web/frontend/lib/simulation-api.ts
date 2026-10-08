@@ -3,6 +3,7 @@ import type { ComputationQualityReport } from '../shared/api/generated/computati
 import type { JobStatus } from '../shared/api/generated/job-status';
 export type { JobState, JobStatus } from '../shared/api/generated/job-status';
 import type { ClusterExecution } from '../shared/api/generated/cluster-execution';
+import type { SingleExecution } from '../shared/api/generated/single-execution';
 import type {
   ClusterValidation,
   CoordinationSnapshot,
@@ -27,6 +28,7 @@ export type SimulationResult = {
   cluster_validation?: ClusterValidation | null;
   coordination_snapshot?: CoordinationSnapshot | null;
   cluster_execution?: ClusterExecution | null;
+  single_execution?: SingleExecution | null;
   metadata: {
     dataset_id?: string | null;
     dataset_revision?: string | null;

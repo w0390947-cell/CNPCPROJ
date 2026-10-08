@@ -1,6 +1,7 @@
 """ProjectCase projection for the public planning reserve contract."""
 
 from dataclasses import replace
+from collections.abc import Mapping
 
 import numpy as np
 
@@ -9,15 +10,30 @@ from oilfield_energy.modules.dispatch.api import plan_storage_reserve
 from oilfield_energy.modules.dispatch.contracts import (
     StorageReservePlan,
     StorageReservePolicy,
+    ReserveRecoveryTask,
 )
 
 
 def with_storage_reserves(
-    case: ProjectCase, policy: StorageReservePolicy, remaining_day_minutes: int
+    case: ProjectCase,
+    policy: StorageReservePolicy,
+    remaining_day_minutes: int,
+    *,
+    start_minute: int = 0,
+    tasks: Mapping[tuple[str, str], ReserveRecoveryTask] | None = None,
+    full_support: bool = False,
+    delivery_alpha: float | None = None,
+    delivery_ramp_mw: float | None = None,
+    delivery_headroom_factor: float = 1.0,
 ) -> ProjectCase:
     reserves: dict[str, StorageReservePlan] = {}
     microgrids: list[MicrogridData] = []
     for mg in case.microgrids:
+        debts = [
+            t
+            for t in (tasks or {}).values()
+            if t.region == mg.name and t.status != "recovered"
+        ]
         st = mg.storage
         scale = sum(
             (
@@ -38,6 +54,16 @@ def with_storage_reserves(
             eta_charge=st.eta_charge,
             eta_discharge=st.eta_discharge,
             policy=policy,
+            recovery_remaining_minutes=max(
+                0, min((t.deadline_minute - start_minute for t in debts), default=0)
+            )
+            if tasks is not None
+            else None,
+            full_support=full_support,
+            required_floor_mw=max((t.required_mw for t in debts), default=0.0),
+            delivery_alpha=delivery_alpha,
+            delivery_ramp_mw=delivery_ramp_mw,
+            delivery_headroom_factor=delivery_headroom_factor,
         )
         reserves[mg.name] = reserve
         # The day-ahead endpoint is a reference, not permission to consume reserve.

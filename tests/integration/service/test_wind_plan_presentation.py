@@ -6,9 +6,12 @@ import pytest
 from oilfield_energy import service
 
 
-@pytest.mark.parametrize("formulation", ["legacy_milp", "misocp"])
 @pytest.mark.parametrize("region", ["SC", "YA_B"])
-def test_service_exposes_selected_regions_optimized_wind_q(monkeypatch, formulation, region):
+def test_service_exposes_selected_regions_optimized_wind_q(monkeypatch, region):
+    from oilfield_energy.bootstrap.adapters.cluster_rolling import window_case
+    case = service.build_synthetic_case(96)
+    energies = {m.name: m.storage.e_initial_mwh for m in case.microgrids}
+    case = window_case(case, 0, 4, energies, energies)
     original_solve = service._solve
     solved = []
 
@@ -23,9 +26,10 @@ def test_service_exposes_selected_regions_optimized_wind_q(monkeypatch, formulat
             {
                 "region": region,
                 "steps": 4,
-                "solver": {"formulation": formulation},
+                "solver": {"formulation": "misocp"},
             }
-        )
+        ),
+        input_case=case,
     )
     optimized = solved[-1].microgrids[region]
     actual = [p.wind_q_mvar for p in result.timeseries]

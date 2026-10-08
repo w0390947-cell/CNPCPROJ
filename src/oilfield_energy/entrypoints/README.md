@@ -1,6 +1,6 @@
 # 命令入口
 
-`shancheng_simulation.main()` 对应 `oilfield-sim generate/run`，只解析配方/清单/输出路径并调用装配根。退出码 0 表示研究的预期检查通过，2 表示输入、执行或检查失败；模拟来源与完整运行步骤见 [山城模拟指南](../../../docs/guides/Shancheng_Complete_Simulation.md)。
+`study_inputs.main()` 对应 `oilfield-study-inputs --output ...`，只解析配方/输出路径并调用装配根。退出码 0 表示数据已生成，2 表示输入输出失败；不运行算法或判定安全。历史执行入口已归档，见 [ADR 0048](../../../docs/architecture/decisions/0048-single-retirement.md)。
 
 维护负责人：项目技术负责人；替代评审：现场数据接入维护负责人。
 

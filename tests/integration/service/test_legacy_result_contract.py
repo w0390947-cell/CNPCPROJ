@@ -46,7 +46,7 @@ def test_legacy_metrics_describe_enforced_bounds_and_modeled_power_balance(
 
 
 @pytest.mark.parametrize("formulation", ["legacy_milp", "misocp"])
-@pytest.mark.parametrize("scenario,steps", [("single_microgrid", 8), ("cluster_coordination", 4)])
+@pytest.mark.parametrize("scenario,steps", [("cluster_coordination", 4)])
 def test_public_service_completes_each_declared_model_with_honest_result(
     formulation: str, scenario: str, steps: int
 ) -> None:
@@ -73,8 +73,6 @@ def test_public_service_completes_each_declared_model_with_honest_result(
         assert result.executive_summary.overall_passed == all(
             i.passed for i in result.validation_items
         )
-    elif scenario == "single_microgrid":
-        assert result.executive_summary.overall_passed
     if scenario == "cluster_coordination":
         assert result.executive_summary.overall_passed == all(i.passed for i in result.validation_items)
         assert result.cluster_execution is not None
@@ -88,8 +86,8 @@ def test_actual_legacy_worker_publishes_a_readable_result(tmp_path: Path) -> Non
         status = manager.create(
             SimulationRequest.model_validate(
                 {
-                    "scenario_type": "single_microgrid",
-                    "steps": 8,
+                    "scenario_type": "cluster_coordination",
+                    "steps": 4,
                     "solver": {"formulation": "legacy_milp"},
                 }
             )

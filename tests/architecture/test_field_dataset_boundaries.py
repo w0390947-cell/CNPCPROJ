@@ -15,7 +15,9 @@ except ModuleNotFoundError:
 
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = ROOT / "src/oilfield_energy"
-REGISTRY = tomllib.loads((ROOT / "docs/architecture/modules.toml").read_text(encoding="utf-8"))
+REGISTRY = tomllib.loads(
+    (ROOT / "docs/architecture/modules.toml").read_text(encoding="utf-8")
+)
 PREFIX = "oilfield_energy."
 
 
@@ -36,6 +38,10 @@ def violation(source, target):
         return True
     if not target.startswith(PREFIX):
         return False
+    if source.startswith(PREFIX + "kernel."):
+        return not target.startswith(PREFIX + "kernel.")
+    if target in {PREFIX + "kernel.enclosures", PREFIX + "kernel.intervals"}:
+        return False
     if source.startswith(PREFIX + "runtime."):
         return not target.startswith(PREFIX + "runtime.")
     for item in REGISTRY["modules"]:
@@ -43,26 +49,39 @@ def violation(source, target):
         if source.startswith(own):
             if not target.startswith(own):
                 allowed = {
-                    PREFIX + "modules." + name + ".contracts" for name in item["allow_contracts"]
+                    PREFIX + "modules." + name + ".contracts"
+                    for name in item["allow_contracts"]
                 }
                 if source[len(own) :].startswith(("api", "application")):
-                    allowed |= {PREFIX + "modules." + name + ".api" for name in item["allow_apis"]}
+                    allowed |= {
+                        PREFIX + "modules." + name + ".api"
+                        for name in item["allow_apis"]
+                    }
                 return target not in allowed
             source_part, target_part = source[len(own) :], target[len(own) :]
-            if source_part == "contracts":
-                return target_part != "contracts"
-            if source_part.startswith("domain") and target_part not in {"contracts", "domain"}:
+            if source_part == "contracts" or source_part.startswith("contracts_"):
+                return target_part != "contracts" and not target_part.startswith(
+                    "contracts_"
+                )
+            if source_part.startswith("domain") and target_part not in {
+                "contracts",
+                "domain",
+            }:
                 return not target_part.startswith("domain.")
-            return source_part.startswith(("application", "api")) and target_part.startswith(
-                "adapters."
-            )
+            return source_part.startswith(
+                ("application", "api")
+            ) and target_part.startswith("adapters.")
     for item in REGISTRY["components"]:
         if "/workflows/" not in item["path"]:
             continue
         workflow = item["path"].removeprefix("src/").replace("/", ".") + "."
         if source.startswith(workflow):
-            allowed = {PREFIX + "modules." + name for name in item.get("allow_public", [])}
-            allowed |= {PREFIX + "workflows." + name for name in item.get("allow_workflows", [])}
+            allowed = {
+                PREFIX + "modules." + name for name in item.get("allow_public", [])
+            }
+            allowed |= {
+                PREFIX + "workflows." + name for name in item.get("allow_workflows", [])
+            }
             return not (target.startswith(workflow) or target in allowed)
     if source.startswith(PREFIX + "entrypoints."):
         return not (
@@ -70,10 +89,18 @@ def violation(source, target):
             or target == PREFIX + "workflows.field_dataset.contracts"
         )
     if source.startswith(PREFIX + "bootstrap."):
-        if target.startswith((PREFIX + "modules.", PREFIX + "workflows.", PREFIX + "bootstrap.", PREFIX + "runtime.")):
+        if target.startswith(
+            (
+                PREFIX + "modules.",
+                PREFIX + "workflows.",
+                PREFIX + "bootstrap.",
+                PREFIX + "runtime.",
+            )
+        ):
             return False
         return not any(
-            source == bridge["path"].removeprefix("src/").removesuffix(".py").replace("/", ".")
+            source
+            == bridge["path"].removeprefix("src/").removesuffix(".py").replace("/", ".")
             and target in bridge["imports"]
             for bridge in REGISTRY["legacy_bridges"]
         )
@@ -81,24 +108,39 @@ def violation(source, target):
 
 
 def sources():
-    for area in ("modules", "workflows", "bootstrap", "entrypoints", "runtime"):
+    for area in (
+        "kernel",
+        "modules",
+        "workflows",
+        "bootstrap",
+        "entrypoints",
+        "runtime",
+    ):
         for path in (PACKAGE / area).rglob("*.py"):
             yield (
                 path,
-                PREFIX + path.relative_to(PACKAGE).with_suffix("").as_posix().replace("/", "."),
+                PREFIX
+                + path.relative_to(PACKAGE)
+                .with_suffix("")
+                .as_posix()
+                .replace("/", "."),
             )
 
 
 def test_registered_paths_owners_and_public_modules():
     modules = REGISTRY["modules"]
     assert {
-        p.name for p in (PACKAGE / "modules").iterdir() if p.is_dir() and p.name != "__pycache__"
+        p.name
+        for p in (PACKAGE / "modules").iterdir()
+        if p.is_dir() and p.name != "__pycache__"
     } == {item["name"] for item in modules}
     for item in modules + REGISTRY["components"]:
         path = ROOT / item["path"]
         assert path.is_dir() and item["owners"] and item["reviewers"]
         assert (path / "README.md").is_file()
-        extension = {"python": ".py", "typescript": ".ts"}[item.get("language", "python")]
+        extension = {"python": ".py", "typescript": ".ts"}[
+            item.get("language", "python")
+        ]
         for public in item.get("public_modules", []):
             assert (path / (public + extension)).is_file()
 
@@ -108,7 +150,9 @@ def test_dependency_graph_and_no_dynamic_bypass():
     for path, name in sources():
         text = path.read_text(encoding="utf-8")
         dependencies = set(imports(text, name))
-        assert not [(name, target) for target in dependencies if violation(name, target)]
+        assert not [
+            (name, target) for target in dependencies if violation(name, target)
+        ]
         for node in ast.walk(ast.parse(text)):
             if isinstance(node, ast.Call):
                 called = ast.unparse(node.func)
@@ -148,8 +192,15 @@ def test_checker_positive_and_negative_examples():
     assert violation(module + "api", workflow + "api")
     assert violation(workflow + "api", PREFIX + "model")
     assert violation(module + "domain", "tests.helpers")
-    assert violation(PREFIX + "runtime.periodic", PREFIX + "modules.demo_simulation.api")
+    assert violation(
+        PREFIX + "runtime.periodic", PREFIX + "modules.demo_simulation.api"
+    )
     assert not violation(PREFIX + "bootstrap.demo", PREFIX + "runtime.periodic")
+    assert not violation(module + "domain", PREFIX + "kernel.enclosures")
+    assert violation(PREFIX + "kernel.enclosures", module + "contracts")
+    assert violation(
+        PREFIX + "modules.control.contracts_tube", PREFIX + "modules.control.api"
+    )
 
 
 def test_contract_import_does_not_load_solvers_or_open_files(tmp_path):
@@ -166,7 +217,11 @@ print(DatasetManifest.__name__)
     env = dict(os.environ)
     env.pop("PYTHONPATH", None)
     process = subprocess.run(
-        [sys.executable, "-c", script], cwd=tmp_path, env=env, capture_output=True, text=True
+        [sys.executable, "-c", script],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
     )
     assert process.returncode == 0, process.stderr
 
@@ -185,10 +240,14 @@ def test_legacy_root_exports_remain_resolvable():
 
 def test_generated_schemas_match_authoritative_types():
     from oilfield_energy.modules.measurements.contracts import DatasetManifest
-    from oilfield_energy.workflows.field_dataset.adapters.document_assembly import DocumentEnvelope
+    from oilfield_energy.workflows.field_dataset.adapters.document_assembly import (
+        DocumentEnvelope,
+    )
 
     for name, model in (("manifest", DatasetManifest), ("document", DocumentEnvelope)):
         schema = json.loads(
-            (ROOT / f"contracts/field_dataset/{name}.schema.json").read_text(encoding="utf-8")
+            (ROOT / f"contracts/field_dataset/{name}.schema.json").read_text(
+                encoding="utf-8"
+            )
         )
         assert schema == model.model_json_schema()

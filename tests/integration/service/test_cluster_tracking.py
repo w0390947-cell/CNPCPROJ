@@ -1,15 +1,14 @@
 """The automated executor never adopts an otherwise valid out-of-band plan."""
 
-from dataclasses import replace
 from unittest.mock import patch
 
 import numpy as np
 import pytest
 
 from oilfield_energy.bootstrap.adapters import cluster_execution as engines
-from oilfield_energy.bootstrap.adapters.project_dataset import build_synthetic_case
 from oilfield_energy.service import SimulationRequest, run_simulation
 from oilfield_energy.workflows.cluster_execution.contracts import ExecutionPolicy
+from tests.support.reserve_case import stationary_reserve_case
 
 
 @pytest.mark.parametrize("code", ["P_TRACKING", "Q_TRACKING"])
@@ -22,7 +21,7 @@ def test_failed_tracking_in_second_window_stops_adoption_and_preserves_prefix(co
         count += 1
         results = original(self, *args, **kwargs)
         region, plan = results["SC"]
-        if count == 2:
+        if count >= 2:
             assert plan is not None and region.status == "passed"
             region = region.model_copy(
                 update={
@@ -38,28 +37,27 @@ def test_failed_tracking_in_second_window_stops_adoption_and_preserves_prefix(co
             results["SC"] = region, plan
         return results
 
-    case = build_synthetic_case(4)
-    case = replace(
-        case,
-        time_hours=np.arange(4) / 4,
-        assumptions=replace(case.assumptions, dt_hours=0.25),
-    )
+    case = stationary_reserve_case()
     with patch.object(engines.ExecutionEngines, "solve_windows", solve_windows):
         result = run_simulation(
             SimulationRequest(scenario_type="cluster_coordination", steps=4),
             input_case=case,
         )
     execution = result.cluster_execution
-    assert len(execution.rolling_updates) == 2
+    assert len(execution.rolling_updates) == 4
     assert execution.rolling_updates[0].adopted
     rejected = execution.rolling_updates[1]
-    assert not rejected.adopted and rejected.status == "violated"
+    # A failed bounded recovery may end unresolved; the injected tracking
+    # rejection and the unexecuted suffix must still remain visible.
+    assert not rejected.adopted and rejected.status != "passed"
     failed = next(c for c in rejected.regional_checks["SC"] if c.code == code)
     assert failed.status == "violated" and failed.actual == 0.08
+    assert all(u.continuation_available for u in execution.rolling_updates)
+    assert any(s.source != "economic" for s in execution.safety.steps if s.minute >= 15)
     for region in execution.stages[2].regions:
-        assert len(region.p_mw) == 15 and region.time_minutes[-1] == 14
+        assert len(region.p_mw) == 60 and region.time_minutes[-1] == 59
         assert (
-            region.storage_energy_mwh[-1] == rejected.initial_energy_mwh[region.region]
+            region.storage_energy_mwh[14] == rejected.initial_energy_mwh[region.region]
         )
 
 

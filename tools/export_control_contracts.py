@@ -8,6 +8,7 @@ from pydantic import TypeAdapter
 
 from oilfield_energy.modules.control.contracts import (
     MinuteExecutionRecord,
+    ReactiveDynamicsRecord,
     StorageDynamicsTrajectory,
 )
 
@@ -17,6 +18,7 @@ def main() -> None:
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     schemas = {
+        "reactive_dynamics": TypeAdapter(ReactiveDynamicsRecord).json_schema(),
         "minute_execution": TypeAdapter(dict[str, MinuteExecutionRecord]).json_schema(),
         "storage_dynamics": TypeAdapter(dict[str, StorageDynamicsTrajectory]).json_schema(
             mode="serialization"

@@ -305,6 +305,8 @@ def validate_ac_dispatch(
                 ):
                     renewable_violations.append(f"{kind}:{bus}:availability_exceeded_or_invalid")
         local = {
+            "pcc_p_mw": pcc_p.tolist(),
+            "pcc_q_mvar": pcc_q.tolist(),
             "all_converged": bool(np.all(converged)),
             "no_reverse": bool(np.min(pcc_p) >= -1e-6),
             "planning_security_floor_compliant": bool(np.min(security_headroom) >= -1e-6),

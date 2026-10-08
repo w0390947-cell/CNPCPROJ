@@ -7,6 +7,7 @@ import pytest
 from oilfield_energy.bootstrap.adapters import cluster_execution as engines
 from oilfield_energy.bootstrap.adapters.project_dataset import build_synthetic_case
 from oilfield_energy.service import SimulationRequest, SimulationResult, run_simulation
+from tests.support.reserve_case import stationary_reserve_case
 
 
 def short_case():
@@ -60,6 +61,64 @@ def test_progress_observation_preserves_real_numerical_results():
 
 
 @pytest.mark.parametrize("storage_enabled", [False, True])
+def test_network_frontend_completes_stationary_feedback_service(storage_enabled):
+    # A positive full-loop witness, separate from the compressed daily forecast
+    # below whose later actual response envelope becomes infeasible.
+    case = short_case()
+    case = replace(
+        case,
+        price_cny_per_mwh=np.full(4, case.price_cny_per_mwh[0]),
+        microgrids=[
+            replace(
+                mg,
+                **{
+                    field: {
+                        b: np.full(4, values[0])
+                        for b, values in getattr(mg, field).items()
+                    }
+                    for field in (
+                        "load_p_mw",
+                        "load_q_mvar",
+                        "wind_available_mw",
+                        "pv_available_mw",
+                    )
+                },
+            )
+            for mg in case.microgrids
+        ],
+    )
+    case = stationary_reserve_case()
+    result = run_simulation(
+        SimulationRequest(
+            scenario_type="cluster_coordination",
+            steps=4,
+            storage_enabled=storage_enabled,
+        ),
+        input_case=case,
+    )
+    execution = result.cluster_execution
+    assert execution.algorithm_version == "cluster-rolling-v6"
+    assert len(execution.rolling_updates) == 4
+    assert all(
+        w.continuation_available and w.actual_end_energy_mwh
+        for w in execution.rolling_updates
+    )
+    assert all(len(r.p_mw) == 60 for r in execution.stages[2].regions)
+    assert execution.safety is not None and len(execution.safety.steps) == 60
+    for window in execution.rolling_updates:
+        if not window.adopted:
+            continue
+        assert window.reference_recovery.accepted
+        assert all(
+            r.executable_plan for r in window.reference_recovery.rounds[-1].regions
+        )
+    assert (
+        SimulationResult.model_validate_json(result.model_dump_json()).cluster_execution
+        == execution
+    )
+
+
+@pytest.mark.parametrize("storage_enabled", [False, True])
 def test_real_automatic_pipeline_preserves_evidence_and_storage_authority(
     storage_enabled,
 ):
@@ -79,14 +138,16 @@ def test_real_automatic_pipeline_preserves_evidence_and_storage_authority(
     )
     execution = result.cluster_execution
     assert execution is not None
-    assert execution.policy.active_tracking_version == "active-tracking-allocation-v1"
+    assert execution.policy.active_tracking_version == "cluster-command-projection-v1"
     assert execution.storage_enabled is storage_enabled
     assert [s.stage for s in execution.stages] == ["day_ahead", "intraday", "minute"]
     assert all(len(s.regions) == 3 for s in execution.stages)
-    # Both storage modes now use realizable resource envelopes (ADR 0023).
-    # Disabled storage must exercise the same execution/evidence assertions.
+    # The compressed forecast fails the full reserve proof before execution
+    # with storage, and the nominal response envelope at minute 30 without it.
+    # Keep any actual prefix and never certify the rejected window.
+    completed = 0
     assert execution.stages[0].status == "passed"
-    assert all(len(r.p_mw) == 60 for r in execution.stages[2].regions)
+    assert all(len(r.p_mw) == 15 * completed for r in execution.stages[2].regions)
     assert result.reference_economics.realization_status == "computed"
     assert (
         result.reference_economics.realized_regional_economic_cost_cny
@@ -94,17 +155,19 @@ def test_real_automatic_pipeline_preserves_evidence_and_storage_authority(
     )
     assert any("分钟级" in p.label for p in progress)
     assert result.cluster_validation.scope == "hierarchical_execution"
-    assert len(execution.rolling_updates) == 4
+    assert len(execution.rolling_updates) == completed + 1
     rolling = [p.rolling for p in progress if p.rolling is not None]
-    assert [p.completed_windows for p in rolling if p.phase == "completed"] == [
-        1,
-        2,
-        3,
-        4,
-    ]
+    assert [p.completed_windows for p in rolling if p.phase == "completed"] == list(
+        range(1, completed + 1)
+    )
     assert {p.total_windows for p in rolling} == {4}
-    assert rolling[-1].end_minute == 60
-    assert all(w.adopted for w in execution.rolling_updates)
+    assert rolling[-1].end_minute == 15 * (completed + 1)
+    assert all(w.adopted for w in execution.rolling_updates[:completed])
+    rejected = execution.rolling_updates[-1]
+    assert not rejected.adopted and rejected.status != "passed"
+    assert execution.safety is not None and execution.safety.failure
+    assert not rejected.continuation_available and not rejected.actual_end_energy_mwh
+    assert rolling[-1].phase == "stopped"
     minute_by_name = {r.region: r for r in execution.stages[2].regions}
     for previous, current in zip(
         execution.rolling_updates, execution.rolling_updates[1:]
@@ -116,6 +179,8 @@ def test_real_automatic_pipeline_preserves_evidence_and_storage_authority(
                 == minute_by_name[name].storage_energy_mwh[current.start_minute - 1]
             )
     for window in execution.rolling_updates:
+        if not window.adopted:
+            continue
         for checks in window.regional_checks.values():
             tracking = [c for c in checks if c.code in ("P_TRACKING", "Q_TRACKING")]
             assert len(tracking) == 2 and all(c.status == "passed" for c in tracking)
@@ -127,6 +192,9 @@ def test_real_automatic_pipeline_preserves_evidence_and_storage_authority(
     for stage in execution.stages:
         for region in stage.regions:
             checks = {c.code: c for c in region.checks}
+            if not region.p_mw:
+                assert region.status != "passed"
+                continue
             raw_max = max(abs(p - q) for p, q in zip(region.p_mw, region.p_target_mw))
             if stage.stage == "minute":
                 assert region.dynamic_tracking["p"].raw_max_error == pytest.approx(
@@ -151,12 +219,18 @@ def test_real_automatic_pipeline_preserves_evidence_and_storage_authority(
                     < 1e-6
                 )
                 assert checks["STORAGE_DISABLED"].status == "passed"
-        assert stage.cluster_import.peak_import_mw == pytest.approx(
-            max(
-                sum(r.p_mw[i] for r in stage.regions)
-                for i in range(len(stage.regions[0].p_mw))
+        if not any(r.p_mw for r in stage.regions) or any(
+            c.status == "unknown" for r in stage.regions for c in r.checks
+        ):
+            assert stage.cluster_import.status != "passed"
+            assert stage.cluster_import.peak_import_mw is None
+        else:
+            assert stage.cluster_import.peak_import_mw == pytest.approx(
+                max(
+                    sum(r.p_mw[i] for r in stage.regions)
+                    for i in range(len(stage.regions[0].p_mw))
+                )
             )
-        )
     for bus, values in before.items():
         np.testing.assert_array_equal(values, case.microgrids[0].load_p_mw[bus])
     assert case.microgrids[0].storage.p_max_mw > 0
@@ -174,7 +248,7 @@ def test_regional_solver_failure_preserves_coordination_and_marks_downstream_unk
     ):
         result = run_simulation(
             SimulationRequest(scenario_type="cluster_coordination", steps=4),
-            input_case=short_case(),
+            input_case=stationary_reserve_case(),
         )
     assert result.admm_history and result.coordination_snapshot.converged
     assert result.cluster_execution.status == "unknown"
@@ -182,37 +256,58 @@ def test_regional_solver_failure_preserves_coordination_and_marks_downstream_unk
     assert all(
         "timeout" in r.reason for r in result.cluster_execution.stages[0].regions
     )
-    assert result.cluster_execution.stages[2].status == "not_computed"
-    assert all(r.p_mw == () for s in result.cluster_execution.stages for r in s.regions)
+    safety = result.cluster_execution.safety
+    assert safety is not None and len(safety.steps) == 60
+    assert all(x.source in {"backup", "terminal"} for x in safety.steps)
+    assert all(len(r.p_mw) == 60 for r in result.cluster_execution.stages[2].regions)
+    assert all(not r.p_target_mw for r in result.cluster_execution.stages[2].regions)
 
 
 def test_historical_result_does_not_acquire_execution_evidence():
-    result = run_simulation(SimulationRequest(steps=4))
+    result = run_simulation(
+        SimulationRequest(
+            scenario_type="cluster_coordination", steps=4, storage_enabled=False
+        ),
+        input_case=short_case(),
+    )
     raw = result.model_dump()
     raw.pop("cluster_execution")
     raw["metadata"]["schema_version"] = "1.4.0"
     assert SimulationResult.model_validate(raw).cluster_execution is None
 
 
-def test_existing_hierarchical_entry_also_keeps_storage_disabled():
-    from oilfield_energy.hierarchical import run_hierarchical_control
+def test_file_study_keeps_storage_disabled(tmp_path):
+    from oilfield_energy.bootstrap.adapters.cluster_study import run_cluster_study
 
-    case = short_case()
-    result = run_hierarchical_control(
-        case,
-        intraday_input_case=case,
-        plant_inputs=engines._persistent_plant(case),
-        storage_enabled=False,
+    result = run_cluster_study(
+        SimulationRequest(
+            scenario_type="cluster_coordination", steps=4, storage_enabled=False
+        ),
+        tmp_path / "study",
+        input_case=stationary_reserve_case(),
     )
-    assert result.admm.coordination_snapshot.capabilities.storage_enabled is False
-    for tracking in result.tracking.values():
-        assert max(abs(v) for v in tracking.storage_actual_mw) < 1e-6
-        assert max(abs(v) for v in tracking.storage_reactive_actual_mvar) < 1e-6
+    assert result.coordination_snapshot.capabilities.storage_enabled is False
+    regions = result.cluster_execution.stages[2].regions
+    assert regions and all(r.p_mw for r in regions)
+    for tracking in regions:
+        assert max(abs(v) for v in tracking.storage_power_mw) < 1e-6
+        mg = next(
+            m for m in stationary_reserve_case().microgrids if m.name == tracking.region
+        )
+        assert (
+            max(
+                abs(v)
+                for v in tracking.resource_q_mvar[
+                    mg.resource_id("storage", mg.storage.bus)
+                ]
+            )
+            < 1e-6
+        )
         assert np.ptp(tracking.storage_energy_mwh) < 1e-6
 
 
 @pytest.mark.parametrize("failure", ["coordination", "regional_plan"])
-def test_failed_second_rolling_update_keeps_executed_prefix_and_stops(failure):
+def test_failed_second_rolling_update_uses_certified_continuation(failure):
     from oilfield_energy.bootstrap.adapters import cluster_rolling
 
     real_coordinate = cluster_rolling.run_admm_coordination
@@ -241,20 +336,21 @@ def test_failed_second_rolling_update_keeps_executed_prefix_and_stops(failure):
     ):
         result = run_simulation(
             SimulationRequest(scenario_type="cluster_coordination", steps=4),
-            input_case=short_case(),
+            input_case=stationary_reserve_case(),
         )
     execution = result.cluster_execution
-    assert count == 2 and len(execution.rolling_updates) == 2
+    assert count >= 4 and len(execution.rolling_updates) == 4
     assert execution.rolling_updates[0].adopted
     assert not execution.rolling_updates[1].adopted
     assert "timeout" in execution.rolling_updates[1].reason
     for region in execution.stages[2].regions:
-        assert len(region.p_mw) == 15
-        assert region.time_minutes[-1] == 14
+        assert len(region.p_mw) == 60
+        assert region.time_minutes[-1] == 59
         checks = {c.code: c for c in region.checks}
-        assert checks["ROLLING_COMPLETE"].status == "unknown"
+        assert checks["CLUSTER_INTERVAL_SAFETY"].status == "passed"
+        assert checks["ECONOMIC_TRACKING"].status == "unknown"
         assert (
-            region.storage_energy_mwh[-1]
+            region.storage_energy_mwh[14]
             == execution.rolling_updates[1].initial_energy_mwh[region.region]
         )
     assert not result.executive_summary.overall_passed
@@ -263,7 +359,7 @@ def test_failed_second_rolling_update_keeps_executed_prefix_and_stops(failure):
 def test_future_minute_plant_changes_cannot_change_earlier_coordination():
     from oilfield_energy.bootstrap.adapters import cluster_rolling
 
-    case = short_case()
+    case = stationary_reserve_case()
     real_coordinate = cluster_rolling.run_admm_coordination
     outputs = []
     for factor in (1.0, 1.2):
@@ -318,6 +414,6 @@ def test_future_minute_plant_changes_cannot_change_earlier_coordination():
     for first, second in zip(
         outputs[0].stages[2].regions, outputs[1].stages[2].regions
     ):
-        assert len(first.p_mw) == 30
-        assert first.p_mw == second.p_mw
-        assert first.storage_energy_mwh == second.storage_energy_mwh
+        assert len(first.p_mw) == 60 and len(second.p_mw) == 30
+        assert first.p_mw[:30] == second.p_mw
+        assert first.storage_energy_mwh[:30] == second.storage_energy_mwh

@@ -55,9 +55,13 @@ class DemoJobs:
     def result(self, job_id: str) -> dict[str, JsonValue]:
         from oilfield_energy.service import SimulationResult
 
-        return SimulationResult.model_validate_json(self.manager.read_result(job_id)).model_dump(
-            mode="json"
-        )
+        try:
+            result = SimulationResult.model_validate_json(self.manager.read_result(job_id))
+        except ValueError as exc:
+            raise RuntimeError(
+                "Result does not match the current contract; read historical single results in the archive"
+            ) from exc
+        return result.model_dump(mode="json")
 
     def tick(self) -> None:
         self.manager.tick()

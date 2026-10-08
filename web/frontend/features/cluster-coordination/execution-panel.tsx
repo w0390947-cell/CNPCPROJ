@@ -50,9 +50,35 @@ export function ExecutionEvidence({
 }: {
   execution: ClusterExecution;
 }) {
+  const restorations = [
+    ...execution.stages.filter((s) => s.stage === 'day_ahead').flatMap((s) =>
+      (s.regions ?? []).flatMap((r) => r.ac_recovery ? [{ scope: `日前 ${r.region}`, evidence: r.ac_recovery }] : [])),
+    ...(execution.rolling_updates ?? []).flatMap((w) => Object.entries(w.ac_recovery ?? {}).map(
+      ([region, evidence]) => ({ scope: `第 ${w.start_minute} 分钟 ${region}`, evidence }))),
+  ];
   return (
     <div className={styles.execution} aria-label="自动执行校核">
       <strong>自动执行校核 · 模拟运行</strong>
+      {!!restorations.length && (
+        <details className={styles.details}>
+          <summary>AC 可行性恢复（{restorations.length} 条）</summary>
+          <p>恢复保留原硬约束。物理可行性与经济最优性分别评价；实际采用仍须通过集群联合及连续安全认证。</p>
+          {restorations.map(({ scope, evidence }) => (
+            <p key={scope}>{scope}：{evidence.outcome !== 'certified' ? '未取得认证恢复计划'
+              : evidence.original_optimality === 'proven' ? '恢复计划通过，原目标达到规定精度'
+              : '可行恢复计划通过；原经济目标最优性未证明'}。</p>
+          ))}
+        </details>
+      )}
+      {execution.safety && (
+        <details className={styles.details}>
+          <summary>连续安全与认证后备（{execution.safety.steps?.length ?? 0} 个已执行区间）</summary>
+          <p>同时检查区域不倒送、电压、支路容量、设备与电量边界，以及集群受电上限和功率因数。每个获采用动作保留一条认证后续控制路径。</p>
+          <p>经济动作 {execution.safety.steps?.filter((s) => s.source === 'economic').length ?? 0} 个；后备或终端动作 {execution.safety.steps?.filter((s) => s.source === 'backup' || s.source === 'terminal').length ?? 0} 个。后备可以偏离经济目标，安全结论与经济跟踪分开记录。</p>
+          <p>{execution.safety.domain.policy.source} 保证还要求输入始终位于记录的范围内，且末个声明包络持续有效。</p>
+          {execution.safety.failure && <p>未获证明或停止原因：{execution.safety.failure}</p>}
+        </details>
+      )}
       <ol>
         {execution.stages.map((stage) => (
           <li key={stage.stage} data-status={stage.status}>
@@ -165,6 +191,8 @@ export function ExecutionEvidence({
                     <td>
                       {row.adopted === true
                         ? '已采用'
+                        : row.continuation_available
+                          ? '采用认证后备'
                         : row.adopted === false
                           ? '未采用'
                           : '未记录'}

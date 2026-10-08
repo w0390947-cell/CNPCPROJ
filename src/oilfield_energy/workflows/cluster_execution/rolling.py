@@ -14,7 +14,7 @@ def run_feedback_loop(
     progress: Callable[[str], None],
     rolling_progress: Callable[[RollingProgress], None] | None = None,
 ) -> tuple[RollingUpdate, ...]:
-    """Never advance an unadopted plan; never replan before feedback is available."""
+    """Advance only an adopted candidate or a retained certified continuation."""
     updates: list[RollingUpdate] = []
     total_windows = (total_minutes + policy.update_minutes - 1) // policy.update_minutes
     for start in range(0, total_minutes, policy.update_minutes):
@@ -44,13 +44,15 @@ def run_feedback_loop(
                 status="unknown",
                 reason=f"滚动准备失败，未执行后续计划：{exc}",
             )
-        if (update.start_minute, update.end_minute, update.horizon_end_minute) != (
-            start,
-            end,
-            horizon_end,
+        if (update.start_minute, update.end_minute) != (start, end) or (
+            update.horizon_end_minute != horizon_end
+            and not (
+                policy.reserve_delivery is not None
+                and update.horizon_end_minute >= horizon_end
+            )
         ):
             raise ValueError("rolling evidence does not match the requested window")
-        if not update.adopted:
+        if not update.adopted and not update.continuation_available:
             updates.append(update)
             if rolling_progress is not None:
                 rolling_progress(observation.model_copy(update={"phase": "stopped"}))

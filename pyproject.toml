@@ -33,7 +33,7 @@ field-dev = [
 oilfield-opt = "oilfield_energy.cli:main"
 oilfield-web = "oilfield_energy.web_api:main"
 oilfield-field = "oilfield_energy.entrypoints.field_dataset:main"
-oilfield-sim = "oilfield_energy.entrypoints.shancheng_simulation:main"
+oilfield-study-inputs = "oilfield_energy.entrypoints.study_inputs:main"
 oilfield-demo = "oilfield_energy.entrypoints.demo:main"
 
 [tool.setuptools]

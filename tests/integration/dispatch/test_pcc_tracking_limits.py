@@ -153,5 +153,5 @@ def test_only_proven_infeasibility_is_reported_as_infeasible(termination, reason
 
     failed = OptimizationResult(False, 2, f"SCIP status: {termination}", 0, 0, None, {}, {}, {})
     with patch.object(ac_consistency, "solve_case_misocp", return_value=failed):
-        result = solve_case_ac_consistent(build_synthetic_case(4), ["SC"])
+        result = solve_case_ac_consistent(build_synthetic_case(4), ["SC"], recovery_policy=None)
     assert not result.passed and result.stop_reason == reason

@@ -13,13 +13,17 @@ from datetime import datetime
 from enum import Enum
 from math import hypot, isfinite
 from pathlib import Path
-from typing import ClassVar, Literal, get_args, get_type_hints
+from typing import ClassVar, Literal, cast, get_args, get_type_hints
 
 from pydantic import ConfigDict, TypeAdapter
 
+from .modules.resources.contracts import WindReactiveCapability
 from .network_model import NetworkModelV2, assess_network_model
 from .network_scenarios import (
-    NetworkOperatingPoint, NetworkSecurityLimits, PointFlowResult, ScenarioStatus,
+    NetworkOperatingPoint,
+    NetworkSecurityLimits,
+    PointFlowResult,
+    ScenarioStatus,
     evaluate_operating_point,
 )
 from .resource_control_contracts import ResourceType
@@ -54,6 +58,9 @@ Optional capability bounds are reported, never used to clip the requested state.
     q_min_mvar: float | None = None
     q_max_mvar: float | None = None
     s_max_mva: float | None = None
+    # Retain the curve, not a Q bound resolved at a different active power.
+    # May include a stricter operating ratio than the equipment's own rating.
+    wind_reactive_capability: WindReactiveCapability | None = None
 
     def __post_init__(self) -> None:
         _identity(self.resource_id, "resource_id")
@@ -74,6 +81,32 @@ Optional capability bounds are reported, never used to clip the requested state.
                 raise ValueError("capability lower bound exceeds upper bound")
         if self.s_max_mva is not None and self.s_max_mva <= 0:
             raise ValueError("s_max_mva must be positive")
+        if self.wind_reactive_capability is not None and (
+            self.resource_type is not ResourceType.WIND
+            # Dataclass construction also has untyped callers; validate the
+            # runtime object even though this field has a declared annotation.
+            or not isinstance(cast(object, self.wind_reactive_capability), WindReactiveCapability)
+        ):
+            raise ValueError("wind capability requires a wind device and a typed curve")
+
+    @property
+    def capability_complete(self) -> bool:
+        """A wind curve with ratio=None explicitly declares converter-only data.
+
+        An absent curve is unknown, not an implicit declaration of that model.
+        """
+        return all(
+            value is not None
+            for value in (
+                self.p_min_mw,
+                self.p_max_mw,
+                self.q_min_mvar,
+                self.q_max_mvar,
+                self.s_max_mva,
+            )
+        ) and (
+            self.resource_type is not ResourceType.WIND or self.wind_reactive_capability is not None
+        )
 
 
 @dataclass(frozen=True)
@@ -141,7 +174,7 @@ class DevicePerturbation:
 @dataclass(frozen=True)
 class ComparisonRequest:
     __pydantic_config__: ClassVar = ConfigDict(extra="forbid")
-    schema_version: Literal["fixed-device-comparison-v1"]
+    schema_version: Literal["fixed-device-comparison-v1", "fixed-device-comparison-v2"]
     network: NetworkModelV2
     operating_mode_id: str
     snapshot: FixedStateSnapshot
@@ -150,8 +183,12 @@ class ComparisonRequest:
     require_field_approval: bool = False
 
     def __post_init__(self) -> None:
-        if self.schema_version != "fixed-device-comparison-v1":
+        if self.schema_version not in ("fixed-device-comparison-v1", "fixed-device-comparison-v2"):
             raise ValueError("unsupported comparison schema version")
+        if self.schema_version == "fixed-device-comparison-v1" and any(
+            d.wind_reactive_capability is not None for d in self.snapshot.devices
+        ):
+            raise ValueError("wind capability curves require fixed-device-comparison-v2")
         _identity(self.operating_mode_id, "operating_mode_id")
         if type(self.require_field_approval) is not bool:
             raise ValueError("require_field_approval must be boolean")
@@ -225,17 +262,49 @@ def perturb_snapshot(snapshot: FixedStateSnapshot, change: DevicePerturbation) -
                    devices=tuple(changed if d.resource_id == target.resource_id else d for d in snapshot.devices))
 
 
-def device_capability_violations(snapshot: FixedStateSnapshot, tolerance: float) -> list[dict]:
-    """Report declared device limits without clipping fixed/executed injections."""
-    rows = []
+def device_capability_violations(
+    snapshot: FixedStateSnapshot,
+    tolerance: float,
+) -> list[dict[str, str | float]]:
+    """Report limits at the snapshot's own P; never clip its P/Q injections.
+
+    The resources contract owns the curve intersection. Static limits can only
+    tighten it. Missing declarations are handled by the caller's evidence gate.
+    """
+    if not isfinite(tolerance) or tolerance < 0:
+        raise ValueError("device capability tolerance must be finite and nonnegative")
+    rows: list[dict[str, str | float]] = []
     for d in snapshot.devices:
+        wind = d.wind_reactive_capability
+        minimum_p = d.p_min_mw
+        apparent = d.s_max_mva
+        if wind is not None:
+            minimum_p = max(0.0, minimum_p) if minimum_p is not None else 0.0
+            apparent = min(apparent, wind.s_max_mva) if apparent is not None else wind.s_max_mva
         for name, actual, bound, lower in (
-            ("P_MIN", d.p_mw, d.p_min_mw, True), ("P_MAX", d.p_mw, d.p_max_mw, False),
-            ("Q_MIN", d.q_mvar, d.q_min_mvar, True), ("Q_MAX", d.q_mvar, d.q_max_mvar, False),
-            ("S_MAX", hypot(d.p_mw, d.q_mvar), d.s_max_mva, False),
+            ("P_MIN", d.p_mw, minimum_p, True),
+            ("P_MAX", d.p_mw, d.p_max_mw, False),
+            ("Q_MIN", d.q_mvar, d.q_min_mvar, True),
+            ("Q_MAX", d.q_mvar, d.q_max_mvar, False),
+            ("S_MAX", hypot(d.p_mw, d.q_mvar), apparent, False),
         ):
-            if bound is not None and (actual < bound - tolerance if lower else actual > bound + tolerance):
+            if bound is not None and (
+                actual < bound - tolerance if lower else actual > bound + tolerance
+            ):
                 rows.append(dict(resource_id=d.resource_id, code=name, actual=actual, limit=bound))
+        if wind is not None:
+            # Negative P is already an explicit P_MIN violation above. Only the
+            # argument to the nonnegative wind curve is bounded, not the state.
+            limit = wind.limit_at(max(0.0, d.p_mw))
+            if abs(d.q_mvar) > limit + tolerance:
+                rows.append(
+                    dict(
+                        resource_id=d.resource_id,
+                        code="WIND_Q_CAPABILITY",
+                        actual=abs(d.q_mvar),
+                        limit=limit,
+                    )
+                )
     return rows
 
 
@@ -262,22 +331,35 @@ def _difference_rows(before, after, identity: str, quantities: tuple[str, ...]) 
 def compare_fixed_states(request: ComparisonRequest) -> dict:
     """Return evidence even for violations; differences only exist for two converged solves."""
     snapshot, model = request.snapshot, request.network
-    report = dict(scope="single_device_fixed_state_ac_comparison", field_acceptance_certified=False,
-                  network_id=model.network_id, dataset_version=model.provenance.dataset_version,
-                  network_source=model.provenance.source, synthetic=model.provenance.synthetic,
-                  operating_mode_id=request.operating_mode_id, baseline_snapshot_id=snapshot.snapshot_id,
-                  snapshot_at=snapshot.at, snapshot_source=snapshot.source,
-                  perturbation=asdict(request.perturbation),
-                  redispatch_performed=False, status="invalid_input", reasons=[],
-                  changed_snapshot=None, after_state_kind="counterfactual",
-                  operating_points=[], before=None, after=None,
-                  differences=None, device_violations={},
-                  held_quantity="q_mvar" if request.perturbation.quantity == "p_mw" else "p_mw",
-                  load_basis=snapshot.load_basis, slack_voltage_pu=snapshot.slack_voltage_pu,
-                  capability_bounds_complete=all(
-                      all(getattr(d, key) is not None for key in
-                          ("p_min_mw", "p_max_mw", "q_min_mvar", "q_max_mvar", "s_max_mva"))
-                      for d in snapshot.devices))
+    report = dict(
+        scope="single_device_fixed_state_ac_comparison",
+        field_acceptance_certified=False,
+        input_schema_version=request.schema_version,
+        device_capability_version="device-capability-v2",
+        network_id=model.network_id,
+        dataset_version=model.provenance.dataset_version,
+        network_source=model.provenance.source,
+        synthetic=model.provenance.synthetic,
+        operating_mode_id=request.operating_mode_id,
+        baseline_snapshot_id=snapshot.snapshot_id,
+        snapshot_at=snapshot.at,
+        snapshot_source=snapshot.source,
+        perturbation=asdict(request.perturbation),
+        redispatch_performed=False,
+        status="invalid_input",
+        reasons=[],
+        changed_snapshot=None,
+        after_state_kind="counterfactual",
+        operating_points=[],
+        before=None,
+        after=None,
+        differences=None,
+        device_violations={},
+        held_quantity="q_mvar" if request.perturbation.quantity == "p_mw" else "p_mw",
+        load_basis=snapshot.load_basis,
+        slack_voltage_pu=snapshot.slack_voltage_pu,
+        capability_bounds_complete=all(d.capability_complete for d in snapshot.devices),
+    )
     readiness = assess_network_model(model, request.operating_mode_id,
                                      require_field_approval=request.require_field_approval)
     report["network_readiness"] = dict(blockers=list(readiness.blockers),

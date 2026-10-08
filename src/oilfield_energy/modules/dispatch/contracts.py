@@ -1,7 +1,8 @@
 """Immutable MW/MWh/CNY values; no solver or transport dependencies."""
 
-from dataclasses import dataclass
-from math import isfinite
+from dataclasses import dataclass, field
+from math import exp, isclose, isfinite
+from numbers import Real
 from typing import Annotated, Literal
 
 from pydantic import (
@@ -13,7 +14,177 @@ from pydantic import (
     model_validator,
 )
 
+from .contracts_network import (
+    JointNetworkEvidence as JointNetworkEvidence,
+)
+from .contracts_ac_recovery import (
+    ACRecoveryAttempt as ACRecoveryAttempt,
+    ACRecoveryEvidence as ACRecoveryEvidence,
+    ACRecoveryPhase as ACRecoveryPhase,
+    ACRecoveryPolicy as ACRecoveryPolicy,
+)
+from .contracts_network import (
+    JointNetworkTarget as JointNetworkTarget,
+)
+from .contracts_network import (
+    NetworkCoordinationPolicy as NetworkCoordinationPolicy,
+)
+from .contracts_storage_window import StorageWindowTarget as StorageWindowTarget
+from .contracts_reserve import ReserveDeliveryPolicy as ReserveDeliveryPolicy
+from .contracts_reserve import ReserveRecoveryTask as ReserveRecoveryTask
+from .contracts_pq import (
+    PQPlanningInput as PQPlanningInput,
+    PQPlanningWitness as PQPlanningWitness,
+)
+
 ACCOUNTING_VERSION = "dispatch-economics-v2"
+
+
+@dataclass(frozen=True)
+class FixedShuntReference:
+    """One bus's signed nominal and voltage-dependent reference injection, Mvar.
+
+    Capacitive injection is positive; inductive injection is negative. Only
+    buses with nonzero resolved nominal injection belong in this value.
+    """
+
+    bus_id: str
+    nominal_q_mvar: float
+    q_mvar: tuple[float, ...]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "q_mvar", tuple(self.q_mvar))
+        if (
+            not self.bus_id.strip()
+            or not isinstance(self.nominal_q_mvar, Real)
+            or not isfinite(self.nominal_q_mvar)
+            or self.nominal_q_mvar == 0
+            or not self.q_mvar
+            or any(
+                not isinstance(q, Real)
+                or not isfinite(q)
+                or q * self.nominal_q_mvar <= 0
+                for q in self.q_mvar
+            )
+        ):
+            raise ValueError(
+                "fixed shunt reference requires finite Q at positive voltage"
+            )
+
+
+@dataclass(frozen=True)
+class CoordinationNetworkCalibration:
+    """Immutable chronological reference data, not a network feasibility certificate.
+
+    Losses are nonnegative series MW/Mvar. Shunts are separate signed injections
+    at the reference voltages. All trajectories have the same interval axis.
+    See docs/modeling/Coordination_Network_Calibration.md.
+    """
+
+    p_loss_mw: tuple[float, ...]
+    q_loss_mvar: tuple[float, ...]
+    fixed_shunts: tuple[FixedShuntReference, ...] = ()
+    version: Literal["coordination-network-calibration-v1"] = field(
+        default="coordination-network-calibration-v1", kw_only=True
+    )
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "p_loss_mw", tuple(self.p_loss_mw))
+        object.__setattr__(self, "q_loss_mvar", tuple(self.q_loss_mvar))
+        object.__setattr__(self, "fixed_shunts", tuple(self.fixed_shunts))
+        steps = len(self.p_loss_mw)
+        if (
+            self.version != "coordination-network-calibration-v1"
+            or not steps
+            or len(self.q_loss_mvar) != steps
+            or any(
+                not isinstance(v, Real) or not isfinite(v) or v < 0
+                for v in (*self.p_loss_mw, *self.q_loss_mvar)
+            )
+            or len({s.bus_id for s in self.fixed_shunts}) != len(self.fixed_shunts)
+            or any(len(s.q_mvar) != steps for s in self.fixed_shunts)
+        ):
+            raise ValueError(
+                "network calibration requires aligned finite series and unique buses"
+            )
+
+
+class CoordinationRecoveryPolicy(BaseModel):
+    """Bounded regional calibration feedback, not a recursive feasibility proof."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    version: Literal["coordination-recovery-v1"] = "coordination-recovery-v1"
+    max_recoordinations: int = Field(default=3, ge=0, le=8, strict=True)
+    calibration_tolerance_mw: float = Field(default=1e-6, gt=0)
+    calibration_tolerance_mvar: float = Field(default=1e-6, gt=0)
+
+
+class NetworkCandidatePolicy(BaseModel):
+    """Finite whole-trajectory search; no convex-hull or completeness claim."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    version: Literal["network-candidates-v1"] = "network-candidates-v1"
+    max_combination_checks: int = Field(default=4096, ge=1, le=100_000, strict=True)
+
+
+class RegionalNetworkCandidate(BaseModel):
+    """One same-window physical witness projected onto the PCC, MW/Mvar.
+
+    Certification and window ownership belong to the calling workflow. This
+    value never certifies interpolation, extrapolation or time-slice mixing.
+    The loss calibration belongs to THIS witness, not the most recent round.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    region: str = Field(min_length=1)
+    source_round: int = Field(ge=1, strict=True)
+    time_minutes: tuple[float, ...]
+    p_mw: tuple[float, ...]
+    q_mvar: tuple[float, ...]
+    calibration: CoordinationNetworkCalibration
+
+    @model_validator(mode="after")
+    def aligned_trajectory(self) -> "RegionalNetworkCandidate":
+        n = len(self.time_minutes)
+        if (
+            not self.region.strip()
+            or not n
+            or len(self.p_mw) != n
+            or len(self.q_mvar) != n
+            or len(self.calibration.p_loss_mw) != n
+            or any(t < 0 for t in self.time_minutes)
+            or any(b <= a for a, b in zip(self.time_minutes, self.time_minutes[1:]))
+        ):
+            raise ValueError("candidate requires an aligned whole-window trajectory")
+        return self
+
+
+class NetworkCandidateSelection(BaseModel):
+    """Search evidence, never an execution/adoption certificate."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    status: Literal["selected", "no_joint_candidate", "budget_exhausted"]
+    candidates: tuple[RegionalNetworkCandidate, ...] = ()
+    combinations_checked: int = Field(ge=0)
+    total_combinations: int = Field(ge=0)
+    search_complete: bool
+    normalized_reference_distance: float | None = Field(default=None, ge=0)
+
+    @model_validator(mode="after")
+    def selection_evidence(self) -> "NetworkCandidateSelection":
+        if (
+            self.combinations_checked > self.total_combinations
+            or self.search_complete
+            != (self.combinations_checked == self.total_combinations)
+            or (self.status == "selected") != bool(self.candidates)
+            or (self.status == "selected")
+            != (self.normalized_reference_distance is not None)
+            or len({c.region for c in self.candidates}) != len(self.candidates)
+            or (self.status == "no_joint_candidate" and not self.search_complete)
+            or (self.status == "budget_exhausted" and self.search_complete)
+        ):
+            raise ValueError("inconsistent finite candidate search evidence")
+        return self
 
 
 class ComputationQualityPolicy(BaseModel):
@@ -88,13 +259,20 @@ class ComputationQualityReport(BaseModel):
     policy: ComputationQualityPolicy
     reference_optimizations: dict[str, tuple[OptimizationQuality, ...]]
     reference_coordination: tuple[CoordinationBudgetEvidence, ...]
+    reference_ac_recovery: dict[str, ACRecoveryEvidence] = Field(default_factory=dict)
 
 
 class ReactivePlanningPolicy(BaseModel):
-    """Study reserve and transition envelope; never expands physical Q authority."""
+    """Study Q envelope; v1 is retained for historical endpoint-only replay.
+
+    v2 certifies a constant-command transition on the declared execution grid,
+    at fixed P and capability. It does not certify feedback tracking or AC paths.
+    """
 
     model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
-    version: Literal["reactive-planning-v1"] = "reactive-planning-v1"
+    version: Literal["reactive-planning-v1", "reactive-planning-v2"] = (
+        "reactive-planning-v2"
+    )
     reserve_fraction: float = Field(default=0.10, ge=0, lt=1)
     transition_minutes: float = Field(default=5.0, gt=0)
     source: str = "软件无功规划假设（参数随结果记录）；待现场动态与预测误差校准"
@@ -163,10 +341,114 @@ class StorageReservePolicy(BaseModel):
     support_minutes: int = Field(default=15, ge=1)
     recovery_minutes: int = Field(default=15, ge=1)
     trigger_fraction: float = Field(default=0.5, gt=0, le=1)
+    observation_tolerance_mw: float = Field(default=1e-9, ge=0)
     replan_cooldown_minutes: int = Field(default=5, ge=1)
     source: str = (
         "软件仿真备用假设（参数随结果记录）；待现场预测误差统计校准，非现场运行定值"
     )
+
+
+class StorageReachabilityPolicy(BaseModel):
+    """Nominal held-response inner envelope; not disturbance/override immunity."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    version: Literal["storage-reachability-v1"] = "storage-reachability-v1"
+    power_tolerance_mw: float = Field(default=1e-6, gt=0)
+    energy_tolerance_mwh: float = Field(default=1e-6, gt=0)
+
+
+class StorageReachabilityInput(BaseModel):
+    """Owned same-window initial state, physical parameters and execution clock."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    policy: StorageReachabilityPolicy
+    resource_id: str = Field(min_length=1)
+    start_minute: float = Field(ge=0)
+    steps: int = Field(ge=1, strict=True)
+    planning_minutes: float = Field(gt=0)
+    execution_minutes: float = Field(gt=0)
+    time_constant_minutes: float = Field(gt=0)
+    ramp_mw_per_minute: float = Field(ge=0)
+    maximum_power_mw: float = Field(ge=0)
+    # None declares initialization at the first plan; it never means observed zero.
+    initial_power_mw: float | None
+    initial_energy_mwh: float
+    minimum_energy_mwh: float
+    maximum_energy_mwh: float
+    terminal_energy_mwh: float
+    terminal_tolerance_mwh: float = Field(ge=0)
+    eta_charge: float = Field(gt=0, le=1)
+    eta_discharge: float = Field(gt=0, le=1)
+
+    @model_validator(mode="after")
+    def physical_state(self) -> "StorageReachabilityInput":
+        ratio = self.planning_minutes / self.execution_minutes
+        if (
+            not self.resource_id.strip()
+            or (self.initial_power_mw is None and self.start_minute != 0)
+            or not isfinite(ratio)
+            or not isfinite(self.ramp_mw_per_minute * self.execution_minutes)
+            or ratio < 1
+            or not isclose(ratio, round(ratio), rel_tol=0, abs_tol=1e-9)
+            or 1.0 - exp(-self.execution_minutes / self.time_constant_minutes) == 0
+            or self.minimum_energy_mwh > self.maximum_energy_mwh
+            or not self.minimum_energy_mwh
+            <= self.terminal_energy_mwh
+            <= self.maximum_energy_mwh
+            or not (
+                self.minimum_energy_mwh - self.policy.energy_tolerance_mwh
+                <= self.initial_energy_mwh
+                <= self.maximum_energy_mwh + self.policy.energy_tolerance_mwh
+            )
+            or (
+                self.initial_power_mw is not None
+                and abs(self.initial_power_mw)
+                > self.maximum_power_mw + self.policy.power_tolerance_mw
+            )
+        ):
+            raise ValueError("invalid storage state or unsupported execution grid")
+        return self
+
+
+@dataclass(frozen=True)
+class StorageReachabilityRow:
+    """a P(t) + b P(t-1) <= upper; P is actual injection, positive discharge."""
+
+    time_index: int
+    coefficient: float
+    previous_coefficient: float
+    upper: float
+
+
+class StorageReachabilityEvidence(BaseModel):
+    """Nominal command witness, not a certificate that feedback follows it."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    version: Literal["storage-reachability-v1"] = "storage-reachability-v1"
+    inputs: StorageReachabilityInput
+    status: Literal["passed", "violated"]
+    p_mw: tuple[float, ...]
+    energy_mwh: tuple[float, ...]
+    first_command_mw: tuple[float, ...]
+    maximum_power_violation_mw: float = Field(ge=0)
+    maximum_energy_violation_mwh: float = Field(ge=0)
+
+    @model_validator(mode="after")
+    def aligned_witness(self) -> "StorageReachabilityEvidence":
+        n = self.inputs.steps
+        if (
+            len(self.p_mw) != n
+            or len(self.energy_mwh) != n + 1
+            or len(self.first_command_mw) != n
+            or (self.status == "passed")
+            != (
+                self.maximum_power_violation_mw <= self.inputs.policy.power_tolerance_mw
+                and self.maximum_energy_violation_mwh
+                <= self.inputs.policy.energy_tolerance_mwh
+            )
+        ):
+            raise ValueError("inconsistent storage reachability evidence")
+        return self
 
 
 @dataclass(frozen=True)

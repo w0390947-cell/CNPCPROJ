@@ -17,8 +17,8 @@ from unittest.mock import patch
 import numpy as np
 
 from oilfield_energy import admm, service
-from oilfield_energy.bootstrap.adapters.project_dataset import build_synthetic_case, plant_inputs_by_region
-from oilfield_energy.hierarchical import run_hierarchical_control
+from oilfield_energy.bootstrap.adapters.cluster_study import run_cluster_study
+from oilfield_energy.bootstrap.adapters.project_dataset import build_synthetic_case
 from oilfield_energy.hierarchy_types import ADMMConfig, CommunicationConfig
 
 
@@ -40,49 +40,21 @@ def save(output: Path, name: str, value: Any) -> None:
 
 
 def hierarchy(output: Path, steps: int, cap: float | None) -> dict[str, Any]:
-    case = build_synthetic_case(steps=steps)
-    if cap is not None:
-        case = replace(case, cluster_import_limit_mw=cap)
-    result = run_hierarchical_control(
-        case,
-        intraday_input_case=build_synthetic_case(steps, profile_kind="intraday"),
-        plant_inputs=plant_inputs_by_region(), admm_config=ADMMConfig(max_iterations=220), time_limit_seconds=60
+    """Historical mode name; all current execution evidence comes from the rolling service."""
+    case = None if cap is None else replace(build_synthetic_case(steps=steps), cluster_import_limit_mw=cap)
+    result = run_cluster_study(
+        service.SimulationRequest(scenario_type=service.ScenarioType.CLUSTER_COORDINATION, steps=steps),
+        output / "cluster_run", input_case=case,
     )
-    names = [mg.name for mg in case.microgrids]
-    series = {
-        "reference": result.admm.aggregate_import_mw,
-        "day_ahead": sum(
-            (result.local_milp_results[n].microgrids[n]["p_grid_mw"] for n in names),
-            np.zeros(steps),
-        ),
-        "intraday": sum(
-            (result.intraday_milp_results[n].microgrids[n]["p_grid_mw"] for n in names),
-            np.zeros(steps),
-        ),
-        "minute": sum(
-            (result.tracking[n].pcc_actual_mw for n in names),
-            np.zeros(len(result.tracking[names[0]].time_minutes)),
-        ),
-    }
-    times = result.tracking[names[0]].time_minutes
-    assert all(np.array_equal(times, result.tracking[n].time_minutes) for n in names)
-    save(output, "aggregate_series.json", series)
-    save(output, "comparison.json", result.comparison)
-    if result.cluster_validation is not None:
-        save(output, "cluster_validation.json", result.cluster_validation)
-    save(output, "admm.json", result.admm)
+    execution = result.cluster_execution
+    assert execution is not None
     return {
         "steps": steps,
-        "limit_mw": case.cluster_import_limit_mw,
-        "comparison": result.comparison,
-        "aggregates": {
-            name: {
-                "peak_mw": float(np.max(values)),
-                "violation_steps": int(np.sum(values > case.cluster_import_limit_mw + 1e-5)),
-                "peak_index": int(np.argmax(values)),
-            }
-            for name, values in series.items()
-        },
+        "algorithm_version": execution.algorithm_version,
+        "execution_status": execution.status,
+        "overall_passed": result.executive_summary.overall_passed,
+        "stages": [stage.model_dump(mode="json") for stage in execution.stages],
+        "rolling_updates": len(execution.rolling_updates),
     }
 
 
@@ -196,6 +168,7 @@ def communication(output: Path, steps: int, seed: int, capture_state: bool) -> d
     )
     return {
         "seed": seed,
+        "scope": "coordination_component_only",
         "converged": result.converged,
         "coordination_updates": result.coordination_updates,
         "iterations": result.iterations,

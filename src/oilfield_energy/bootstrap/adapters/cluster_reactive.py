@@ -24,6 +24,7 @@ def with_reactive_planning(
     dynamics: DynamicTrackingPolicy,
     checkpoints: dict[str, DeviceCheckpoint],
     storage_enabled: bool,
+    execution_step_minutes: float = 1.0,
 ) -> ProjectCase:
     plans = {}
     sides = case.assumptions.polygon_sides
@@ -111,5 +112,6 @@ def with_reactive_planning(
             time_constant_minutes=dynamics.time_constant_minutes,
             ramp_mvar_per_minute=dynamics.q_ramp_mvar_per_minute,
             policy=policy,
+            execution_step_minutes=execution_step_minutes,
         )
     return replace(case, reactive_plans=plans)

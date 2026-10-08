@@ -3,9 +3,41 @@
 from dataclasses import dataclass
 from datetime import datetime
 from math import isfinite
-from typing import Literal
+from typing import ClassVar, Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, computed_field, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    computed_field,
+    model_validator,
+)
+
+from .contracts_energy_policy import EnergyReturnPolicy as EnergyReturnPolicy
+from .contracts_policy import BalancePolicy as BalancePolicy
+from .contracts_policy import PolicyTransition as PolicyTransition
+from .contracts_protection import ProtectionTarget as ProtectionTarget
+from .contracts_protection import ProtectionTargetRecord as ProtectionTargetRecord
+
+from .contracts_tube import (
+    TubeBox as TubeBox,
+)
+from .contracts_tube import (
+    TubeCommand as TubeCommand,
+)
+from .contracts_tube import (
+    TubeDeviceModel as TubeDeviceModel,
+)
+from .contracts_tube import (
+    TubeResource as TubeResource,
+)
+from .contracts_tube import (
+    TubeState as TubeState,
+)
+from .contracts_tube import (
+    TubeTransition as TubeTransition,
+)
 
 
 class DynamicTrackingPolicy(BaseModel):
@@ -24,6 +56,34 @@ class DynamicTrackingPolicy(BaseModel):
 
 
 TrackingStatus = Literal["passed", "violated", "unknown"]
+
+
+@dataclass(frozen=True)
+class ReactiveDynamicsRecord:
+    """Ordinary Q dynamics evidence; no hardware-protection override is modeled.
+
+    Capability reachability considers the command box, lag and shared ramp only;
+    it does not certify arbitration or AC safety. See Reactive_Dynamics.md.
+    """
+
+    __pydantic_config__: ClassVar = ConfigDict(extra="forbid", allow_inf_nan=False)
+    resource_ids: tuple[str, ...]
+    q_initial_mvar: tuple[float, ...]
+    q_targets_mvar: tuple[float, ...]
+    q_actual_mvar: tuple[float, ...]
+    q_minimum_mvar: tuple[float, ...]
+    q_maximum_mvar: tuple[float, ...]
+    alpha: float
+    aggregate_ramp_mvar: float
+    response_applied: bool
+    aggregate_movement_mvar: float
+    minimum_recovery_movement_mvar: float
+    initial_capacity_within_limits: bool
+    actual_capacity_within_limits: bool
+    capability_reachable_without_arbitration: bool
+    ramp_compliant: bool
+    response_matches_prediction: bool
+    version: Literal["reactive-dynamics-v1"] = "reactive-dynamics-v1"
 
 
 @dataclass(frozen=True)
@@ -46,9 +106,55 @@ class ReactiveTrackingResult:
     status: Literal["improved", "limited", "held", "blocked"]
     version: Literal["reactive-tracking-v1"] = "reactive-tracking-v1"
 
+
 # Numerical action comparisons in MW; neither is an engineering tracking limit.
 ACTIVE_TRACKING_TRIGGER_MW = 1e-6
 ACTIVE_TRACKING_MOVEMENT_MW = 1e-9
+
+# Strict improvement comparison in MW, not an engineering tracking deadband.
+STORAGE_TRACKING_IMPROVEMENT_MW = 1e-9
+StorageTrackingStatus = Literal[
+    "adopted",
+    "network_rejected",
+    "not_improved",
+    "baseline_unsafe",
+    "blocked",
+    "unchanged",
+    "physical_override",
+]
+
+
+@dataclass(frozen=True)
+class StorageTrackingPoint:
+    """Read-only AC assessment at fixed load, other P/Q and cycle-start state."""
+
+    power_mw: float
+    error_mw: float | None
+    safe: bool
+
+    def __post_init__(self) -> None:
+        values = (
+            (self.power_mw,)
+            if self.error_mw is None
+            else (self.power_mw, self.error_mw)
+        )
+        if any(isinstance(v, bool) or not isfinite(v) for v in values):
+            raise ValueError("storage tracking evidence must be finite")
+        if type(self.safe) is not bool or (self.safe and self.error_mw is None):
+            raise ValueError("safe storage tracking requires a valid AC error")
+
+
+@dataclass(frozen=True)
+class StorageTrackingResult:
+    """Ordinary adoption evidence; subsequent hard protection remains independent."""
+
+    baseline: StorageTrackingPoint
+    candidate: StorageTrackingPoint | None
+    proposed_mw: float
+    selected_mw: float
+    status: StorageTrackingStatus
+    version: Literal["storage-tracking-v1"] = "storage-tracking-v1"
+    improvement_tolerance_mw: float = STORAGE_TRACKING_IMPROVEMENT_MW
 
 
 @dataclass(frozen=True)
@@ -72,11 +178,21 @@ class ActiveTrackingResource:
     def __post_init__(self) -> None:
         if type(self.resource_id) is not str or not self.resource_id.strip():
             raise ValueError("active tracking requires a resource ID")
-        values = (self.previous_mw, self.baseline_mw, self.minimum_mw,
-                  self.maximum_mw, self.ramp_mw, self.alpha)
+        values = (
+            self.previous_mw,
+            self.baseline_mw,
+            self.minimum_mw,
+            self.maximum_mw,
+            self.ramp_mw,
+            self.alpha,
+        )
         if any(isinstance(v, bool) or not isfinite(v) for v in values):
             raise ValueError("active tracking inputs must be finite")
-        if self.minimum_mw > self.maximum_mw or self.ramp_mw < 0 or not 0 < self.alpha <= 1:
+        if (
+            self.minimum_mw > self.maximum_mw
+            or self.ramp_mw < 0
+            or not 0 < self.alpha <= 1
+        ):
             raise ValueError("invalid active tracking envelope or dynamics")
         if type(self.controllable) is not bool:
             raise ValueError("controllability must be explicit")
@@ -139,36 +255,47 @@ class DeviceCheckpoint(BaseModel):
     storage_energy_mwh: float
     storage_power_mw: float
     reactive_power_mvar: dict[str, float] = Field(default_factory=dict)
+    active_power_mw: dict[str, float] = Field(default_factory=dict)
+    gross_load_p_mw: dict[str, float] = Field(default_factory=dict)
+    gross_load_q_mvar: dict[str, float] = Field(default_factory=dict)
 
 
-class StopDeviceSession(Exception):
-    """Stop at a minute boundary and return only the completed execution prefix."""
-
-
-class DevicePlanUpdate(BaseModel):
-    """Prospective minute commands; injections positive, PCC imports positive."""
+class StorageResponseSettings(BaseModel):
+    """Interpret a plan's storage P as a next-step actual target, not a command."""
 
     model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
-    start_minute: int = Field(ge=0)
-    p_mw: tuple[float, ...]
-    q_mvar: tuple[float, ...]
-    resource_p_mw: dict[str, tuple[float, ...]]
-    resource_q_mvar: dict[str, tuple[float, ...]]
+    version: Literal["storage-held-response-v1"] = "storage-held-response-v1"
+    execution_minutes: float = Field(gt=0)
+    time_constant_minutes: float = Field(gt=0)
+    ramp_mw_per_minute: float = Field(ge=0)
+    power_tolerance_mw: float = Field(gt=0)
+
+
+class StoragePlanResponse(BaseModel):
+    """Separate a nominal reachable target from the final arbitrated response."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    settings: StorageResponseSettings
+    target_mw: float
+    effective_command_mw: float
+    predicted_mw: float
+    actual_mw: float
+    reachable: bool
+    followed: bool
 
     @model_validator(mode="after")
-    def aligned(self) -> "DevicePlanUpdate":
-        n = len(self.p_mw)
-        if (
-            not n
-            or not self.resource_p_mw
-            or self.resource_p_mw.keys() != self.resource_q_mvar.keys()
-        ):
-            raise ValueError("minute update requires matching resource identities")
-        if any(
-            len(v) != n
-            for v in (self.q_mvar, *self.resource_p_mw.values(), *self.resource_q_mvar.values())
-        ):
-            raise ValueError("minute update trajectories must align")
+    def actual_evidence(self) -> "StoragePlanResponse":
+        reachable = (
+            abs(self.predicted_mw - self.target_mw) <= self.settings.power_tolerance_mw
+        )
+        followed = (
+            reachable
+            and abs(self.actual_mw - self.target_mw) <= self.settings.power_tolerance_mw
+        )
+        if self.reachable != reachable or self.followed != followed:
+            raise ValueError(
+                "storage plan response flags must match the recorded powers"
+            )
         return self
 
 
@@ -198,6 +325,7 @@ class StorageDynamicsRecord:
     ordinary_unserved_mw: float
     physical_override: bool
     hard_override: bool
+    plan_response: StoragePlanResponse | None = None
 
     def __post_init__(self) -> None:
         values = (
@@ -212,8 +340,20 @@ class StorageDynamicsRecord:
         if any(isinstance(v, bool) or not isfinite(v) for v in values):
             raise ValueError("storage dynamics evidence must be finite")
         if self.time_minutes < 0 or self.maximum_change_mw < 0:
-            raise ValueError("storage dynamics time and ramp allowance must be nonnegative")
-        if type(self.physical_override) is not bool or type(self.hard_override) is not bool:
+            raise ValueError(
+                "storage dynamics time and ramp allowance must be nonnegative"
+            )
+        if (
+            self.plan_response is not None
+            and self.plan_response.actual_mw != self.actual_mw
+        ):
+            raise ValueError(
+                "storage plan response must describe the same actual power"
+            )
+        if (
+            type(self.physical_override) is not bool
+            or type(self.hard_override) is not bool
+        ):
             raise ValueError("storage override flags must be boolean")
 
     @computed_field
@@ -280,7 +420,9 @@ class WindActiveSetpoint:
         if type(self.resource_id) is not str or not self.resource_id.strip():
             raise ValueError("wind setpoint identity is required")
         if self.target_mw is not None and (
-            isinstance(self.target_mw, bool) or not isfinite(self.target_mw) or self.target_mw < 0
+            isinstance(self.target_mw, bool)
+            or not isfinite(self.target_mw)
+            or self.target_mw < 0
         ):
             raise ValueError("wind target must be nonnegative finite MW or None")
 
@@ -299,7 +441,8 @@ class WindStorageActivePlan:
         if len(set(ids)) != len(ids):
             raise ValueError("wind setpoint identities must be unique")
         if self.storage_target_mw is not None and (
-            isinstance(self.storage_target_mw, bool) or not isfinite(self.storage_target_mw)
+            isinstance(self.storage_target_mw, bool)
+            or not isfinite(self.storage_target_mw)
         ):
             raise ValueError("storage target must be finite MW or None")
 
@@ -336,16 +479,23 @@ class RestorationStation:
             or not self.station_id.strip()
             or type(self.other_caps) is not tuple
         ):
-            raise ValueError("restoration station identity and immutable caps are required")
+            raise ValueError(
+                "restoration station identity and immutable caps are required"
+            )
         for value in (self.actual_mw, self.baseline_mw, self.available_mw):
             if isinstance(value, bool) or not isfinite(value) or value < 0:
-                raise ValueError("restoration station powers must be finite and nonnegative")
+                raise ValueError(
+                    "restoration station powers must be finite and nonnegative"
+                )
         if any(type(pair) is not tuple or len(pair) != 2 for pair in self.other_caps):
             raise ValueError("other caps must be immutable owner/value pairs")
         owners = [owner for owner, _ in self.other_caps]
         if len(set(owners)) != len(owners) or any(not owner for owner in owners):
             raise ValueError("other cap owners must be nonempty and unique")
-        if any(isinstance(cap, bool) or not isfinite(cap) or cap < 0 for _, cap in self.other_caps):
+        if any(
+            isinstance(cap, bool) or not isfinite(cap) or cap < 0
+            for _, cap in self.other_caps
+        ):
             raise ValueError("other caps must be finite and nonnegative")
 
 
@@ -364,7 +514,9 @@ class RestorationObservation:
         ):
             raise ValueError("observation time must be finite and nonnegative")
         if type(self.stations) is not tuple or not self.stations:
-            raise ValueError("restoration observations require immutable station states")
+            raise ValueError(
+                "restoration observations require immutable station states"
+            )
         ids = [s.station_id for s in self.stations]
         if len(set(ids)) != len(ids) or type(self.valid) is not bool:
             raise ValueError("station identities must be unique and validity explicit")
@@ -385,7 +537,9 @@ class RestorationCommand:
             or not isfinite(self.requested_mw)
             or self.requested_mw <= 0
         ):
-            raise ValueError("restoration commands require identity and positive finite MW")
+            raise ValueError(
+                "restoration commands require identity and positive finite MW"
+            )
         if (
             isinstance(self.cap_released_mw, bool)
             or not isfinite(self.cap_released_mw)
@@ -464,7 +618,9 @@ class PlantInputs(BaseModel):
             for v in item.values
         ):
             raise ValueError("gross load and available generation must be nonnegative")
-        if {item.bus_id for item in self.load_p} != {item.bus_id for item in self.load_q}:
+        if {item.bus_id for item in self.load_p} != {
+            item.bus_id for item in self.load_q
+        }:
             raise ValueError("P/Q bus coverage differs")
         return self
 
@@ -478,7 +634,8 @@ class PlantInputs(BaseModel):
 
         def cut(group: tuple[BusSeries, ...]) -> tuple[BusSeries, ...]:
             return tuple(
-                BusSeries(bus_id=item.bus_id, values=item.values[start:stop]) for item in group
+                BusSeries(bus_id=item.bus_id, values=item.values[start:stop])
+                for item in group
             )
 
         return PlantInputs(
@@ -489,3 +646,180 @@ class PlantInputs(BaseModel):
             wind_available=cut(self.wind_available),
             pv_available=cut(self.pv_available),
         )
+
+
+class TransitionValue(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+
+
+class TransitionActuator(TransitionValue):
+    actuator: str = Field(min_length=1)
+    previous_mw: float
+    proposed_mw: float
+    # Only an ordinary decrease may be deferred, at most to the previous P.
+    # Mandatory actions, storage and unavailable resources use proposed_mw.
+    defer_to_mw: float
+
+    @model_validator(mode="after")
+    def valid_deferral(self) -> "TransitionActuator":
+        if (
+            not self.proposed_mw
+            <= self.defer_to_mw
+            <= max(self.previous_mw, self.proposed_mw)
+        ):
+            raise ValueError(
+                "deferral must stay between the proposal and previous injection"
+            )
+        return self
+
+
+class TransitionBranchAssumption(TransitionValue):
+    branch_id: str = Field(min_length=1)
+    r_pu: float = Field(ge=0)
+    receiving_apparent_power_max_mva: float = Field(gt=0)
+
+
+class TransitionNetworkAssumptions(TransitionValue):
+    network_id: str = Field(min_length=1)
+    operating_mode_id: str = Field(min_length=1)
+    base_mva: float = Field(gt=0)
+    minimum_voltage_pu: float = Field(gt=0)
+    branches: tuple[TransitionBranchAssumption, ...]
+
+    @model_validator(mode="after")
+    def unique_branches(self) -> "TransitionNetworkAssumptions":
+        if len({b.branch_id for b in self.branches}) != len(self.branches):
+            raise ValueError("network loss envelope cannot duplicate a branch")
+        return self
+
+
+class RegionalTransitionProposal(TransitionValue):
+    version: Literal["cluster-transition-box-v1"] = "cluster-transition-box-v1"
+    region: str = Field(min_length=1)
+    start_minute: int = Field(ge=0)
+    duration_minutes: float = Field(gt=0)
+    gross_load_upper_mw: float = Field(ge=0)
+    loss_upper_mw: float = Field(ge=0)
+    # Lower-bound allowance for numerical aggregate/device reconciliation,
+    # never an extra permission to exceed the cluster capacity.
+    injection_roundoff_mw: float = Field(default=0, ge=0)
+    loss_basis: Literal["lossless", "thermal-voltage-envelope", "explicit-upper-bound"]
+    network_assumptions: TransitionNetworkAssumptions | None = None
+    actuators: tuple[TransitionActuator, ...]
+
+    @model_validator(mode="after")
+    def identities(self) -> "RegionalTransitionProposal":
+        ids = [a.actuator for a in self.actuators]
+        if not ids or len(set(ids)) != len(ids):
+            raise ValueError(
+                "transition actuator identities must be nonempty and unique"
+            )
+        if self.loss_basis == "lossless" and self.loss_upper_mw != 0:
+            raise ValueError("a lossless envelope cannot contain losses")
+        if (self.loss_basis == "thermal-voltage-envelope") != (
+            self.network_assumptions is not None
+        ):
+            raise ValueError(
+                "thermal loss envelopes must retain their network assumptions"
+            )
+        return self
+
+
+class TransitionSetpoint(TransitionValue):
+    actuator: str
+    p_mw: float
+
+
+class RegionalTransitionSelection(TransitionValue):
+    region: str
+    start_minute: int = Field(ge=0)
+    setpoints: tuple[TransitionSetpoint, ...]
+
+
+class ClusterTransitionDecision(TransitionValue):
+    version: Literal["cluster-transition-box-v1"] = "cluster-transition-box-v1"
+    status: Literal["certified", "unproven"]
+    limit_mw: float = Field(gt=0)
+    requested_upper_mw: float
+    selected_upper_mw: float | None = None
+    proposals: tuple[RegionalTransitionProposal, ...]
+    selections: tuple[RegionalTransitionSelection, ...] = ()
+    reason: str
+
+    @model_validator(mode="after")
+    def certificate_shape(self) -> "ClusterTransitionDecision":
+        if self.status == "unproven":
+            if self.selections or self.selected_upper_mw is not None:
+                raise ValueError("an unproven interval cannot authorize endpoints")
+            return self
+        if self.selected_upper_mw is None or self.selected_upper_mw > self.limit_mw:
+            raise ValueError("a certificate requires a bound within the capacity limit")
+        proposals = {p.region: p for p in self.proposals}
+        if (
+            not proposals
+            or len(proposals) != len(self.proposals)
+            or len(self.selections) != len(proposals)
+            or {s.region for s in self.selections} != set(proposals)
+        ):
+            raise ValueError(
+                "a certificate requires complete unique regional selections"
+            )
+        for selection in self.selections:
+            proposal = proposals[selection.region]
+            points = {s.actuator: s.p_mw for s in selection.setpoints}
+            if (
+                selection.start_minute != proposal.start_minute
+                or len(points) != len(selection.setpoints)
+                or set(points) != {a.actuator for a in proposal.actuators}
+                or any(
+                    not a.proposed_mw <= points[a.actuator] <= a.defer_to_mw
+                    for a in proposal.actuators
+                )
+            ):
+                raise ValueError(
+                    "a certificate cannot exceed regional authority or change identity"
+                )
+        return self
+
+
+class RegionalTransitionReady(TransitionValue):
+    region: str
+    start_minute: int = Field(ge=0)
+    selection: RegionalTransitionSelection
+    status: Literal["passed", "unknown"]
+    pcc_import_mw: float | None = None
+    reason: str = ""
+
+    @model_validator(mode="after")
+    def readiness(self) -> "RegionalTransitionReady":
+        if (
+            self.region != self.selection.region
+            or self.start_minute != self.selection.start_minute
+        ):
+            raise ValueError("readiness must match the selected interval and region")
+        if self.status == "passed" and self.pcc_import_mw is None:
+            raise ValueError("passed readiness requires known PCC power")
+        return self
+
+
+class ClusterTransitionRecord(TransitionValue):
+    decision: ClusterTransitionDecision
+    ready: tuple[RegionalTransitionReady, ...] = ()
+    committed: bool = False
+    reason: str = ""
+
+    @model_validator(mode="after")
+    def committed_evidence(self) -> "ClusterTransitionRecord":
+        if self.committed and (
+            self.decision.status != "certified"
+            or self.reason
+            or len(self.ready) != len(self.decision.selections)
+            or any(
+                r.status != "passed" or r.selection != s
+                for r, s in zip(self.ready, self.decision.selections, strict=True)
+            )
+        ):
+            raise ValueError(
+                "committed evidence requires every certified endpoint to be ready"
+            )
+        return self

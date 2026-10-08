@@ -1,4 +1,4 @@
-"""基于精确Branch Flow结构的混合整数二阶锥调度模型。
+"""Shared Branch Flow builder: MISOCP relaxation and exact nonconvex recovery.
 
 模型使用PySCIPOpt/SCIP求解。与旧LinDistFlow MILP不同，本模型通过同一个
 线路电流平方变量同时描述：
@@ -10,20 +10,33 @@
 
 对于径向网络和单调递增的网损目标，该锥松弛通常在最优点取紧；代码仍会
 显式报告锥松弛间隙，并使用独立AC前推回代复核，避免把“通常精确”当成假设。
+显式恢复模式补上反向不等式；设备、备用、时序和网络约束仍只有这一份实现。
 """
 
 from __future__ import annotations
 
 from math import acos, cos, pi, sin, tan
-from typing import Dict, Hashable, Iterable, Mapping, Sequence, cast
+from time import monotonic
+from typing import Dict, Hashable, Iterable, Literal, Mapping, Sequence, cast
 
 import numpy as np
 from pyscipopt import Model, Variable, quicksum
 
 from .data import MicrogridData, ProjectCase, renewable_active_power_limits
 from .model import OptimizationResult
-from .modules.dispatch.api import account_renewable, evaluate_economics
-from .modules.dispatch.contracts import ACCOUNTING_VERSION, CostRates, PCCTrackingLimits
+from .modules.dispatch.api import (
+    account_renewable,
+    evaluate_economics,
+    storage_reachability_rows,
+    pq_planning_rows,
+)
+from .modules.dispatch.contracts import (
+    ACCOUNTING_VERSION,
+    CostRates,
+    JointNetworkTarget,
+    PCCTrackingLimits,
+    PQPlanningWitness,
+)
 from .network_model import validate_legacy_network_alignment
 from .planning_security import resolve_security_floors
 from .resource_control_contracts import (
@@ -47,6 +60,14 @@ def _selected_microgrids(
 
 def _value(model: Model, solution, variable) -> float:
     return float(model.getSolVal(solution, variable))
+
+
+def _optimize_model(model: Model) -> None:
+    """Normalize only SDK solve failures; cancellation still propagates."""
+    try:
+        model.optimizeNogil()
+    except Exception as exc:
+        raise RuntimeError(f"SCIP numerical solve failed: {exc}") from exc
 
 
 def _add_polygon_constraints(
@@ -84,6 +105,9 @@ def solve_case_misocp(
     voltage_security_margin_pu: float = 0.0,
     display_solver_output: bool = False,
     p_grid_security_floors_mw: Mapping[str, np.ndarray] | None = None,
+    joint_network_target: JointNetworkTarget | None = None,
+    exact_ac_physics: bool = False,
+    objective_mode: Literal["original", "feasibility"] = "original",
 ) -> OptimizationResult:
     """建立并求解集中式或单区域MISOCP Branch Flow模型。"""
     selected = _selected_microgrids(case, microgrid_names)
@@ -95,7 +119,23 @@ def solve_case_misocp(
     }
     security_floors = resolve_security_floors(case, selected, p_grid_security_floors_mw)
     T = len(case.time_hours)
+    if joint_network_target is not None and (
+        not cluster_coordination
+        or tracking_limits is not None
+        or pcc_targets is None
+        or set(pcc_targets) != {m.name for m in selected}
+        or len(joint_network_target.pf_margin_mvar) != T
+    ):
+        raise ValueError(
+            "joint restoration requires full-window soft references and joint constraints"
+        )
     a = case.assumptions
+    if objective_mode not in {"original", "feasibility"}:
+        raise ValueError("unsupported branch-flow objective")
+    if objective_mode == "feasibility" and not exact_ac_physics:
+        raise ValueError("feasibility restoration requires exact AC physics")
+    if exact_ac_physics and relax_storage_binaries:
+        raise ValueError("exact AC restoration retains the original storage modes")
     if extra_loss_tightening_cny_per_mwh < 0.0:
         raise ValueError("extra_loss_tightening_cny_per_mwh must be nonnegative")
     if voltage_security_margin_pu < 0.0:
@@ -288,6 +328,14 @@ def solve_case_misocp(
                     <= v_parent * ell / line.tap_ratio**2,
                     name=f"{mg.name}.current_cone[{line.name},{t}]",
                 )
+                if exact_ac_physics:
+                    # Together with the existing cone this is the physical
+                    # equality, including the same off-nominal tap convention.
+                    model.addCons(
+                        p_line * p_line + q_line * q_line
+                        >= v_parent * ell / line.tap_ratio**2,
+                        name=f"{mg.name}.current_equality[{line.name},{t}]",
+                    )
                 v_child = r["v"][(line.child, t)]
                 model.addCons(
                     v_child
@@ -448,6 +496,23 @@ def solve_case_misocp(
             )
             r["q_svg"][t] = qsvg
 
+        reachability = (
+            case.storage_reachability.get(mg.name) if storage_enabled else None
+        )
+        if reachability is not None:
+            for i, row in enumerate(storage_reachability_rows(reachability)):
+                power = r["p_dis"][row.time_index] - r["p_ch"][row.time_index]
+                previous = (
+                    r["p_dis"][row.time_index - 1] - r["p_ch"][row.time_index - 1]
+                    if row.previous_coefficient
+                    else 0.0
+                )
+                model.addCons(
+                    row.coefficient * power + row.previous_coefficient * previous
+                    <= row.upper,
+                    name=f"{mg.name}.storage_reachability[{i}]",
+                )
+
         for t in range(1, T):
             ramp = model.addVar(name=f"{mg.name}.p_grid_ramp[{t}]", lb=0.0)
             r["p_grid_ramp"][t] = ramp
@@ -466,13 +531,22 @@ def solve_case_misocp(
             if not storage_enabled or t == 0:
                 lo = hi = st.e_initial_mwh
             elif t == T:
-                lo = max(
-                    st.e_min_mwh,
-                    st.terminal_energy_mwh - a.terminal_energy_tolerance_mwh,
+                target = case.storage_window_targets.get(mg.name)
+                lo = (
+                    max(st.e_min_mwh, target.minimum_mwh)
+                    if target is not None
+                    else max(
+                        st.e_min_mwh,
+                        st.terminal_energy_mwh - a.terminal_energy_tolerance_mwh,
+                    )
                 )
-                hi = min(
-                    st.e_max_mwh,
-                    st.terminal_energy_mwh + a.terminal_energy_tolerance_mwh,
+                hi = (
+                    min(st.e_max_mwh, target.maximum_mwh)
+                    if target is not None
+                    else min(
+                        st.e_max_mwh,
+                        st.terminal_energy_mwh + a.terminal_energy_tolerance_mwh,
+                    )
                 )
             else:
                 lo, hi = st.e_min_mwh, st.e_max_mwh
@@ -485,6 +559,12 @@ def solve_case_misocp(
                         f"{mg.name} reserve and terminal energy conflict at {t}"
                     )
             r["energy"][t] = model.addVar(name=f"{mg.name}.energy[{t}]", lb=lo, ub=hi)
+        target = case.storage_window_targets.get(mg.name) if storage_enabled else None
+        if target is not None and target.reference_cost_cny_per_mwh:
+            deviation = model.addVar(name=f"{mg.name}.energy_reference_deviation", lb=0)
+            model.addCons(deviation >= r["energy"][T] - target.reference_mwh)
+            model.addCons(deviation >= target.reference_mwh - r["energy"][T])
+            objective_terms.append(target.reference_cost_cny_per_mwh * deviation)
         for t in range(T):
             model.addCons(
                 r["energy"][t + 1]
@@ -494,8 +574,8 @@ def solve_case_misocp(
                 name=f"{mg.name}.energy_balance[{t}]",
             )
 
-        for i, row in enumerate(case.reactive_plans.get(mg.name, ())):
-            t = row.time_index
+        for i, reactive_row in enumerate(case.reactive_plans.get(mg.name, ())):
+            t = reactive_row.time_index
             active = {
                 **{
                     mg.resource_id("wind", b): r["p_wind"][(b, t)]
@@ -521,14 +601,81 @@ def solve_case_misocp(
                     },
                     mg.resource_id("storage", st.bus): r["q_ess"][index],
                     mg.resource_id("svg", mg.svg_bus): r["q_svg"][index],
-                }[row.resource_id]
+                }[reactive_row.resource_id]
 
-            expression = row.p_coefficient * active[
-                row.resource_id
-            ] + row.q_coefficient * reactive_at(t)
-            if row.previous_q_coefficient:
-                expression += row.previous_q_coefficient * reactive_at(t - 1)
-            model.addCons(expression <= row.upper, name=f"{mg.name}.reactive_plan[{i}]")
+            expression = reactive_row.p_coefficient * active[
+                reactive_row.resource_id
+            ] + reactive_row.q_coefficient * reactive_at(t)
+            if reactive_row.previous_q_coefficient:
+                expression += reactive_row.previous_q_coefficient * reactive_at(t - 1)
+            model.addCons(expression <= reactive_row.upper, name=f"{mg.name}.reactive_plan[{i}]")
+
+        joint_pq = case.joint_pq_plans.get(mg.name)
+        if joint_pq is not None:
+            h = joint_pq.transition_minutes
+            ids = tuple(x.resource_id for x in joint_pq.devices.resources)
+
+            def endpoint_axis(t, reactive):
+                return {
+                    **{
+                        mg.resource_id("wind", b): r[
+                            "q_wind" if reactive else "p_wind"
+                        ][(b, t)]
+                        for b in mg.wind_capacity_mw
+                    },
+                    **{
+                        mg.resource_id("pv", b): r["q_pv" if reactive else "p_pv"][
+                            (b, t)
+                        ]
+                        for b in mg.pv_capacity_mw
+                    },
+                    mg.resource_id("storage", st.bus): r["q_ess"][t]
+                    if reactive
+                    else r["p_dis"][t] - r["p_ch"][t],
+                    mg.resource_id("svg", mg.svg_bus): r["q_svg"][t]
+                    if reactive
+                    else 0.0,
+                }
+
+            if set(ids) != set(endpoint_axis(0, False)):
+                raise ValueError("joint P/Q solver resource identities differ")
+            variables = {}
+            for t in range(T):
+                endpoints = (endpoint_axis(t, False), endpoint_axis(t, True))
+                for i, rid in enumerate(ids):
+                    for k in range(1, h + 1):
+                        for axis in ("p", "q", "up", "uq", "dq"):
+                            variables[i, t, k, axis] = (
+                                endpoints[axis == "q"][rid]
+                                if k == h and axis in ("p", "q")
+                                else model.addVar(
+                                    name=f"{mg.name}.joint_pq[{i},{t},{k},{axis}]",
+                                    lb=0 if axis == "dq" else -model.infinity(),
+                                )
+                            )
+            r["pq_variables"] = variables
+            r["pq_endpoints_p"] = {
+                (i, t): endpoint_axis(t, False)[rid]
+                for t in range(T)
+                for i, rid in enumerate(ids)
+            }
+            r["pq_endpoints_q"] = {
+                (i, t): endpoint_axis(t, True)[rid]
+                for t in range(T)
+                for i, rid in enumerate(ids)
+            }
+            for j, pq_row in enumerate(pq_planning_rows(joint_pq)):
+                expression = quicksum(
+                    term.coefficient
+                    * variables[term.resource, term.window, term.step, term.axis]
+                    for term in pq_row.terms
+                )
+                model.addCons(
+                    expression == pq_row.upper
+                    if pq_row.equality
+                    else expression <= pq_row.upper,
+                    name=f"{mg.name}.joint_pq_row[{j}]",
+                )
 
         incoming = {bus: [] for bus in mg.buses}
         outgoing = {bus: [] for bus in mg.buses}
@@ -584,6 +731,14 @@ def solve_case_misocp(
                 name=f"cluster.import_limit[{t}]",
             )
             model.addCons(aggregate <= peak, name=f"cluster.peak[{t}]")
+            if joint_network_target is not None:
+                aggregate_q = quicksum(refs[mg.name]["q_grid"][t] for mg in selected)
+                limit_q = (
+                    tan(acos(joint_network_target.pf_target)) * aggregate
+                    - joint_network_target.pf_margin_mvar[t]
+                )
+                model.addCons(aggregate_q <= limit_q, name=f"cluster.pf_pos[{t}]")
+                model.addCons(-aggregate_q <= limit_q, name=f"cluster.pf_neg[{t}]")
             if t > 0:
                 ramp = model.addVar(name=f"cluster.ramp[{t}]", lb=0.0)
                 previous = quicksum(refs[mg.name]["p_grid"][t - 1] for mg in selected)
@@ -602,9 +757,52 @@ def solve_case_misocp(
         lb=curtailment_constant,
         ub=curtailment_constant,
     )
-    model.setObjective(quicksum(objective_terms) + objective_constant, "minimize")
+    economic_objective = quicksum(objective_terms) + objective_constant
+    joint_record: dict[str, object] = {}
+    solved_objective = "original_economic"
+    if objective_mode == "feasibility":
+        solved_objective = "constant_feasibility"
+        # No artificial distance cap or weighted tracking tradeoff. All original
+        # hard constraints above remain active; this gap is NOT an economic gap.
+        model.setObjective(0.0, "minimize")
+        _optimize_model(model)
+    elif joint_network_target is not None:
+        solved_objective = "reference_distance"
+        # Lexicographic solve: distance first, then existing economic/network
+        # regularization within the best distance found plus declared tolerance.
+        # A time-limited first phase is an incumbent cap, never an optimality proof.
+        distance = quicksum(
+            refs[mg.name]["p_target_dev"][t] / joint_network_target.p_scale_mw
+            + refs[mg.name]["q_target_dev"][t] / joint_network_target.q_scale_mvar
+            for mg in selected
+            for t in range(T)
+        )
+        started = monotonic()
+        model.setRealParam("limits/time", time_limit_seconds / 2)
+        model.setObjective(distance, "minimize")
+        _optimize_model(model)
+        if model.getNSols() > 0:
+            incumbent = float(model.getSolVal(model.getBestSol(), distance))
+            joint_record = {
+                "deviation": incumbent,
+                "deviation_bound": float(model.getDualbound()),
+                "deviation_optimal": str(model.getStatus()) == "optimal",
+            }
+            model.freeTransform()
+            model.addCons(
+                distance <= incumbent + joint_network_target.deviation_tolerance,
+                name="joint.distance_cap",
+            )
+            model.setRealParam(
+                "limits/time", max(0.001, time_limit_seconds - (monotonic() - started))
+            )
+            model.setObjective(economic_objective, "minimize")
+            solved_objective = "joint_lexicographic"
+            _optimize_model(model)
+    else:
+        model.setObjective(economic_objective, "minimize")
+        _optimize_model(model)
     # Same SCIP solve, with the GIL released so the owner-death guard can run.
-    model.optimizeNogil()
     status_text = str(model.getStatus())
     solution = model.getBestSol()
     has_solution = solution is not None and model.getNSols() > 0
@@ -771,7 +969,10 @@ def solve_case_misocp(
             q_loss_line[idx] = line.x_pu * ell[idx] / mg.base_mva
             parent_v = voltage_sq[bus_index[line.parent]] / line.tap_ratio**2
             lhs = p_line[idx] ** 2 + q_line[idx] ** 2
-            cone_gap[idx] = np.maximum(0.0, parent_v * ell[idx] - lhs)
+            residual = parent_v * ell[idx] - lhs
+            cone_gap[idx] = (
+                np.abs(residual) if exact_ac_physics else np.maximum(0.0, residual)
+            )
             cone_relative_gap[idx] = cone_gap[idx] / np.maximum(1.0, lhs)
             receiving_s = np.hypot(
                 p_line[idx] - p_loss_line[idx],
@@ -928,6 +1129,26 @@ def solve_case_misocp(
             "economic_cost_cny": costs.economic_cost_cny,
         }
 
+        joint_pq = case.joint_pq_plans.get(mg.name)
+        if joint_pq is not None:
+            def number(value):
+                return float(value) if isinstance(value, (float, int)) else _value(model, solution, value)
+
+            n = len(joint_pq.devices.resources)
+            variables = r["pq_variables"]
+            witness = PQPlanningWitness.model_validate({
+                "inputs": joint_pq,
+                "commands": tuple(tuple({
+                    "p_mw": tuple(number(variables[i,t,k,"up"]) for i in range(n)),
+                    "q_mvar": tuple(number(variables[i,t,k,"uq"]) for i in range(n)),
+                } for k in range(1,joint_pq.transition_minutes+1)) for t in range(T)),
+                "endpoints": tuple({
+                    "p_mw": tuple(number(r["pq_endpoints_p"][i,t]) for i in range(n)),
+                    "q_mvar": tuple(number(r["pq_endpoints_q"][i,t]) for i in range(n)),
+                } for t in range(T)),
+            })
+            result_mg[mg.name]["joint_pq_witness"] = witness.model_dump(mode="json")
+
     cluster_p = np.sum(
         [np.asarray(result_mg[mg.name]["p_grid_mw"]) for mg in selected], axis=0
     )
@@ -935,6 +1156,22 @@ def solve_case_misocp(
         [np.asarray(result_mg[mg.name]["q_grid_mvar"]) for mg in selected], axis=0
     )
     cluster: Dict[str, object] = {
+        "original_constraints_verified": bool(
+            model.checkSol(
+                solution,
+                printreason=display_solver_output,
+                completely=True,
+                original=True,
+            )
+        )
+        if exact_ac_physics
+        else None,
+        "solved_objective": solved_objective,
+        "network_physics": "branch-flow-equality"
+        if exact_ac_physics
+        else "branch-flow-socp",
+        "objective_mode": objective_mode,
+        "original_objective_cny": float(model.getSolVal(solution, economic_objective)),
         "total_import_mw": cluster_p,
         "total_reactive_import_mvar": cluster_q,
         "peak_import_mw": float(np.max(cluster_p)),
@@ -987,12 +1224,35 @@ def solve_case_misocp(
         "storage_binary_relaxation_used": bool(relax_storage_binaries),
     }
     raw_objective = float(model.getObjVal())
+    cluster["solver_objective_value"] = raw_objective
+    if joint_network_target is not None:
+        joint_record["deviation"] = sum(
+            float(
+                np.abs(
+                    result_mg[m.name]["p_grid_mw"]
+                    - np.asarray(pcc_targets[m.name]["p_mw"])
+                ).sum()
+            )
+            / joint_network_target.p_scale_mw
+            + float(
+                np.abs(
+                    result_mg[m.name]["q_grid_mvar"]
+                    - np.asarray(pcc_targets[m.name]["q_mvar"])
+                ).sum()
+            )
+            / joint_network_target.q_scale_mvar
+            for m in selected
+        )
+        cluster["joint_network_recovery"] = joint_record
     return OptimizationResult(
         success=success,
         status=status_code,
         message=f"SCIP status: {status_text}",
-        objective_cny=raw_objective,
-        solver_objective_without_constants_cny=raw_objective - curtailment_constant,
+        objective_cny=float(model.getSolVal(solution, economic_objective)),
+        solver_objective_without_constants_cny=float(
+            model.getSolVal(solution, economic_objective)
+        )
+        - curtailment_constant,
         mip_gap=gap_value,
         microgrids=result_mg,
         cluster=cluster,

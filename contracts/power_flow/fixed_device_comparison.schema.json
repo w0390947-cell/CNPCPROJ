@@ -1,0 +1,933 @@
+{
+  "$defs": {
+    "BranchServiceState": {
+      "properties": {
+        "branch_id": {
+          "title": "Branch Id",
+          "type": "string"
+        },
+        "in_service": {
+          "title": "In Service",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "branch_id",
+        "in_service"
+      ],
+      "title": "BranchServiceState",
+      "type": "object"
+    },
+    "BusLoadState": {
+      "additionalProperties": false,
+      "properties": {
+        "bus_id": {
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "p_mw": {
+          "title": "P Mw",
+          "type": "number"
+        },
+        "q_mvar": {
+          "title": "Q Mvar",
+          "type": "number"
+        }
+      },
+      "required": [
+        "bus_id",
+        "p_mw",
+        "q_mvar"
+      ],
+      "title": "BusLoadState",
+      "type": "object"
+    },
+    "DevicePerturbation": {
+      "additionalProperties": false,
+      "properties": {
+        "resource_id": {
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "quantity": {
+          "enum": [
+            "p_mw",
+            "q_mvar"
+          ],
+          "title": "Quantity",
+          "type": "string"
+        },
+        "delta": {
+          "title": "Delta",
+          "type": "number"
+        }
+      },
+      "required": [
+        "resource_id",
+        "quantity",
+        "delta"
+      ],
+      "title": "DevicePerturbation",
+      "type": "object"
+    },
+    "DeviceState": {
+      "additionalProperties": false,
+      "description": "P/Q positive into the network; storage charging is negative P.\n\nOptional capability bounds are reported, never used to clip the requested state.",
+      "properties": {
+        "resource_id": {
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "bus_id": {
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "resource_type": {
+          "$ref": "#/$defs/ResourceType"
+        },
+        "p_mw": {
+          "title": "P Mw",
+          "type": "number"
+        },
+        "q_mvar": {
+          "title": "Q Mvar",
+          "type": "number"
+        },
+        "in_service": {
+          "title": "In Service",
+          "type": "boolean"
+        },
+        "p_min_mw": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "P Min Mw"
+        },
+        "p_max_mw": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "P Max Mw"
+        },
+        "q_min_mvar": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Q Min Mvar"
+        },
+        "q_max_mvar": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Q Max Mvar"
+        },
+        "s_max_mva": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "S Max Mva"
+        },
+        "wind_reactive_capability": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WindReactiveCapability"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "resource_id",
+        "bus_id",
+        "resource_type",
+        "p_mw",
+        "q_mvar",
+        "in_service"
+      ],
+      "title": "DeviceState",
+      "type": "object"
+    },
+    "FixedStateSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "snapshot_id": {
+          "title": "Snapshot Id",
+          "type": "string"
+        },
+        "at": {
+          "format": "date-time",
+          "title": "At",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "load_basis": {
+          "const": "gross_bus_load",
+          "title": "Load Basis",
+          "type": "string"
+        },
+        "slack_voltage_pu": {
+          "title": "Slack Voltage Pu",
+          "type": "number"
+        },
+        "quality_valid": {
+          "title": "Quality Valid",
+          "type": "boolean"
+        },
+        "coherent": {
+          "title": "Coherent",
+          "type": "boolean"
+        },
+        "loads": {
+          "items": {
+            "$ref": "#/$defs/BusLoadState"
+          },
+          "title": "Loads",
+          "type": "array"
+        },
+        "devices": {
+          "items": {
+            "$ref": "#/$defs/DeviceState"
+          },
+          "title": "Devices",
+          "type": "array"
+        }
+      },
+      "required": [
+        "snapshot_id",
+        "at",
+        "source",
+        "load_basis",
+        "slack_voltage_pu",
+        "quality_valid",
+        "coherent",
+        "loads",
+        "devices"
+      ],
+      "title": "FixedStateSnapshot",
+      "type": "object"
+    },
+    "NetworkBranchKind": {
+      "enum": [
+        "line",
+        "transformer"
+      ],
+      "title": "NetworkBranchKind",
+      "type": "string"
+    },
+    "NetworkBus": {
+      "properties": {
+        "bus_id": {
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "nominal_voltage_kv": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Nominal Voltage Kv"
+        },
+        "provenance": {
+          "default": "",
+          "title": "Provenance",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bus_id",
+        "name",
+        "nominal_voltage_kv"
+      ],
+      "title": "NetworkBus",
+      "type": "object"
+    },
+    "NetworkContingency": {
+      "properties": {
+        "contingency_id": {
+          "title": "Contingency Id",
+          "type": "string"
+        },
+        "outaged_branch_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Outaged Branch Ids",
+          "type": "array"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "provenance": {
+          "default": "",
+          "title": "Provenance",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contingency_id",
+        "outaged_branch_ids"
+      ],
+      "title": "NetworkContingency",
+      "type": "object"
+    },
+    "NetworkDataProvenance": {
+      "description": "网络数据包的来源和批准状态。\n\n``synthetic`` 与 ``approved_for_field_use`` 互斥，避免合成台账被误标为现场\n台账。正式现场模型必须同时给出审批人和审批时间。",
+      "properties": {
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "dataset_version": {
+          "title": "Dataset Version",
+          "type": "string"
+        },
+        "synthetic": {
+          "default": false,
+          "title": "Synthetic",
+          "type": "boolean"
+        },
+        "approved_for_field_use": {
+          "default": false,
+          "title": "Approved For Field Use",
+          "type": "boolean"
+        },
+        "approved_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Approved By"
+        },
+        "approved_at_utc": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Approved At Utc"
+        }
+      },
+      "required": [
+        "source",
+        "dataset_version"
+      ],
+      "title": "NetworkDataProvenance",
+      "type": "object"
+    },
+    "NetworkModelV2": {
+      "properties": {
+        "network_id": {
+          "title": "Network Id",
+          "type": "string"
+        },
+        "base_mva": {
+          "title": "Base Mva",
+          "type": "number"
+        },
+        "pcc_bus_id": {
+          "title": "Pcc Bus Id",
+          "type": "string"
+        },
+        "buses": {
+          "items": {
+            "$ref": "#/$defs/NetworkBus"
+          },
+          "title": "Buses",
+          "type": "array"
+        },
+        "branches": {
+          "items": {
+            "$ref": "#/$defs/SeriesBranch"
+          },
+          "title": "Branches",
+          "type": "array"
+        },
+        "operating_modes": {
+          "items": {
+            "$ref": "#/$defs/NetworkOperatingMode"
+          },
+          "title": "Operating Modes",
+          "type": "array"
+        },
+        "default_operating_mode_id": {
+          "title": "Default Operating Mode Id",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/NetworkDataProvenance"
+        },
+        "phase_model": {
+          "$ref": "#/$defs/NetworkPhaseModel",
+          "default": "balanced_positive_sequence"
+        },
+        "switches": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/NetworkSwitch"
+          },
+          "title": "Switches",
+          "type": "array"
+        },
+        "shunts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ShuntCompensator"
+          },
+          "title": "Shunts",
+          "type": "array"
+        },
+        "contingencies": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/NetworkContingency"
+          },
+          "title": "Contingencies",
+          "type": "array"
+        }
+      },
+      "required": [
+        "network_id",
+        "base_mva",
+        "pcc_bus_id",
+        "buses",
+        "branches",
+        "operating_modes",
+        "default_operating_mode_id",
+        "provenance"
+      ],
+      "title": "NetworkModelV2",
+      "type": "object"
+    },
+    "NetworkOperatingMode": {
+      "properties": {
+        "mode_id": {
+          "title": "Mode Id",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "switch_states": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SwitchState"
+          },
+          "title": "Switch States",
+          "type": "array"
+        },
+        "branch_states": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/BranchServiceState"
+          },
+          "title": "Branch States",
+          "type": "array"
+        },
+        "transformer_taps": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/TransformerTapPosition"
+          },
+          "title": "Transformer Taps",
+          "type": "array"
+        },
+        "shunt_operating_points": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ShuntOperatingPoint"
+          },
+          "title": "Shunt Operating Points",
+          "type": "array"
+        },
+        "provenance": {
+          "default": "",
+          "title": "Provenance",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode_id",
+        "description"
+      ],
+      "title": "NetworkOperatingMode",
+      "type": "object"
+    },
+    "NetworkPhaseModel": {
+      "enum": [
+        "balanced_positive_sequence",
+        "three_phase_unbalanced"
+      ],
+      "title": "NetworkPhaseModel",
+      "type": "string"
+    },
+    "NetworkSecurityLimits": {
+      "description": "调用者显式给出研究范围内限值；核心不猜测现场定值。",
+      "properties": {
+        "voltage_min_pu": {
+          "title": "Voltage Min Pu",
+          "type": "number"
+        },
+        "voltage_max_pu": {
+          "title": "Voltage Max Pu",
+          "type": "number"
+        },
+        "pcc_import_min_mw": {
+          "title": "Pcc Import Min Mw",
+          "type": "number"
+        },
+        "pcc_import_max_mw": {
+          "title": "Pcc Import Max Mw",
+          "type": "number"
+        },
+        "power_factor_min": {
+          "title": "Power Factor Min",
+          "type": "number"
+        },
+        "comparison_tolerance": {
+          "default": 1e-06,
+          "title": "Comparison Tolerance",
+          "type": "number"
+        },
+        "flow_tolerance": {
+          "default": 1e-10,
+          "title": "Flow Tolerance",
+          "type": "number"
+        },
+        "max_iterations": {
+          "default": 100,
+          "title": "Max Iterations",
+          "type": "integer"
+        },
+        "power_tolerance_pu": {
+          "default": 1e-08,
+          "title": "Power Tolerance Pu",
+          "type": "number"
+        },
+        "singular_voltage_pu": {
+          "default": 1e-08,
+          "title": "Singular Voltage Pu",
+          "type": "number"
+        }
+      },
+      "required": [
+        "voltage_min_pu",
+        "voltage_max_pu",
+        "pcc_import_min_mw",
+        "pcc_import_max_mw",
+        "power_factor_min"
+      ],
+      "title": "NetworkSecurityLimits",
+      "type": "object"
+    },
+    "NetworkSwitch": {
+      "properties": {
+        "switch_id": {
+          "title": "Switch Id",
+          "type": "string"
+        },
+        "controlled_branch_id": {
+          "title": "Controlled Branch Id",
+          "type": "string"
+        },
+        "normally_closed": {
+          "default": true,
+          "title": "Normally Closed",
+          "type": "boolean"
+        },
+        "provenance": {
+          "default": "",
+          "title": "Provenance",
+          "type": "string"
+        }
+      },
+      "required": [
+        "switch_id",
+        "controlled_branch_id"
+      ],
+      "title": "NetworkSwitch",
+      "type": "object"
+    },
+    "ResourceType": {
+      "enum": [
+        "wind",
+        "pv",
+        "storage",
+        "svg"
+      ],
+      "title": "ResourceType",
+      "type": "string"
+    },
+    "SeriesBranch": {
+      "description": "线路或变压器串联支路。\n\n变压器 ``fixed_tap_ratio`` 是在两侧各自额定电压基准上的非额定标幺变比，\n不是高压侧/低压侧额定 kV 的直接比值。\n串联 R/X 位于声明方向的 to_bus 侧；反向解析时随变比折算，不保留原数值。",
+      "properties": {
+        "branch_id": {
+          "title": "Branch Id",
+          "type": "string"
+        },
+        "from_bus_id": {
+          "title": "From Bus Id",
+          "type": "string"
+        },
+        "to_bus_id": {
+          "title": "To Bus Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/NetworkBranchKind"
+        },
+        "r_pu": {
+          "title": "R Pu",
+          "type": "number"
+        },
+        "x_pu": {
+          "title": "X Pu",
+          "type": "number"
+        },
+        "s_max_mva": {
+          "title": "S Max Mva",
+          "type": "number"
+        },
+        "normally_in_service": {
+          "default": true,
+          "title": "Normally In Service",
+          "type": "boolean"
+        },
+        "fixed_tap_ratio": {
+          "default": 1.0,
+          "title": "Fixed Tap Ratio",
+          "type": "number"
+        },
+        "phase_shift_degrees": {
+          "default": 0.0,
+          "title": "Phase Shift Degrees",
+          "type": "number"
+        },
+        "tap_changer": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TransformerTapChanger"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "provenance": {
+          "default": "",
+          "title": "Provenance",
+          "type": "string"
+        }
+      },
+      "required": [
+        "branch_id",
+        "from_bus_id",
+        "to_bus_id",
+        "kind",
+        "r_pu",
+        "x_pu",
+        "s_max_mva"
+      ],
+      "title": "SeriesBranch",
+      "type": "object"
+    },
+    "ShuntCompensator": {
+      "description": "并联电容/电抗器台账。\n\n``q_per_step_mvar`` 是母线电压为 1 pu 时每档的额定无功；实际注入按\n``Q = Q_nominal * |V|²`` 计算。",
+      "properties": {
+        "shunt_id": {
+          "title": "Shunt Id",
+          "type": "string"
+        },
+        "bus_id": {
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/ShuntKind"
+        },
+        "q_per_step_mvar": {
+          "title": "Q Per Step Mvar",
+          "type": "number"
+        },
+        "minimum_steps": {
+          "title": "Minimum Steps",
+          "type": "integer"
+        },
+        "maximum_steps": {
+          "title": "Maximum Steps",
+          "type": "integer"
+        },
+        "default_steps": {
+          "title": "Default Steps",
+          "type": "integer"
+        },
+        "normally_in_service": {
+          "default": true,
+          "title": "Normally In Service",
+          "type": "boolean"
+        },
+        "provenance": {
+          "default": "",
+          "title": "Provenance",
+          "type": "string"
+        }
+      },
+      "required": [
+        "shunt_id",
+        "bus_id",
+        "kind",
+        "q_per_step_mvar",
+        "minimum_steps",
+        "maximum_steps",
+        "default_steps"
+      ],
+      "title": "ShuntCompensator",
+      "type": "object"
+    },
+    "ShuntKind": {
+      "enum": [
+        "capacitor",
+        "reactor"
+      ],
+      "title": "ShuntKind",
+      "type": "string"
+    },
+    "ShuntOperatingPoint": {
+      "properties": {
+        "shunt_id": {
+          "title": "Shunt Id",
+          "type": "string"
+        },
+        "in_service": {
+          "title": "In Service",
+          "type": "boolean"
+        },
+        "steps": {
+          "title": "Steps",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "shunt_id",
+        "in_service",
+        "steps"
+      ],
+      "title": "ShuntOperatingPoint",
+      "type": "object"
+    },
+    "SwitchState": {
+      "properties": {
+        "switch_id": {
+          "title": "Switch Id",
+          "type": "string"
+        },
+        "closed": {
+          "title": "Closed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "switch_id",
+        "closed"
+      ],
+      "title": "SwitchState",
+      "type": "object"
+    },
+    "TransformerTapChanger": {
+      "properties": {
+        "minimum_position": {
+          "title": "Minimum Position",
+          "type": "integer"
+        },
+        "maximum_position": {
+          "title": "Maximum Position",
+          "type": "integer"
+        },
+        "neutral_position": {
+          "title": "Neutral Position",
+          "type": "integer"
+        },
+        "default_position": {
+          "title": "Default Position",
+          "type": "integer"
+        },
+        "step_percent": {
+          "title": "Step Percent",
+          "type": "number"
+        }
+      },
+      "required": [
+        "minimum_position",
+        "maximum_position",
+        "neutral_position",
+        "default_position",
+        "step_percent"
+      ],
+      "title": "TransformerTapChanger",
+      "type": "object"
+    },
+    "TransformerTapPosition": {
+      "properties": {
+        "branch_id": {
+          "title": "Branch Id",
+          "type": "string"
+        },
+        "position": {
+          "title": "Position",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "branch_id",
+        "position"
+      ],
+      "title": "TransformerTapPosition",
+      "type": "object"
+    },
+    "WindReactiveCapability": {
+      "description": "Intersect policy, absolute Q rating and converter capacity at actual P.\n\nMissing ratio/absolute Q is reserved for historical inputs which only\ndeclared a converter envelope. A zero ratio explicitly disables Q.",
+      "properties": {
+        "s_max_mva": {
+          "title": "S Max Mva",
+          "type": "number"
+        },
+        "q_abs_over_p_max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Q Abs Over P Max"
+        },
+        "q_abs_max_mvar": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Q Abs Max Mvar"
+        }
+      },
+      "required": [
+        "s_max_mva"
+      ],
+      "title": "WindReactiveCapability",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "enum": [
+        "fixed-device-comparison-v1",
+        "fixed-device-comparison-v2"
+      ],
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "network": {
+      "$ref": "#/$defs/NetworkModelV2"
+    },
+    "operating_mode_id": {
+      "title": "Operating Mode Id",
+      "type": "string"
+    },
+    "snapshot": {
+      "$ref": "#/$defs/FixedStateSnapshot"
+    },
+    "perturbation": {
+      "$ref": "#/$defs/DevicePerturbation"
+    },
+    "limits": {
+      "$ref": "#/$defs/NetworkSecurityLimits"
+    },
+    "require_field_approval": {
+      "default": false,
+      "title": "Require Field Approval",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schema_version",
+    "network",
+    "operating_mode_id",
+    "snapshot",
+    "perturbation",
+    "limits"
+  ],
+  "title": "ComparisonRequest",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-generator": "tools/export_comparison_contract.py v1; do not edit",
+  "description": "Versioned fixed-state input. Wind capability curves require v2; v1 is retained for historical inputs. Physical consistency and version checks also apply at runtime."
+}

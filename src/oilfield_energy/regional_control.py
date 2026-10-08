@@ -12,12 +12,24 @@ from typing import Mapping, Sequence
 
 import cvxpy as cp
 import numpy as np
+from numpy.typing import NDArray
 from scipy.sparse import coo_matrix
 
 from .data import MicrogridData, ProjectCase, renewable_active_power_limits
 from .hierarchy_types import ADMMConfig, CoordinationSignal, RegionalSchedule
-from .modules.dispatch.api import account_renewable, evaluate_economics
-from .modules.dispatch.contracts import CostRates, DispatchCapabilities
+from .modules.dispatch.api import (
+    account_renewable,
+    coordination_shunt_injection,
+    evaluate_economics,
+    storage_reachability_rows,
+)
+from .modules.dispatch.contracts import (
+    CoordinationNetworkCalibration,
+    CostRates,
+    DispatchCapabilities,
+    RegionalNetworkCandidate,
+)
+from .network_model import validate_legacy_network_alignment
 
 
 def _capacity_polygon(
@@ -81,14 +93,20 @@ class RegionalConvexController:
         case: ProjectCase,
         microgrid: MicrogridData,
         config: ADMMConfig,
-        loss_calibration: Mapping[str, np.ndarray] | None = None,
+        loss_calibration: CoordinationNetworkCalibration
+        | Mapping[str, np.ndarray]
+        | None = None,
         p_grid_security_floor_mw: np.ndarray | None = None,
         capabilities: DispatchCapabilities | None = None,
+        network_candidate: RegionalNetworkCandidate | None = None,
     ):
+        if case.joint_pq_plans:
+            raise ValueError("joint single P/Q planning requires the MISOCP backend")
         self.case = case
         self.microgrid = microgrid
         self.config = config
         self.capabilities = capabilities or DispatchCapabilities()
+        self.network_candidate = network_candidate
         self.T = len(case.time_hours)
         self.reactive_rhs: cp.Parameter | None = None
         self.loss_calibration = loss_calibration
@@ -125,6 +143,11 @@ class RegionalConvexController:
         self.p_discharge = cp.Variable(T, nonneg=True, name=f"{mg.name}_p_discharge")
         self.energy = cp.Variable(T + 1, name=f"{mg.name}_energy")
         self.q_support = cp.Variable(T, name=f"{mg.name}_q_support")
+        self.network_enabled = self.config.network_model == "branch-flow-socp-v1"
+        self.network_load_p = {b: cp.Parameter(T) for b in mg.buses}
+        self.network_load_q = {b: cp.Parameter(T) for b in mg.buses}
+        self.network_loss: cp.Expression = cp.Constant(np.zeros(T))
+        self.network_cost: cp.Expression = cp.Constant(0.0)
 
         self.p_demand = cp.Parameter(T)
         self.q_demand = cp.Parameter(T)
@@ -133,6 +156,8 @@ class RegionalConvexController:
         self.price = cp.Parameter(T)
         self.initial_energy = cp.Parameter()
         self.terminal_energy = cp.Parameter()
+        self.terminal_lower = cp.Parameter()
+        self.terminal_upper = cp.Parameter()
         self.reserve_energy_floor = cp.Parameter(T + 1)
         self.reserve_energy_ceiling = cp.Parameter(T + 1)
         self.reserve_power_minimum = cp.Parameter(T)
@@ -149,9 +174,6 @@ class RegionalConvexController:
         st = mg.storage
         pf_tan = tan(acos(a.pf_dispatch_target))
         constraints: list[cp.Constraint] = [
-            self.p_grid + self.p_renew + self.p_discharge - self.p_charge
-            == self.p_demand,
-            self.q_grid + self.q_support == self.q_demand,
             self.p_grid >= self.security_floor,
             self.p_grid <= mg.p_grid_max_mw,
             self.q_grid <= pf_tan * (self.p_grid - self.security_floor),
@@ -169,24 +191,66 @@ class RegionalConvexController:
             self.energy <= self.reserve_energy_ceiling,
             self.p_discharge - self.p_charge >= self.reserve_power_minimum,
             self.p_discharge - self.p_charge <= self.reserve_power_maximum,
-            self.energy[T] >= self.terminal_energy - a.terminal_energy_tolerance_mwh,
-            self.energy[T] <= self.terminal_energy + a.terminal_energy_tolerance_mwh,
+            self.energy[T] >= self.terminal_lower,
+            self.energy[T] <= self.terminal_upper,
         ]
+        if not self.network_enabled:
+            constraints.extend(
+                [
+                    self.p_grid + self.p_renew + self.p_discharge - self.p_charge
+                    == self.p_demand,
+                    self.q_grid + self.q_support == self.q_demand,
+                ]
+            )
+        if self.network_candidate is not None:
+            constraints.extend(
+                [
+                    self.p_grid == np.asarray(self.network_candidate.p_mw),
+                    self.q_grid == np.asarray(self.network_candidate.q_mvar),
+                ]
+            )
+        reachability = (
+            case.storage_reachability.get(mg.name)
+            if self.capabilities.storage_enabled
+            else None
+        )
+        if reachability is not None:
+            power = self.p_discharge - self.p_charge
+            for row in storage_reachability_rows(reachability):
+                previous = (
+                    power[row.time_index - 1] if row.previous_coefficient else 0.0
+                )
+                constraints.append(
+                    row.coefficient * power[row.time_index]
+                    + row.previous_coefficient * previous
+                    <= row.upper
+                )
         self._build_resources(constraints)
 
     def update_window(
         self,
         case: ProjectCase,
         microgrid: MicrogridData,
-        loss_calibration: Mapping[str, np.ndarray] | None,
+        loss_calibration: CoordinationNetworkCalibration
+        | Mapping[str, np.ndarray]
+        | None,
         security_floor: np.ndarray,
     ) -> None:
         """Refresh owned data; caller must verify structural compatibility first."""
-        mg, T = microgrid, self.T
+        mg, T, a = microgrid, self.T, case.assumptions
         if len(case.time_hours) != T or security_floor.shape != (T,):
             raise ValueError("coordination window dimensions changed")
+        if case.storage_reachability.get(mg.name) != self.case.storage_reachability.get(
+            mg.name
+        ):
+            raise ValueError(
+                "changed storage reachability requires a rebuilt controller"
+            )
         self.case, self.microgrid = case, microgrid
         self.loss_calibration = loss_calibration
+        for bus in mg.buses:
+            self.network_load_p[bus].value = np.array(mg.load_p_mw[bus], copy=True)
+            self.network_load_q[bus].value = np.array(mg.load_q_mvar[bus], copy=True)
         self.p_grid_security_floor_mw = np.array(security_floor, dtype=float, copy=True)
 
         load_p = np.sum(np.vstack(list(mg.load_p_mw.values())), axis=0)
@@ -212,32 +276,86 @@ class RegionalConvexController:
         )
         self.raw_renewable_available_mw = renewable_available.copy()
         self.renewable_available_mw = renewable_limit.copy()
-        # 正式分层流程使用AC一致MISOCP结果逐时校准；单独调用ADMM时回退到
-        # 保守固定裕度。协调层仍保持凸性，精确网络方程由区域MISOCP落实。
+        # Network calibration holds reference-voltage injections fixed to retain
+        # convexity. It is not an exact network model; see ADR 0037.
+        network = validate_legacy_network_alignment(mg)
+        calibration = (
+            self.loss_calibration
+            if isinstance(self.loss_calibration, CoordinationNetworkCalibration)
+            else None
+        )
+        shunt_q: NDArray[np.float64] = (
+            np.zeros(T)
+            if self.network_enabled
+            else np.asarray(
+                coordination_shunt_injection(
+                    calibration,
+                    current_nominal_mvar_by_bus=network.shunt_q_nominal_mvar_by_bus,
+                    steps=T,
+                ),
+                dtype=np.float64,
+            )
+        )
+        p_loss_allowance: NDArray[np.float64]
+        q_loss_allowance: NDArray[np.float64]
         if self.loss_calibration is None:
             p_loss_allowance = 0.008 * load_p
             q_loss_allowance = 0.005 * load_q
-        else:
+        elif isinstance(self.loss_calibration, CoordinationNetworkCalibration):
             p_loss_allowance = np.asarray(
-                self.loss_calibration["p_loss_mw"], dtype=float
+                self.loss_calibration.p_loss_mw, dtype=np.float64
             )
             q_loss_allowance = np.asarray(
-                self.loss_calibration["q_loss_mvar"], dtype=float
+                self.loss_calibration.q_loss_mvar, dtype=np.float64
+            )
+        else:
+            p_loss_allowance = np.asarray(
+                self.loss_calibration["p_loss_mw"], dtype=np.float64
+            )
+            q_loss_allowance = np.asarray(
+                self.loss_calibration["q_loss_mvar"], dtype=np.float64
             )
             if p_loss_allowance.shape != (T,) or q_loss_allowance.shape != (T,):
                 raise ValueError(
                     f"{mg.name} loss calibration must contain {T} time steps"
                 )
+            if (
+                not np.isfinite(p_loss_allowance).all()
+                or not np.isfinite(q_loss_allowance).all()
+            ):
+                raise ValueError(f"{mg.name} loss calibration must be finite")
             if np.min(p_loss_allowance) < -1e-9 or np.min(q_loss_allowance) < -1e-9:
                 raise ValueError(f"{mg.name} loss calibration must be nonnegative")
         self.p_loss_allowance_mw = p_loss_allowance.copy()
+        self.fixed_shunt_q_mvar: NDArray[np.float64] = np.array(
+            shunt_q, dtype=np.float64, copy=True
+        )
         self.p_demand.value = load_p + p_loss_allowance
-        self.q_demand.value = load_q + q_loss_allowance
+        self.q_demand.value = load_q + q_loss_allowance - shunt_q
         self.security_floor.value = self.p_grid_security_floor_mw.copy()
         self.renewable_limit.value = renewable_limit.copy()
         self.price.value = np.array(case.price_cny_per_mwh, dtype=float, copy=True)
         self.initial_energy.value = mg.storage.e_initial_mwh
         self.terminal_energy.value = mg.storage.terminal_energy_mwh
+        terminal = case.storage_window_targets.get(mg.name)
+        self.terminal_lower.value = (
+            (
+                terminal.minimum_mwh
+                if terminal is not None
+                else mg.storage.terminal_energy_mwh - a.terminal_energy_tolerance_mwh
+            )
+            if self.capabilities.storage_enabled
+            else mg.storage.e_initial_mwh
+        )
+        self.terminal_upper.value = (
+            (
+                terminal.maximum_mwh
+                if terminal is not None
+                else mg.storage.terminal_energy_mwh + a.terminal_energy_tolerance_mwh
+            )
+            if self.capabilities.storage_enabled
+            else mg.storage.e_initial_mwh
+        )
         if self.reactive_rhs is not None:
             self.reactive_rhs.value = np.array(
                 [row.upper for row in case.reactive_plans[mg.name]]
@@ -412,6 +530,8 @@ class RegionalConvexController:
                 - self.p_discharge[t] * a.dt_hours / st.eta_discharge
             )
 
+        if self.network_enabled:
+            self._build_network(constraints)
         local_cost = (
             cp.sum(cp.multiply(self.price * a.dt_hours, self.p_grid))
             + a.curtailment_cost_cny_per_mwh
@@ -427,6 +547,7 @@ class RegionalConvexController:
                 else 0.0
             )
             + self.config.local_q_regularization * cp.sum_squares(self.q_support)
+            + self.network_cost
         )
         augmented = (
             0.5
@@ -441,6 +562,88 @@ class RegionalConvexController:
         self.autonomous_problem = cp.Problem(cp.Minimize(local_cost), constraints)
         if not self.problem.is_dpp() or not self.autonomous_problem.is_dpp():
             raise ValueError("regional parameterized model must be DPP")
+
+    def _build_network(self, constraints: list[cp.Constraint]) -> None:
+        """Branch-flow SOCP with the same two-ended thermal polygons as MISOCP.
+
+        Storage modes and current equalities remain relaxed. These constraints
+        inform coordination but never replace the independent AC adoption gate.
+        See Network_Physical_Recovery.md and the cross-backend conservation tests.
+        """
+        mg, a, T = self.microgrid, self.case.assumptions, self.T
+        network = validate_legacy_network_alignment(mg)
+        voltage = {b: cp.Variable(T, nonneg=True) for b in mg.buses}
+        p_in: dict[str, cp.Expression] = {b: cp.Constant(np.zeros(T)) for b in mg.buses}
+        q_in: dict[str, cp.Expression] = {
+            b: network.shunt_q_nominal_mvar_by_bus[b] * voltage[b] for b in mg.buses
+        }
+        losses: list[cp.Expression] = []
+        v_cost: list[cp.Expression] = []
+        for bus in mg.buses:
+            if bus == mg.pcc_bus:
+                constraints.append(voltage[bus] == 1.0)
+                p_in[bus] += self.p_grid
+                q_in[bus] += self.q_grid
+            else:
+                constraints.extend(
+                    [
+                        voltage[bus] >= mg.voltage_min_pu**2,
+                        voltage[bus] <= mg.voltage_max_pu**2,
+                    ]
+                )
+            v_cost.append(cp.sum(cp.abs(voltage[bus] - 1.0)))
+        for line in network.branches:
+            p, q, ell = cp.Variable(T), cp.Variable(T), cp.Variable(T, nonneg=True)
+            r, x = line.r_pu / mg.base_mva, line.x_pu / mg.base_mva
+            parent_v = voltage[line.parent] / line.tap_ratio**2
+            constraints.append(
+                ell <= line.s_max_mva**2 * line.tap_ratio**2 / mg.voltage_min_pu**2
+            )
+            constraints.extend(_capacity_polygon(p, q, line.s_max_mva, a.polygon_sides))
+            constraints.extend(
+                _capacity_polygon(
+                    p - r * ell, q - x * ell, line.s_max_mva, a.polygon_sides
+                )
+            )
+            # ||(2P,2Q,v-l)|| <= v+l is exactly P²+Q² <= vl.
+            constraints.append(
+                cp.SOC(
+                    parent_v + ell, cp.vstack([2 * p, 2 * q, parent_v - ell]), axis=0
+                )
+            )
+            constraints.append(
+                voltage[line.child]
+                == parent_v - 2 * (r * p + x * q) + (r * r + x * x) * ell
+            )
+            p_in[line.parent] -= p
+            q_in[line.parent] -= q
+            p_in[line.child] += p - r * ell
+            q_in[line.child] += q - x * ell
+            losses.append(r * ell)
+        for bus in mg.buses:
+            for active, reactive in (
+                (self.p_wind, self.q_wind),
+                (self.p_pv, self.q_pv),
+            ):
+                if bus in active:
+                    p_in[bus] += active[bus]
+                    q_in[bus] += reactive[bus]
+            if bus == mg.storage.bus:
+                p_in[bus] += self.p_discharge - self.p_charge
+                q_in[bus] += self.q_storage
+            if bus == mg.svg_bus:
+                q_in[bus] += self.q_svg
+            constraints.extend(
+                [
+                    p_in[bus] == self.network_load_p[bus],
+                    q_in[bus] == self.network_load_q[bus],
+                ]
+            )
+        self.network_loss = sum(losses, cp.Constant(np.zeros(T)))
+        self.network_cost = a.dt_hours * (
+            a.loss_value_cny_per_mwh * cp.sum(self.network_loss)
+            + a.voltage_deviation_cost_cny_per_pu2h * sum(v_cost, cp.Constant(0.0))
+        )
 
     def solve(
         self, signal: CoordinationSignal | None, *, fallback: bool = False
@@ -480,7 +683,9 @@ class RegionalConvexController:
             curtailed_mw=renewable_accounting.curtailed_mw,
             charge_mw=np.asarray(self.p_charge.value, dtype=float),
             discharge_mw=np.asarray(self.p_discharge.value, dtype=float),
-            loss_mw=self.p_loss_allowance_mw,
+            loss_mw=np.asarray(self.network_loss.value, dtype=float)
+            if self.network_enabled
+            else self.p_loss_allowance_mw,
             dt_hours=a.dt_hours,
             rates=CostRates(
                 a.curtailment_cost_cny_per_mwh,
@@ -517,6 +722,7 @@ class ClusterProjectionController:
         microgrids: Sequence[MicrogridData],
         config: ADMMConfig,
         p_grid_security_floors_mw: Mapping[str, np.ndarray] | None = None,
+        network_candidates: Mapping[str, RegionalNetworkCandidate] | None = None,
     ) -> None:
         self.case = case
         self.microgrids = list(microgrids)
@@ -524,6 +730,7 @@ class ClusterProjectionController:
         self.M = len(self.microgrids)
         self.T = len(case.time_hours)
         self.p_grid_security_floors_mw = p_grid_security_floors_mw
+        self.network_candidates = network_candidates
         self._build_problem()
 
     def _build_problem(self) -> None:
@@ -537,6 +744,10 @@ class ClusterProjectionController:
         aggregate_p = cp.sum(self.z_p, axis=0)
         aggregate_q = cp.sum(self.z_q, axis=0)
         pf_tan = tan(acos(self.config.aggregate_pf_target))
+        margins = self.config.aggregate_pf_margin_mvar or (0.0,) * T
+        if len(margins) != T:
+            raise ValueError("aggregate PF margins must cover this planning window")
+        pf_margin = np.asarray(margins, dtype=float)
         if self.p_grid_security_floors_mw is None:
             lower = np.vstack(
                 [
@@ -561,10 +772,26 @@ class ClusterProjectionController:
             self.z_p >= self.lower,
             self.z_p <= upper,
             aggregate_p <= self.case.cluster_import_limit_mw,
-            aggregate_q <= pf_tan * aggregate_p,
-            -aggregate_q <= pf_tan * aggregate_p,
+            aggregate_q <= pf_tan * aggregate_p - pf_margin,
+            -aggregate_q <= pf_tan * aggregate_p - pf_margin,
             self.peak >= aggregate_p,
         ]
+        if self.network_candidates is not None:
+            constraints.extend(
+                [
+                    self.z_p
+                    == np.asarray(
+                        [self.network_candidates[m.name].p_mw for m in self.microgrids]
+                    ),
+                    self.z_q
+                    == np.asarray(
+                        [
+                            self.network_candidates[m.name].q_mvar
+                            for m in self.microgrids
+                        ]
+                    ),
+                ]
+            )
         objective = (
             0.5
             * self.config.rho

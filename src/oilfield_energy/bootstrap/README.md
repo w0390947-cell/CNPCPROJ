@@ -1,8 +1,10 @@
 # 装配根
 
+`adapters/cluster_safety.py` 将区域网络、设备和已执行状态接入唯一集群安全监督器；备用认证与因果策略归 `cluster_execution`，绝对恢复规则归 `dispatch`。旧设备执行器及其备用装配桥已按 [ADR 0058](../../../docs/architecture/decisions/0058-retire-legacy-device-executor.md) 删除。
+
 `adapters/project_dataset.py` 通过包资源读取统一三区域台账，经 `UnifiedDataset` 校验后投影为数值输入。设备包、Web/CLI 与山城专项共用该来源；`materialize_default_bundle()` 为默认 Web 保存内容寻址的捕获副本，不依赖 examples 或当前工作目录。见 [统一数据决策](../../../docs3/architecture/decisions/0012-unified-synthetic-dataset.md)。
 
-新增 `shancheng_simulation.create_simulation()` 装配完整模拟研究端口，`generate_simulation()` 装配文件生成与发布。模拟用例的存量数值接线及其导入范围见 [ADR-0002](../../../docs/architecture/decisions/0002-shancheng-simulation.md)。
+`study_inputs.generate_study_inputs()` 装配文件生成与发布。历史专项执行装配已退出正式包；共享数据投影保留。清退范围见 [ADR 0048](../../../docs/architecture/decisions/0048-single-retirement.md)。
 
 维护负责人：项目技术负责人；替代评审：现场数据接入维护负责人。
 
@@ -13,3 +15,9 @@
 旧实现接入属于装配职责；物理模型、数据真实性与安全判定不得在此重写。迁移旧实现时替换端口实现，保持固定状态数值回归和失败语义。
 
 测试：`python -m pytest tests/workflows tests/architecture -q --import-mode=importlib`。
+
+## ?????????2026-10-07?
+
+`adapters/cluster_joint_recovery.py` ??????????? MISOCP/AC ???
+???????????????`cluster_recovery` ??????????????
+????????????????????????????? modules.toml?

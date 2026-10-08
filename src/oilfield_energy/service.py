@@ -19,23 +19,32 @@ from .ac_consistency import solve_case_ac_consistent
 from .ac_power_flow import validate_ac_dispatch
 from .admm import run_admm_coordination
 from .analysis import compare_results, validate_result
-from .bootstrap.adapters.project_dataset import build_synthetic_case
 from .bootstrap.adapters.cluster_execution import run_cluster_execution
-from .workflows.cluster_execution.contracts import ClusterExecution, RollingProgress
+from .bootstrap.adapters.project_dataset import build_synthetic_case
+from .bootstrap.adapters.single_execution import (
+    prepare_single_case,
+    run_single_execution,
+    single_execution_policy,
+)
 from .data import MicrogridData, ProjectCase
 from .group_control_scenarios import run_group_control_scenarios, scenario_basis
 from .hierarchy_types import ADMMConfig, CommunicationConfig
 from .model import OptimizationResult, solve_case
-from .modules.dispatch.api import assess_reference_economics
+from .modules.dispatch.api import (
+    assess_reference_economics,
+    assess_single_economic_requirement,
+    build_coordination_calibration,
+)
 from .modules.dispatch.contracts import (
+    ACCOUNTING_VERSION,
     ComputationQualityPolicy,
     ComputationQualityReport,
+    ACRecoveryEvidence,
     CoordinationBudgetEvidence,
-    OptimizationQuality,
-    ACCOUNTING_VERSION,
     CoordinationIterationTrace,
     CoordinationSnapshot,
     DispatchCapabilities,
+    OptimizationQuality,
     ReferenceEconomics,
 )
 from .modules.power_flow.api import assess_cluster_import, summarize_cluster_validation
@@ -44,8 +53,16 @@ from .modules.studies.api import compile_communication_events, validate_scenario
 from .modules.studies.contracts import CommunicationEventExecution, ScenarioEventRecord
 from .network_model import validate_legacy_network_alignment
 from .scenario_events import EventType, ScenarioEvent, apply_physical_events
+from .workflows.cluster_execution.contracts import ClusterExecution, RollingProgress
+from .workflows.single_execution.contracts import (
+    SingleBoundaryRequest,
+    SingleExecution,
+    SingleResearchPolicy,
+)
 
-SCHEMA_VERSION = "1.7.0"
+SCHEMA_VERSION = "1.26.0"
+# 1.23 adds cluster reserve evidence; the single-execution contract is unchanged.
+SINGLE_SCHEMA_VERSIONS = frozenset({SCHEMA_VERSION})
 SIMULATED_DATA_NOTICE = "全部网络与运行数据均为参数化模拟数据，不代表实际油田数据。"
 
 
@@ -96,6 +113,8 @@ class SimulationRequestRecord(ContractModel):
     communication_outage_start_iteration: int = Field(default=12, ge=1, le=1000)
     communication_outage_end_iteration: int = Field(default=22, ge=1, le=1000)
     events: list[ScenarioEventRecord] = Field(default_factory=list, max_length=20)
+    single_boundary: SingleBoundaryRequest | None = None
+    single_research: SingleResearchPolicy | None = None
 
 
 class SimulationRequest(SimulationRequestRecord):
@@ -105,6 +124,15 @@ class SimulationRequest(SimulationRequestRecord):
 
     @model_validator(mode="after")
     def validate_scenario_options(self) -> "SimulationRequest":
+        if self.scenario_type is ScenarioType.SINGLE_MICROGRID and self.solver.formulation is not SolverFormulation.MISOCP:
+            raise ValueError("single-microgrid execution requires the unified MISOCP algorithm")
+        if self.single_research is not None and self.scenario_type is not ScenarioType.SINGLE_MICROGRID:
+            raise ValueError("single research assumptions require a single-microgrid scenario")
+        if self.single_boundary is not None and (
+            self.scenario_type is not ScenarioType.SINGLE_MICROGRID
+            or self.solver.formulation is not SolverFormulation.MISOCP or self.events
+        ):
+            raise ValueError("single boundary requires single MISOCP with fixed topology and authority; events need a new certified domain")
         if self.solver.quality_policy is not None and (
             self.scenario_type not in {ScenarioType.CLUSTER_COORDINATION, ScenarioType.SINGLE_MICROGRID}
             or self.solver.formulation is not SolverFormulation.MISOCP
@@ -316,7 +344,26 @@ class SimulationResult(ContractModel):
     cluster_validation: ClusterValidation | None = None
     coordination_snapshot: CoordinationSnapshot | None = None
     cluster_execution: ClusterExecution | None = None
+    single_execution: SingleExecution | None = None
     computation_quality: ComputationQualityReport | None = None
+
+
+    @model_validator(mode="before")
+    @classmethod
+    def explicit_single_version(cls, value: Any) -> Any:
+        if isinstance(value, dict):
+            metadata = value.get("metadata")
+            if isinstance(metadata, dict) and metadata.get("scenario_type") == "single_microgrid":
+                if metadata.get("schema_version") not in SINGLE_SCHEMA_VERSIONS:
+                    raise ValueError("historical single results require the archived environment")
+        return value
+
+    @model_validator(mode="after")
+    def current_single_evidence(self) -> "SimulationResult":
+        if self.metadata.scenario_type is ScenarioType.SINGLE_MICROGRID:
+            if self.metadata.schema_version not in SINGLE_SCHEMA_VERSIONS or self.single_execution is None:
+                raise ValueError("single results require current unified execution evidence; use the archive for historical results")
+        return self
 
 
 ProgressCallback = Callable[[ProgressUpdate], None]
@@ -373,10 +420,11 @@ def _solve(
             f"AC consistency failed: {checked.stop_reason}; "
             f"quality evidence: {[q.model_dump() for q in checked.optimization_quality]}"
         )
-    last = checked.history[-1]
+    last = checked.history[(checked.selected_consistency_iteration or len(checked.history))-1]
     return checked.optimization, {
         "ac_consistency_required": True,
         "optimization_quality": [q.model_dump(mode="json") for q in checked.optimization_quality],
+        "ac_recovery": checked.recovery.model_dump(mode="json") if checked.recovery else None,
         "ac_consistency_passed": checked.passed,
         "ac_consistency_stop_reason": checked.stop_reason,
         "ac_consistency_iterations": checked.iterations,
@@ -402,9 +450,28 @@ def _reference_quality(
     }
     report = ComputationQualityReport(
         policy=policy, reference_optimizations=records, reference_coordination=coordination,
+        reference_ac_recovery={
+            name: ACRecoveryEvidence.model_validate(details["ac_recovery"])
+            for name, details in (("baseline", baseline_details), ("optimized", optimized_details))
+            if details.get("ac_recovery") is not None
+        },
     )
     checks = []
     for name, attempts in records.items():
+        recovery = report.reference_ac_recovery.get(name)
+        if recovery is not None:
+            selected = recovery.attempts[recovery.selected_attempt-1] if recovery.selected_attempt else None
+            proven = recovery.original_optimality == "proven"
+            checks.append(ValidationItem(
+                code="REFERENCE_OPTIMIZATION_QUALITY", label="参考优化最优性精度",
+                passed=proven, scope=name,
+                actual=selected.relative_gap if selected and selected.phase == "original_objective" else None,
+                limit=policy.relative_gap,
+                explanation="原目标精度已证明" if proven else "可行恢复计划；原经济目标最优性未证明",
+                validation_basis="centralized_reference",
+                assessment_status="passed" if proven else "unknown",
+            ))
+            continue
         q = attempts[-1]
         checks.append(ValidationItem(
             code="REFERENCE_OPTIMIZATION_QUALITY", label="参考优化最优性精度",
@@ -560,9 +627,17 @@ def _run_single_microgrid(
     microgrid = lookup[request.region]
     names = [request.region]
 
+    execution_policy = single_execution_policy(quality_policy)
+    baseline_case = prepare_single_case(
+        case, request.region, storage_enabled=False, policy=execution_policy,
+    )
+    optimized_case = prepare_single_case(
+        case, request.region, storage_enabled=request.storage_enabled, policy=execution_policy,
+    )
+
     _emit(progress_callback, SimulationStage.SOLVING_BASELINE, "求解单微网基准方案", 2)
     baseline, baseline_details = _solve(
-        case,
+        baseline_case,
         names,
         formulation=request.solver.formulation,
         storage_enabled=False,
@@ -573,7 +648,7 @@ def _run_single_microgrid(
 
     _emit(progress_callback, SimulationStage.SOLVING_OPTIMIZED, "求解单微网优化方案", 3)
     optimized, optimized_details = _solve(
-        case,
+        optimized_case,
         names,
         formulation=request.solver.formulation,
         storage_enabled=request.storage_enabled,
@@ -589,6 +664,74 @@ def _run_single_microgrid(
     items = _validation_items(request.region, validation, ac_validation)
     quality_report, quality_checks = _reference_quality(quality_policy, baseline_details, optimized_details)
     items.extend(quality_checks)
+    if all(c.passed for c in quality_checks):
+        execution = run_single_execution(
+            case, optimized, request.region,
+            storage_enabled=request.storage_enabled,
+            time_limit_seconds=request.solver.time_limit_seconds,
+            packaged_inputs=input_case is None, events=request.events,
+            policy=execution_policy,
+            boundary=request.single_boundary,
+            research=request.single_research,
+            progress=lambda observation: _emit(
+                progress_callback, SimulationStage.VALIDATING,
+                "独立单微电网：动态规划、连续执行与实际状态反馈", 4,
+                rolling=observation,
+            ),
+        )
+    else:
+        execution = SingleExecution(
+            version="single-execution-v9",
+            region=request.region, status="not_computed",
+            reason="参考规划质量未通过，未采用为执行初始条件",
+            storage_enabled=request.storage_enabled, policy=execution_policy,
+            input_basis="未启动独立周期执行",
+            total_minutes=round(len(case.time_hours) * case.assumptions.dt_hours * 60),
+        )
+    items.append(ValidationItem(
+        code="SINGLE_UNIFIED_EXECUTION", label="独立单微电网统一规划与执行闭环",
+        passed=execution.status == "passed", assessment_status=execution.status,
+        scope=request.region, validation_basis="minute",
+        actual=execution.completed_minutes, limit=execution.total_minutes, unit="min",
+        explanation=execution.reason or (
+            "统一经济优化、安全监督、备用续接与反馈执行；安全证书覆盖声明模型和扰动边界，跟踪结论按周期末证据单独判定；启动前过渡未评估"
+            if execution.unified is not None else
+            "参考规划质量未通过，未启动统一执行"
+        ),
+    ))
+    if execution.unified is not None:
+        proof = execution.unified
+        items.extend((
+            ValidationItem(code="SINGLE_HARD_TASK", label="硬任务可行续接与期限完成",
+                passed=proof.hard_task.guarantee in ("maintained", "not_required") and proof.hard_task.outcome in ("met", "not_required"),
+                assessment_status="passed" if proof.hard_task.guarantee in ("maintained", "not_required") and proof.hard_task.outcome in ("met", "not_required") else "violated" if proof.hard_task.outcome == "missed" else "unknown",
+                scope=request.region, validation_basis="minute",
+                explanation=proof.hard_task.reason or "原始储能任务区间与绝对期限保持不变；每次接纳策略均保留完成硬任务的安全续接。保证状态与实际期限结果分别记录。"),
+            ValidationItem(code="SINGLE_TARGET_ACCEPTANCE",label="目标接受与有限区间跟踪证书",
+                passed=proof.target_admission_status == "passed",
+                assessment_status="passed" if proof.target_admission_status == "passed" else "violated"
+                if proof.target_admission_status == "rejected" else "unknown",
+                scope=request.region,validation_basis="minute",
+                actual=sum(a.accepted for a in proof.target_admissions),limit=len(proof.target_admissions),unit="target",
+                explanation="内部目标下发前检查可达性、包络内反馈跟踪及安全续接；外部目标不改写。拒绝目标单独保留，不能计为通过。"),
+            ValidationItem(code="SINGLE_SAFETY_CONTINUATION", label="条件安全与备用续接",
+                passed=proof.status == "passed", assessment_status="passed" if proof.status == "passed" else "unknown",
+                scope=request.region, validation_basis="minute", actual=len(proof.steps), limit=proof.requested_steps, unit="min",
+                explanation=proof.reason or "在预测边界、固定权限及声明响应模型内，对实际执行命令和可续接尾部逐一校核。"),
+            ValidationItem(code="SINGLE_CYCLE_TRACKING", label="响应期限后的周期末 PCC 跟踪",
+                passed=proof.tracking_status == "passed", assessment_status="passed" if proof.tracking_status == "passed" else "violated" if proof.tracking_status == "violated" else "unknown",
+                scope=request.region, validation_basis="minute",
+                explanation="按请求目标和保留的响应期限判定；安全备用动作不自动获得跟踪通过结论。"),
+        ))
+    economic_improvement, economic_passed = assess_single_economic_requirement(
+        float(comparison["baseline_economic_cost_cny"]), float(comparison["optimized_economic_cost_cny"]),
+    )
+    items.append(ValidationItem(
+        code="SINGLE_ECONOMIC_REQUIREMENT", label="计划综合成本改善至少 10%",
+        passed=economic_passed, assessment_status="passed" if economic_passed else "violated",
+        scope=request.region, validation_basis="centralized_reference", actual=economic_improvement, limit=10.0, unit="%",
+        explanation="按已确认口径比较无储能优化方案与选定方案的计划综合成本。",
+    ))
     overall_passed = bool(validation["passed"] and ac_validation["passed"] and all(item.passed for item in items))
 
     _emit(progress_callback, SimulationStage.SERIALIZING, "整理网页结构化结果", 5)
@@ -597,6 +740,7 @@ def _run_single_microgrid(
     local = validation["microgrids"][request.region]
     result = SimulationResult(
         computation_quality=quality_report,
+        single_execution=execution,
         economic_accounting_version=ACCOUNTING_VERSION,
         metadata=SimulationMetadata(
             dataset_id=case.dataset_id,
@@ -613,7 +757,7 @@ def _run_single_microgrid(
         request=request,
         executive_summary=ExecutiveSummary(
             overall_passed=overall_passed,
-            headline="单微电网优化及独立 AC 校核通过"
+            headline="单微电网动态规划与执行闭环校核通过"
             if overall_passed
             else "单微电网存在未通过的校核项",
             economic_improvement_percent=float(comparison["economic_improvement_percent"]),
@@ -739,6 +883,7 @@ def _run_cluster(
     quality_policy = ComputationQualityPolicy() if request.solver.quality_policy else None
     admm_config = ADMMConfig(
         max_iterations=request.admm_max_iterations, quality_policy=quality_policy,
+        network_model="branch-flow-socp-v1",
     )
     _emit(progress_callback, SimulationStage.PREPARING_CASE, "构造三区域参数化模拟算例", 1)
     case = apply_physical_events(
@@ -773,10 +918,14 @@ def _run_cluster(
     )
     _require_success("cluster optimized", optimized)
     loss_calibration = {
-        name: {
-            "p_loss_mw": np.asarray(optimized.microgrids[name]["loss_mw"]),
-            "q_loss_mvar": np.asarray(optimized.microgrids[name]["reactive_loss_mvar"]),
-        }
+        name: build_coordination_calibration(
+            p_loss_mw=optimized.microgrids[name]["loss_mw"],
+            q_loss_mvar=optimized.microgrids[name]["reactive_loss_mvar"],
+            shunt_nominal_mvar_by_bus=optimized.microgrids[name].get(
+                "fixed_shunt_q_nominal_mvar_by_bus"
+            ),
+            shunt_q_mvar_by_bus=optimized.microgrids[name].get("fixed_shunt_q_mvar_by_bus"),
+        )
         for name in names
     }
     if communication_fault:

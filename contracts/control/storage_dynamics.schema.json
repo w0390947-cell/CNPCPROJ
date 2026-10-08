@@ -39,6 +39,17 @@
           "title": "Hard Override",
           "type": "boolean"
         },
+        "plan_response": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StoragePlanResponse"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "ramp_compliant": {
           "readOnly": true,
           "title": "Ramp Compliant",
@@ -93,6 +104,90 @@
         "records"
       ],
       "title": "StorageDynamicsTrajectory",
+      "type": "object"
+    },
+    "StoragePlanResponse": {
+      "additionalProperties": false,
+      "description": "Separate a nominal reachable target from the final arbitrated response.",
+      "properties": {
+        "settings": {
+          "$ref": "#/$defs/StorageResponseSettings"
+        },
+        "target_mw": {
+          "title": "Target Mw",
+          "type": "number"
+        },
+        "effective_command_mw": {
+          "title": "Effective Command Mw",
+          "type": "number"
+        },
+        "predicted_mw": {
+          "title": "Predicted Mw",
+          "type": "number"
+        },
+        "actual_mw": {
+          "title": "Actual Mw",
+          "type": "number"
+        },
+        "reachable": {
+          "title": "Reachable",
+          "type": "boolean"
+        },
+        "followed": {
+          "title": "Followed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "settings",
+        "target_mw",
+        "effective_command_mw",
+        "predicted_mw",
+        "actual_mw",
+        "reachable",
+        "followed"
+      ],
+      "title": "StoragePlanResponse",
+      "type": "object"
+    },
+    "StorageResponseSettings": {
+      "additionalProperties": false,
+      "description": "Interpret a plan's storage P as a next-step actual target, not a command.",
+      "properties": {
+        "version": {
+          "const": "storage-held-response-v1",
+          "default": "storage-held-response-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "execution_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Execution Minutes",
+          "type": "number"
+        },
+        "time_constant_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Time Constant Minutes",
+          "type": "number"
+        },
+        "ramp_mw_per_minute": {
+          "minimum": 0,
+          "title": "Ramp Mw Per Minute",
+          "type": "number"
+        },
+        "power_tolerance_mw": {
+          "exclusiveMinimum": 0,
+          "title": "Power Tolerance Mw",
+          "type": "number"
+        }
+      },
+      "required": [
+        "execution_minutes",
+        "time_constant_minutes",
+        "ramp_mw_per_minute",
+        "power_tolerance_mw"
+      ],
+      "title": "StorageResponseSettings",
       "type": "object"
     }
   },

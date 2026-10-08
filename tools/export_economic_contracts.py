@@ -26,6 +26,7 @@ from oilfield_energy.service import (
 )
 from oilfield_energy.web_api import app
 from oilfield_energy.workflows.cluster_execution.contracts import ClusterExecution
+from oilfield_energy.workflows.single_execution.contracts import SingleExecution
 
 
 def typescript(schema: dict[str, Any]) -> str:
@@ -40,6 +41,13 @@ def typescript(schema: dict[str, Any]) -> str:
         return " | ".join(typescript(v) for v in schema["anyOf"])
     kind = schema.get("type")
     if kind == "array":
+        if "prefixItems" in schema:
+            items = schema["prefixItems"]
+            if schema.get("minItems") != len(items) or schema.get("maxItems") != len(
+                items
+            ):
+                raise ValueError("only fixed-length tuple schemas are supported")
+            return "[" + ", ".join(typescript(item) for item in items) + "]"
         return f"Array<{typescript(schema['items'])}>"
     if kind == "object":
         if "properties" not in schema and isinstance(
@@ -88,6 +96,9 @@ def type_bundle(*models: type) -> str:
 
 def artifacts(root: Path) -> dict[Path, str]:
     return {
+        root / "web/frontend/shared/api/generated/single-execution.ts": type_bundle(
+            SingleExecution
+        ),
         root / "web/frontend/shared/api/generated/computation-quality.ts": type_bundle(
             ComputationQualityReport
         ),

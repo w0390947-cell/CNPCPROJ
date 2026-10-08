@@ -20,11 +20,10 @@ PUBLIC = {"oilfield_energy.modules.control.api", "oilfield_energy.modules.contro
 
 def test_legacy_control_consumers_use_only_public_paths():
     for name in (
-        "device_control",
+        "execution_coordinator",
         "hierarchy_types",
         "hierarchy_reporting",
         "shancheng_control",
-        "hierarchical",
     ):
         path = ROOT / "src/oilfield_energy" / (name + ".py")
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
@@ -60,9 +59,14 @@ sys.meta_path.insert(0, RejectHeavy())
 from oilfield_energy.modules.control.api import limit_synthetic_generation
 from oilfield_energy.modules.control.api import allocate_wind_storage_target
 from oilfield_energy.modules.control.api import execution_substeps, constrain_storage_power
+from oilfield_energy.modules.control.api import select_storage_tracking
+from oilfield_energy.modules.control.api import reactive_cycle_response, assess_reactive_cycle
+from oilfield_energy.modules.control.contracts import StorageTrackingPoint
 from oilfield_energy.modules.control.contracts import WindActiveState, StorageActiveCapability
 assert limit_synthetic_generation(5., 1., 2.) == 1.
+assert reactive_cycle_response((1.5,), (-1.305,), alpha=.4, ramp_mvar=.9) == (.6,)
 assert execution_substeps(15, 1) == 15
+assert select_storage_tracking(StorageTrackingPoint(0, .4, True), .4, lambda p: StorageTrackingPoint(p, 0, True), enabled=True, physical_override=False).status == 'adopted'
 assert constrain_storage_power(previous_mw=0, requested_mw=2, minimum_mw=-2.5, maximum_mw=2.5, maximum_change_mw=.65).actual_mw == .65
 assert allocate_wind_storage_target((WindActiveState('w', 3, 1, True),), StorageActiveCapability(0, True, 0, 0), 3) is None
 """

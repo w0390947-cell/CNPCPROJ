@@ -1,5 +1,7 @@
 'use client';
 
+import { SingleExecutionPanel } from '@/features/single-execution';
+
 import {
   Activity,
   AlertTriangle,
@@ -1670,6 +1672,13 @@ export default function SimulationDashboard({
               />
             </section>
           )}
+        {selectedView === 'single_microgrid' && simulation?.single_execution && (
+          <SingleExecutionPanel
+            execution={simulation.single_execution}
+            economicPassed={simulation.validation_items.find((c) => c.code === 'SINGLE_ECONOMIC_REQUIREMENT')?.passed}
+            improvementPercent={simulation.executive_summary.economic_improvement_percent}
+          />
+        )}
         <div
           className={`dashboard-grid${isExecutionView ? ' execution-grid' : ''}`}
         >

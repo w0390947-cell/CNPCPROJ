@@ -8,7 +8,6 @@ from pathlib import Path
 
 from .ac_consistency import solve_case_ac_consistent
 from .ac_power_flow import validate_ac_dispatch
-from .admm import run_admm_coordination
 from .analysis import (
     compare_results,
     validate_result,
@@ -16,22 +15,20 @@ from .analysis import (
     write_summary,
     write_timeseries_csv,
 )
-from .bootstrap.adapters.project_dataset import build_synthetic_case, plant_inputs_by_region
+from .bootstrap.adapters.cluster_study import run_cluster_batch, run_cluster_study
+from .bootstrap.adapters.project_dataset import build_synthetic_case
+from .bootstrap.adapters.single_execution import (
+    prepare_single_case,
+    run_single_execution,
+    single_execution_policy,
+)
 from .field_data import write_field_data_audit
 from .group_control_scenarios import (
-    scenario_basis,
     run_group_control_scenarios,
+    scenario_basis,
     write_group_control_scenario_outputs,
 )
-from .hierarchical import run_hierarchical_control
-from .hierarchy_reporting import write_fault_demo_outputs, write_hierarchical_outputs
-from .hierarchy_types import (
-    ADMMConfig,
-    CommunicationConfig,
-    GroupControlConfig,
-    TimeScaleConfig,
-)
-from .model import solve_case
+from .modules.dispatch.api import assess_single_economic_requirement
 from .network_model import NetworkContingency
 from .network_scenarios import (
     NetworkOperatingPoint,
@@ -41,6 +38,7 @@ from .network_scenarios import (
     write_network_scenario_outputs,
 )
 from .plotting import plot_cluster, plot_microgrid
+from .service import ScenarioType, SimulationRequest, SolverOptions
 
 
 def _require_success(label, result) -> None:
@@ -48,22 +46,19 @@ def _require_success(label, result) -> None:
         raise RuntimeError(f"{label} failed: status={result.status}, message={result.message}")
 
 
-def run(steps: int, output: Path, time_limit: float, legacy_milp: bool = False) -> None:
+def run(steps: int, output: Path, time_limit: float) -> None:
     case = build_synthetic_case(steps=steps)
     single_names = ["SC"]
     cluster_names = [mg.name for mg in case.microgrids]
     exactness = {}
+    single_policy = single_execution_policy()
 
     def solve_dispatch(label: str, names, *, storage_enabled: bool, cluster_coordination: bool):
-        if legacy_milp:
-            return solve_case(
-                case, names,
-                storage_enabled=storage_enabled,
-                cluster_coordination=cluster_coordination,
-                time_limit_seconds=time_limit,
-            )
+        planning_case = case if cluster_coordination else prepare_single_case(
+            case, names[0], storage_enabled=storage_enabled, policy=single_policy,
+        )
         checked = solve_case_ac_consistent(
-            case, names,
+            planning_case, names,
             storage_enabled=storage_enabled,
             cluster_coordination=cluster_coordination,
             time_limit_seconds=time_limit,
@@ -106,21 +101,37 @@ def run(steps: int, output: Path, time_limit: float, legacy_milp: bool = False) 
     output.mkdir(parents=True, exist_ok=True)
     single_comparison = compare_results(single_baseline, single_optimized)
     cluster_comparison = compare_results(cluster_baseline, cluster_optimized)
+    single_execution = run_single_execution(
+        case, single_optimized, single_names[0], storage_enabled=True,
+        time_limit_seconds=time_limit, packaged_inputs=True, events=[], policy=single_policy,
+    )
+    cluster_result = None if steps < 4 else run_cluster_study(
+        SimulationRequest(
+            name="Cluster rolling study", scenario_type=ScenarioType.CLUSTER_COORDINATION,
+            steps=steps, solver=SolverOptions(time_limit_seconds=time_limit),
+        ),
+        output / "cluster_rolling",
+    )
     payload = {
         "case_notice": "全部网络与运行数据均为参数化模拟数据，不代表长庆油田真实数据。",
         "economic_claim": {
             "comparison_scope": "synthetic_no_storage_optimization_reference",
-            "formal_ten_percent_requirement_certified": False,
+            "formal_ten_percent_requirement_certified": assess_single_economic_requirement(
+                float(single_comparison["baseline_economic_cost_cny"]),
+                float(single_comparison["optimized_economic_cost_cny"]),
+            )[1],
             "reason": (
-                "当前基准关闭储能且仍优化其他资源，不等同于山城现行分时就地策略；"
-                "正式指标必须使用同一真实数据、已确认成本口径和现行策略回放。"
+                "按已确认口径比较无储能优化方案与选定方案的计划综合成本；"
+                "本项独立于实际执行的安全、跟踪和运行成本评价。"
             ),
         },
-        "network_formulation": "legacy LinDistFlow MILP" if legacy_milp else "AC-consistent Branch Flow MISOCP",
+        "network_formulation": "AC-consistent Branch Flow MISOCP",
         "ac_consistency": exactness,
         "steps": steps,
         "dt_hours": case.assumptions.dt_hours,
         "single_microgrid": {
+            "unified_execution": single_execution.model_dump(mode="json") if single_execution else None,
+            "unified_execution_passed": single_execution.status == "passed" if single_execution else False,
             "comparison": single_comparison,
             "validation": validate_result(case, single_optimized, single_names),
             "ac_power_flow_validation": validate_ac_dispatch(case, single_optimized, single_names),
@@ -129,6 +140,10 @@ def run(steps: int, output: Path, time_limit: float, legacy_milp: bool = False) 
             "mip_gap": single_optimized.mip_gap,
         },
         "multi_microgrid": {
+            "execution_scope": "cluster-rolling-v1" if cluster_result else "reference_only",
+            "cluster_execution": cluster_result.cluster_execution.model_dump(mode="json")
+            if cluster_result and cluster_result.cluster_execution else None,
+
             "microgrid_count": len(cluster_names),
             "comparison": cluster_comparison,
             "validation": validate_result(case, cluster_optimized, cluster_names),
@@ -153,104 +168,47 @@ def run(steps: int, output: Path, time_limit: float, legacy_milp: bool = False) 
         f"{cluster_comparison['economic_improvement_percent']:.2f}%"
     )
     print(f"Results written to: {output.resolve()}")
+    if cluster_result is not None and (
+        cluster_result.cluster_execution is None or cluster_result.cluster_execution.status != "passed"
+    ):
+        raise RuntimeError("cluster rolling execution not certified; inspect saved execution evidence")
+    if single_execution is not None and single_execution.status != "passed":
+        raise RuntimeError("single-microgrid V2 execution not certified; inspect saved execution evidence")
 
 
-def run_hierarchy(
+def run_cluster(
     steps: int,
     output: Path,
     time_limit: float,
-    include_fault_demo: bool,
+    *,
+    request_file: Path | None = None,
+    communication_fault: bool = False,
 ) -> None:
-    """运行三模型多层级控制，并导出可审阅结果。"""
-    case = build_synthetic_case(steps=steps)
-    names = [mg.name for mg in case.microgrids]
-    admm_config = ADMMConfig()
-    communication_config = CommunicationConfig()
-    time_scale_config = TimeScaleConfig()
-    group_control_config = GroupControlConfig()
-    print("[1/5] Solving AC-consistent centralized MISOCP and convex ADMM coordination...")
-    print("[2/5] Solving independent AC-consistent regional MISOCP realizations...")
-    print("[3/5] Simulating intraday update and one-minute device tracking...")
-    result = run_hierarchical_control(
-        case,
-        names,
-        intraday_input_case=build_synthetic_case(steps, profile_kind="intraday"),
-        plant_inputs=plant_inputs_by_region(),
-        admm_config=admm_config,
-        communication_config=communication_config,
-        time_scale_config=time_scale_config,
-        group_control_config=group_control_config,
-        time_limit_seconds=time_limit,
+    """Compose the same request/service as the Web entry; save evidence before checking status."""
+    request = (
+        SimulationRequest.model_validate_json(request_file.read_bytes())
+        if request_file is not None
+        else SimulationRequest(
+            name="Cluster rolling study",
+            scenario_type=ScenarioType.COMMUNICATION_FAULT if communication_fault else ScenarioType.CLUSTER_COORDINATION,
+            steps=steps,
+            solver=SolverOptions(time_limit_seconds=time_limit),
+        )
     )
-    print("[4/5] Running deterministic group-control scenario regression...")
-    group_scenarios = run_group_control_scenarios(config=group_control_config, basis=scenario_basis(case.microgrids[0]))
-    failed_scenarios = [
-        name for name, scenario in group_scenarios.items() if not scenario.passed
-    ]
-    result.comparison["group_control_scenarios_passed"] = not failed_scenarios
-    result.comparison["group_control_scenario_count"] = float(len(group_scenarios))
-    write_hierarchical_outputs(
-        output,
-        case,
-        names,
-        result,
-        configuration={
-            "steps": steps,
-            "dt_hours": case.assumptions.dt_hours,
-            "admm": vars(admm_config),
-            "communication": vars(communication_config),
-            "time_scales": vars(time_scale_config),
-            "group_control": vars(group_control_config),
-        },
-    )
-    write_group_control_scenario_outputs(
-        output / "group_control_scenarios",
-        group_scenarios,
-    )
-    # Preserve diagnostic trajectories before refusing a safety certification.
-    if not result.comparison["overall_passed"]:
-        raise RuntimeError("hierarchical execution not certified; inspect saved stage assessments")
-    if failed_scenarios:
-        raise RuntimeError(
-            "group-control scenario regression failed: "
-            + ", ".join(failed_scenarios)
-        )
-
-    if include_fault_demo:
-        print("[5/5] Running reduced-size delay/loss/outage recovery regression...")
-        fault_case = build_synthetic_case(steps=min(24, steps))
-        fault_config = CommunicationConfig(
-            loss_probability=0.05,
-            min_delay_iterations=0,
-            max_delay_iterations=2,
-            stale_limit_iterations=3,
-            outage_region="YA_B",
-            outage_start_iteration=12,
-            outage_end_iteration=22,
-        )
-        fault_result = run_admm_coordination(
-            fault_case,
-            admm_config=ADMMConfig(max_iterations=450),
-            communication_config=fault_config,
-        )
-        if not fault_result.converged:
-            raise RuntimeError("fault-regression ADMM did not recover before its iteration limit")
-        write_fault_demo_outputs(
-            output / "fault_demo",
-            fault_case,
-            fault_result,
-            configuration={
-                "admm": vars(ADMMConfig(max_iterations=450)),
-                "communication": vars(fault_config),
-            },
-        )
-    else:
-        print("[5/5] Communication fault regression skipped by command-line option.")
-
-    print(f"ADMM convergence: {result.admm.coordination_updates} coordination updates")
-    print(f"Distributed-vs-centralized economic gap: {result.comparison['distributed_cost_gap_percent']:.2f}%")
-    print(f"Device safety passed: {result.comparison['device_safety_passed']}")
+    result = run_cluster_study(request, output)
+    execution = result.cluster_execution
     print(f"Results written to: {output.resolve()}")
+    if execution is None or execution.status != "passed":
+        raise RuntimeError("cluster rolling execution not certified; inspect saved execution evidence")
+    print(f"Algorithm: {execution.algorithm_version}; execution: {execution.status}")
+
+
+def run_hierarchy(steps: int, output: Path, time_limit: float, include_fault_demo: bool) -> None:
+    """Command alias only; the former Python algorithm and result format were retired."""
+    print("hierarchical now calls cluster-rolling-v1; exports SimulationResult, not the former hierarchical report.")
+    run_cluster(steps, output, time_limit)
+    if include_fault_demo:
+        run_cluster(steps, output / "fault_demo", time_limit, communication_fault=True)
 
 
 def run_group_scenario_suite(output: Path) -> None:
@@ -337,21 +295,17 @@ def main() -> None:
         "command",
         nargs="?",
         default="run",
-        choices=["run", "hierarchical", "group-scenarios", "field-audit", "network-scenarios", "compare-power-flow", "field-power-flow"],
+        choices=["run", "cluster", "cluster-batch", "hierarchical", "group-scenarios", "field-audit", "network-scenarios", "compare-power-flow", "field-power-flow"],
     )
     parser.add_argument("--steps", type=int, default=96, help="24-hour time steps (96 = 15 min)")
     parser.add_argument("--output", type=Path, default=Path("results"))
-    parser.add_argument("--input", type=Path, help="JSON request for compare-power-flow or field-power-flow")
+    parser.add_argument("--input", type=Path, help="JSON request for cluster/compare-power-flow/field-power-flow, or request array for cluster-batch")
     parser.add_argument("--at", help="field-power-flow target ISO timestamp with timezone")
     parser.add_argument("--demo", action="store_true", help="explicitly allow synthetic field-power-flow demo inputs")
-    parser.add_argument("--time-limit", type=float, default=180.0, help="seconds per MILP")
+    parser.add_argument("--time-limit", type=float, default=180.0, help="seconds per solver call (cluster --input uses its solver options)")
     parser.add_argument(
         "--skip-fault-demo", action="store_true",
-        help="skip the reduced-size communication delay/loss/outage regression",
-    )
-    parser.add_argument(
-        "--legacy-milp", action="store_true",
-        help="use the former approximate LinDistFlow MILP instead of the default AC-consistent MISOCP",
+        help="skip the additional full rolling communication-fault study (hierarchical alias only)",
     )
     parser.add_argument(
         "--short-circuit-workbook", type=Path,
@@ -378,6 +332,13 @@ def main() -> None:
         except (ValueError, OSError) as exc:
             parser.exit(2, f"Fixed-state comparison input/output error: {exc}\n")
         raise SystemExit(exit_code)
+    elif args.command == "cluster-batch":
+        if args.input is None:
+            parser.error("cluster-batch requires --input containing a JSON request array")
+        if not run_cluster_batch(args.input, args.output):
+            raise SystemExit(1)
+    elif args.command == "cluster":
+        run_cluster(args.steps, args.output, args.time_limit, request_file=args.input)
     elif args.command == "hierarchical":
         run_hierarchy(args.steps, args.output, args.time_limit, not args.skip_fault_demo)
     elif args.command == "network-scenarios":
@@ -391,7 +352,7 @@ def main() -> None:
             args.line_load_workbook,
         )
     else:
-        run(args.steps, args.output, args.time_limit, args.legacy_milp)
+        run(args.steps, args.output, args.time_limit)
 
 
 if __name__ == "__main__":

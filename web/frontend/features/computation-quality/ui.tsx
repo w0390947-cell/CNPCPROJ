@@ -1,4 +1,5 @@
 import type { ClusterExecution } from '@/shared/api/generated/cluster-execution';
+import type { ACRecoveryEvidence } from '@/shared/api/generated/cluster-execution';
 import type {
   ComputationQualityReport,
   OptimizationQuality,
@@ -20,7 +21,7 @@ export function ComputationQualityDetails({
   execution?: ClusterExecution | null;
   mode?: 'single' | 'cluster';
 }) {
-  const rows: Array<{ scope: string; records: OptimizationQuality[] }> = [
+  const rows: Array<{ scope: string; records: OptimizationQuality[]; recovery?: ACRecoveryEvidence | null }> = [
     ...Object.entries(quality.reference_optimizations).map(
       ([scope, records]) => ({
         scope:
@@ -30,6 +31,7 @@ export function ComputationQualityDetails({
               ? '单微网优化'
               : '集中式参考',
         records,
+        recovery: quality.reference_ac_recovery?.[scope],
       }),
     ),
     ...(execution?.stages
@@ -38,12 +40,14 @@ export function ComputationQualityDetails({
         (s.regions ?? []).map((r) => ({
           scope: `日前 ${r.region}`,
           records: r.optimization_quality ?? [],
+          recovery: r.ac_recovery,
         })),
       ) ?? []),
     ...(execution?.rolling_updates?.flatMap((w) =>
       Object.entries(w.optimization_quality ?? {}).map(([region, records]) => ({
         scope: `第 ${w.start_minute} 分钟 ${region}`,
         records,
+        recovery: w.ac_recovery?.[region],
       })),
     ) ?? []),
   ];
@@ -87,12 +91,25 @@ export function ComputationQualityDetails({
         </thead>
         <tbody>
           {rows
-            .filter((r) => r.records.length)
-            .map(({ scope, records }) => (
+            .filter((r) => r.records.length || r.recovery)
+            .map(({ scope, records, recovery }) => (
               <tr key={scope}>
                 <td>{scope}</td>
-                <td>{statusLabels[records.at(-1)!.status]}</td>
+                <td>{recovery
+                  ? recovery.outcome !== 'certified' ? 'AC 恢复未获认证'
+                    : recovery.original_optimality === 'proven' ? 'AC 恢复通过，原目标达到规定精度'
+                    : 'AC 可行恢复通过；原经济目标最优性未证明'
+                  : statusLabels[records.at(-1)!.status]}</td>
                 <td>
+                  {recovery?.attempts?.map((attempt, index) => (
+                    <div key={`ac-${index}`}>
+                      {attempt.phase === 'physical_feasibility' ? '物理可行性恢复' : '原目标改进'}：
+                      {attempt.certified ? '认证通过' : '未获认证'}；{attempt.solver_status}；
+                      {attempt.elapsed_seconds.toPrecision(3)} 秒
+                      {recovery.selected_attempt === index + 1 ? '（保留候选）' : ''}。
+                      {attempt.phase === 'physical_feasibility' && '此阶段的求解间隙不代表经济最优性。'}
+                    </div>
+                  ))}
                   {records.map((record, index) => (
                     <div key={index}>
                       模型求解 {index + 1}：

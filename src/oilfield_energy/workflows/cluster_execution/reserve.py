@@ -21,7 +21,13 @@ def observe_storage_reserve(
     remaining_minutes: int,
     policy: StorageReservePolicy,
 ) -> MinuteReserveObservation:
-    """Energy endurance and instantaneous P headroom, not a dynamic certificate."""
+    """Observe constant-target increments relative to the completed net power.
+
+    Positive power discharges. The target can switch instantaneously and stays
+    constant for the support interval; ramp, Q and network limits are excluded.
+    See docs/modeling/Storage_Reserve.md, observation model v2. Invalid physical
+    states raise ValueError instead of being clipped into apparent reserve.
+    """
     if (
         remaining_minutes <= 0
         or not 0 < eta_charge <= 1
@@ -40,21 +46,24 @@ def observe_storage_reserve(
         )
     ):
         raise ValueError("invalid reserve observation inputs")
+    if not (
+        minimum_energy_mwh <= state.storage_energy_mwh <= maximum_energy_mwh
+        and -maximum_power_mw <= state.storage_power_mw <= maximum_power_mw
+    ):
+        raise ValueError("reserve observation state exceeds physical bounds")
     hours = min(remaining_minutes, policy.support_minutes) / 60
-    up = max(
-        0.0,
-        min(
-            maximum_power_mw - state.storage_power_mw,
-            (state.storage_energy_mwh - minimum_energy_mwh) * eta_discharge / hours,
-        ),
+    maximum_target_mw = min(
+        maximum_power_mw,
+        (state.storage_energy_mwh - minimum_energy_mwh) * eta_discharge / hours,
     )
-    down = max(
-        0.0,
-        min(
-            maximum_power_mw + state.storage_power_mw,
-            (maximum_energy_mwh - state.storage_energy_mwh) / eta_charge / hours,
-        ),
+    minimum_target_mw = -min(
+        maximum_power_mw,
+        (maximum_energy_mwh - state.storage_energy_mwh) / eta_charge / hours,
     )
+    # Both bounds are absolute targets. Shift to the actual-power baseline only
+    # after intersecting energy and power limits, including cross-zero actions.
+    up = max(0.0, maximum_target_mw - state.storage_power_mw)
+    down = max(0.0, state.storage_power_mw - minimum_target_mw)
     return MinuteReserveObservation(
         minute=state.minute,
         region=region,
@@ -63,5 +72,10 @@ def observe_storage_reserve(
         required_mw=required_mw,
         available_up_mw=up,
         available_down_mw=down,
-        deficient=min(up, down) + 1e-9 < required_mw * policy.trigger_fraction,
+        deficient=(
+            min(up, down) + policy.observation_tolerance_mw
+            < required_mw * policy.trigger_fraction
+        ),
+        model_version="storage-reserve-observation-v2",
+        support_hours=hours,
     )

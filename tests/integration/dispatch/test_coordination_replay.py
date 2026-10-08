@@ -59,7 +59,7 @@ def test_trace_matches_final_reference_residual_and_survives_mutation():
     assert (
         ADMMHistoryPoint.model_validate(points[-1].model_dump(mode="json")) == restored
     )
-    # The existing hierarchical JSON exporter also serializes the new evidence.
+    # The coordination evidence remains JSON serializable for archived results.
     json.dumps(
         TypeAdapter(ADMMIteration).dump_python(result.history[-1], mode="json"),
         allow_nan=False,

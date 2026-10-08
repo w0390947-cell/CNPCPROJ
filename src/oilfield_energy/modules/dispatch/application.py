@@ -1,13 +1,28 @@
 """Validated, deterministic accounting use cases; inputs are never modified."""
 
 from collections.abc import Iterable
-from math import fsum, isclose, isfinite
+from math import acos, fsum, isclose, isfinite, sqrt, tan
 
 from .contracts import CostRates, EconomicCost, ReferenceEconomics, RenewableAccounting
 from .domain import combined_cost, operating_cost, renewable_balance
 
 # Solver-output roundoff allowance in MW, not an engineering feasibility limit.
 POWER_ROUNDOFF_MW = 2e-5
+
+
+def assess_single_economic_requirement(baseline_cost_cny: float, selected_cost_cny: float) -> tuple[float, bool]:
+    """Agreed planned comprehensive-cost comparison against no-storage optimization."""
+    if not all(isfinite(v) for v in (baseline_cost_cny, selected_cost_cny)) or baseline_cost_cny <= 0:
+        raise ValueError("the agreed economic comparison requires a finite positive baseline cost")
+    improvement = 100*(baseline_cost_cny-selected_cost_cny)/baseline_cost_cny
+    return improvement, improvement >= 10.0
+
+
+def single_planning_power_factor(pf_min: float, tangent_fraction: float) -> float:
+    """Proposal headroom only; the independent AC certificate decides acceptance."""
+    if not 0 < pf_min <= 1 or not 0 < tangent_fraction <= 1:
+        raise ValueError("invalid single planning power factor headroom")
+    return 1/sqrt(1+(tangent_fraction*tan(acos(pf_min)))**2)
 
 
 def _validate_cost(cost: EconomicCost) -> None:

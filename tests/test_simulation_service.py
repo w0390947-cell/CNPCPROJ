@@ -7,7 +7,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from oilfield_energy.bootstrap.adapters.project_dataset import build_synthetic_case
 from oilfield_energy.service import (
+    SCHEMA_VERSION,
     ScenarioType,
     SimulationRequest,
     SimulationStage,
@@ -15,7 +17,6 @@ from oilfield_energy.service import (
     SolverOptions,
     run_simulation,
 )
-from oilfield_energy.bootstrap.adapters.project_dataset import build_synthetic_case
 
 
 class SimulationServiceTests(unittest.TestCase):
@@ -38,16 +39,24 @@ class SimulationServiceTests(unittest.TestCase):
         payload = self.result.model_dump(mode="json")
         encoded = json.dumps(payload, ensure_ascii=False, allow_nan=False)
         self.assertIn("参数化模拟数据", encoded)
-        self.assertEqual(payload["metadata"]["schema_version"], "1.7.0")
+        self.assertEqual(payload["metadata"]["schema_version"], SCHEMA_VERSION)
         self.assertEqual(payload["metadata"]["steps"], 8)
 
     def test_true_solver_result_contains_complete_display_contract(self) -> None:
-        self.assertTrue(self.result.executive_summary.overall_passed)
+        self.assertIsNotNone(self.result.single_execution)
+        self.assertEqual(
+            self.result.executive_summary.overall_passed,
+            all(item.passed for item in self.result.validation_items),
+        )
         self.assertEqual(len(self.result.timeseries), 8)
         grid = next(m for m in build_synthetic_case(8).microgrids if m.name == "SC")
         self.assertEqual({n.id for n in self.result.topology_nodes}, set(grid.buses))
         self.assertEqual({e.id for e in self.result.topology_edges}, {line.name for line in grid.lines})
-        self.assertTrue(all(item.passed for item in self.result.validation_items))
+        self.assertTrue(all(item.passed for item in self.result.validation_items
+                            if not item.code.startswith("SINGLE_")))
+        execution_check = next(item for item in self.result.validation_items
+                               if item.code == "SINGLE_UNIFIED_EXECUTION")
+        self.assertEqual(self.result.single_execution.status == "passed", execution_check.passed)
         self.assertIn("SCIP status", self.result.solver["message"])
 
     def test_timeseries_units_and_security_relationships_are_consistent(self) -> None:
@@ -65,7 +74,7 @@ class SimulationServiceTests(unittest.TestCase):
 
     def test_progress_callback_reports_stable_ordered_stages(self) -> None:
         self.assertEqual(
-            [item.stage for item in self.progress],
+            [item.stage for item in self.progress if item.rolling is None],
             [
                 SimulationStage.PREPARING_CASE,
                 SimulationStage.SOLVING_BASELINE,
@@ -75,7 +84,8 @@ class SimulationServiceTests(unittest.TestCase):
                 SimulationStage.SUCCEEDED,
             ],
         )
-        self.assertEqual([item.sequence for item in self.progress], list(range(1, 7)))
+        self.assertEqual([item.sequence for item in self.progress if item.rolling is None], list(range(1, 7)))
+        self.assertTrue(any(item.rolling is not None for item in self.progress))
 
     def test_contract_rejects_reversed_communication_outage(self) -> None:
         with self.assertRaises(ValueError):

@@ -1,0 +1,114 @@
+{
+  "additionalProperties": false,
+  "description": "Ordinary Q dynamics evidence; no hardware-protection override is modeled.\n\nCapability reachability considers the command box, lag and shared ramp only;\nit does not certify arbitration or AC safety. See Reactive_Dynamics.md.",
+  "properties": {
+    "resource_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Resource Ids",
+      "type": "array"
+    },
+    "q_initial_mvar": {
+      "items": {
+        "type": "number"
+      },
+      "title": "Q Initial Mvar",
+      "type": "array"
+    },
+    "q_targets_mvar": {
+      "items": {
+        "type": "number"
+      },
+      "title": "Q Targets Mvar",
+      "type": "array"
+    },
+    "q_actual_mvar": {
+      "items": {
+        "type": "number"
+      },
+      "title": "Q Actual Mvar",
+      "type": "array"
+    },
+    "q_minimum_mvar": {
+      "items": {
+        "type": "number"
+      },
+      "title": "Q Minimum Mvar",
+      "type": "array"
+    },
+    "q_maximum_mvar": {
+      "items": {
+        "type": "number"
+      },
+      "title": "Q Maximum Mvar",
+      "type": "array"
+    },
+    "alpha": {
+      "title": "Alpha",
+      "type": "number"
+    },
+    "aggregate_ramp_mvar": {
+      "title": "Aggregate Ramp Mvar",
+      "type": "number"
+    },
+    "response_applied": {
+      "title": "Response Applied",
+      "type": "boolean"
+    },
+    "aggregate_movement_mvar": {
+      "title": "Aggregate Movement Mvar",
+      "type": "number"
+    },
+    "minimum_recovery_movement_mvar": {
+      "title": "Minimum Recovery Movement Mvar",
+      "type": "number"
+    },
+    "initial_capacity_within_limits": {
+      "title": "Initial Capacity Within Limits",
+      "type": "boolean"
+    },
+    "actual_capacity_within_limits": {
+      "title": "Actual Capacity Within Limits",
+      "type": "boolean"
+    },
+    "capability_reachable_without_arbitration": {
+      "title": "Capability Reachable Without Arbitration",
+      "type": "boolean"
+    },
+    "ramp_compliant": {
+      "title": "Ramp Compliant",
+      "type": "boolean"
+    },
+    "response_matches_prediction": {
+      "title": "Response Matches Prediction",
+      "type": "boolean"
+    },
+    "version": {
+      "const": "reactive-dynamics-v1",
+      "default": "reactive-dynamics-v1",
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "resource_ids",
+    "q_initial_mvar",
+    "q_targets_mvar",
+    "q_actual_mvar",
+    "q_minimum_mvar",
+    "q_maximum_mvar",
+    "alpha",
+    "aggregate_ramp_mvar",
+    "response_applied",
+    "aggregate_movement_mvar",
+    "minimum_recovery_movement_mvar",
+    "initial_capacity_within_limits",
+    "actual_capacity_within_limits",
+    "capability_reachable_without_arbitration",
+    "ramp_compliant",
+    "response_matches_prediction"
+  ],
+  "title": "ReactiveDynamicsRecord",
+  "type": "object"
+}

@@ -40,6 +40,18 @@ test('historical and disabled storage results do not acquire reserve evidence', 
   );
 });
 
+test('full service evidence and immutable deadline are separate from emergency observations', () => {
+  const html = render({storage_enabled: true, policy: {
+    storage_reserve: {support_minutes: 15, recovery_minutes: 15, trigger_fraction: 0.5, replan_cooldown_minutes: 5},
+    reserve_delivery: {response_minutes: 1},
+  }, minute_reserves: [{minute: 7, deficient: false}],
+  reserve_observations: [{status: 'unknown'}]});
+  assert.match(html, /截止时间不随重规划重置/);
+  assert.match(html, /响应时限 1 分钟/);
+  assert.match(html, /通过 0 条/);
+  assert.match(html, /未获证明 1 条/);
+});
+
 test('minute coverage counts timestamps and rejected targets retain original values and reason', () => {
   const html = render({
     storage_enabled: true,

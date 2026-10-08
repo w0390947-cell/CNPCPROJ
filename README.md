@@ -2,6 +2,17 @@
 
 ## 1. 环境准备
 
+单微电网正式执行现统一为经济优化、安全监督、备用续接和实际状态反馈的一条算法。
+硬任务共同续接、原始储能期限及未获保证时的安全仿真规则见 [任务模型](docs/modeling/Single_Task_Continuation.md) 和 [ADR 0050](docs/architecture/decisions/0050-single-task-continuation.md)。
+模型、保证条件与分项验收见 [统一单微电网说明](docs/modeling/Single_Microgrid_Execution.md)，
+迁移见 [ADR 0046](docs/architecture/decisions/0046-unified-single-execution.md)。
+旧执行代码、专用测试和历史运行入口已退出正式包，见 [清退决策](docs/architecture/decisions/0048-single-retirement.md)。
+旧结果仅在 [归档环境](archives/single_retirement_20261005/README.md) 读取；显式边界输入使用 `single_boundary`。
+清退范围、数值对照、安装包验证和既有失败见 [清退验证记录](docs/modeling/Single_Retirement_Validation.md)。
+正式目标在下发前联合认证期限可达、负荷反馈与安全续接，原请求及接纳值分开保存；外部固定目标不改写。
+有限保证时段、目标拒绝和本次跟踪修复见 [ADR 0049](docs/architecture/decisions/0049-single-target-admission.md)
+及 [验证记录](docs/modeling/Single_Tracking_Validation.md)。
+
 - Python：建议使用 3.12，项目声明的最低版本为 3.10。
 - Node.js：22.13.0 或更高版本，并安装随附的 npm。
 - Windows 使用 PowerShell；Linux 以下以 Ubuntu 24.04、Bash 和 systemd 为例。
@@ -349,15 +360,14 @@ sudo systemctl disable cnpc-frontend cnpc-api
 # 24 时段小算例
 & '.\.venv\Scripts\python.exe' run_model.py --steps 24 --output results/quick
 
-# 多层级控制
-& '.\.venv\Scripts\python.exe' run_model.py hierarchical --output results/hierarchical
+# 多层级滚动控制（每次使用新的输出目录）
+& '.\.venv\Scripts\python.exe' run_model.py cluster --output results/cluster-001
 
 # 群调群控场景
 & '.\.venv\Scripts\python.exe' run_model.py group-scenarios --output results/group_control_scenarios
 
-# 生成并运行山城完整模拟；每次使用新的输入、输出目录
-& '.\.venv\Scripts\oilfield-sim.exe' generate --output artifacts/shancheng-inputs-001
-& '.\.venv\Scripts\oilfield-sim.exe' run --manifest artifacts/shancheng-inputs-001/manifest.json --output artifacts/shancheng-run-001
+# 生成合成研究资料；每次使用新的输出目录
+& '.\.venv\Scripts\oilfield-study-inputs.exe' --output artifacts/shancheng-inputs-001
 ```
 
 ### 4.2 Linux Bash
@@ -366,14 +376,23 @@ sudo systemctl disable cnpc-frontend cnpc-api
 .venv/bin/python run_model.py --help
 .venv/bin/python run_model.py
 .venv/bin/python run_model.py --steps 24 --output results/quick
-.venv/bin/python run_model.py hierarchical --output results/hierarchical
+.venv/bin/python run_model.py cluster --output results/cluster-001
 .venv/bin/python run_model.py group-scenarios --output results/group_control_scenarios
 
-.venv/bin/oilfield-sim generate --output artifacts/shancheng-inputs-001
-.venv/bin/oilfield-sim run --manifest artifacts/shancheng-inputs-001/manifest.json --output artifacts/shancheng-run-001
+.venv/bin/oilfield-study-inputs --output artifacts/shancheng-inputs-001
 ```
 
 `oilfield-opt` 与 `run_model.py` 使用相同入口。计算完成后，以终端显示的结果路径为准。完整模拟耗时较长，保持进程运行，勿将启动成功当作计算完成。
+
+专利一正式执行使用网页／服务的 `single_microgrid` 或 `oilfield-opt`。
+`oilfield-study-inputs` 只生成合成资料。历史回归和旧结果读取通过 `tools/replay_single_baseline.py` 在隔离归档中运行。
+
+集群网页、CLI 和批量研究共享同一套滚动规划、状态反馈与采用规则。
+`cluster --input request.json` 接收与网页一致的请求；`cluster-batch --input requests.json`
+接收请求数组。每项归档 `result.json` 与 `cluster_execution.json`，不合格时返回非零。
+`hierarchical` 仅保留为有提示的命令别名，原独立 Python 算法及旧报告格式已退役。
+算法标识和测试迁移见 [集群权威实现说明](docs/modeling/Cluster_Algorithm_Authority.md)。
+当前集群正式执行统一为 v6，新增[联合连续安全、认证后备与条件递归可行性](docs/modeling/Cluster_Recursive_Safety.md)；安全运行与经济目标跟踪分别记录。
 
 ### 4.3 使用自备输入运行
 
@@ -396,7 +415,7 @@ Linux 使用 `.venv/bin/python`，将输入路径替换为服务器路径；多�
 
 | 现象 | 处理步骤 |
 | --- | --- |
-| 找不到 `oilfield-web`、`oilfield-sim` 或 Python 模块 | 回到项目根目录，使用目标虚拟环境的 Python 重新执行 `-m pip install -e .`。 |
+| 找不到 `oilfield-web`、`oilfield-study-inputs` 或 Python 模块 | 回到项目根目录，使用目标虚拟环境的 Python 重新执行 `-m pip install -e .`。 |
 | 健康检查没有 `SCIP` | 使用同一虚拟环境执行 `python -m pip show pyscipopt`，检查安装错误，再重新安装项目依赖。 |
 | 本机正常，远程网页显示服务离线 | 检查构建时的 API 地址是否为客户端可访问的完整地址；修正后重新构建并重启前端。 |
 | HTTPS 页面请求失败 | API 地址也必须使用 `https://`，并与访问域名一致；重新构建后刷新页面。 |

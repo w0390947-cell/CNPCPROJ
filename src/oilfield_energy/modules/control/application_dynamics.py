@@ -1,8 +1,36 @@
 """Pure fixed-grid validation and ordinary storage transition projection."""
 
-from math import isclose, isfinite
+from math import exp, isclose, isfinite
 
-from .contracts import StoragePowerProjection
+from .contracts import StoragePowerProjection, StorageResponseSettings
+
+
+def storage_response_command(
+    *,
+    previous_mw: float,
+    target_mw: float,
+    maximum_power_mw: float,
+    settings: StorageResponseSettings,
+) -> float:
+    """Bounded inverse command for a held actual target; never overwrite actual P.
+
+    Feedback may have moved the current state away from a certified plan. In
+    that case the bounded command still goes through the ordinary lag/ramp/SOC
+    response; the caller must record whether the target was actually reached.
+    """
+    if (
+        any(not isfinite(v) for v in (previous_mw, target_mw, maximum_power_mw))
+        or maximum_power_mw < 0
+    ):
+        raise ValueError("storage command projection requires finite physical values")
+    # Use the same floating-point coefficient as the actual response engine.
+    alpha = 1.0 - exp(-settings.execution_minutes / settings.time_constant_minutes)
+    if alpha == 0:
+        raise ValueError("storage response is below floating-point resolution")
+    command = previous_mw + (target_mw - previous_mw) / alpha
+    if not isfinite(command):
+        raise ValueError("storage command projection overflow")
+    return min(maximum_power_mw, max(-maximum_power_mw, command))
 
 
 def execution_substeps(planning_minutes: float, device_minutes: float) -> int:
@@ -41,7 +69,10 @@ def constrain_storage_power(
         raise ValueError("storage transition values must be finite real numbers")
     if minimum_mw > maximum_mw or maximum_change_mw < 0:
         raise ValueError("storage envelope must be ordered and ramp allowance nonnegative")
-    ramp_min, ramp_max = previous_mw - maximum_change_mw, previous_mw + maximum_change_mw
+    ramp_min, ramp_max = (
+        previous_mw - maximum_change_mw,
+        previous_mw + maximum_change_mw,
+    )
     if not isfinite(ramp_min) or not isfinite(ramp_max):
         raise ValueError("storage ramp envelope overflow")
     low, high = max(minimum_mw, ramp_min), min(maximum_mw, ramp_max)

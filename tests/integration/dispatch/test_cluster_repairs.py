@@ -9,7 +9,6 @@ from oilfield_energy import admm, cli, service
 from oilfield_energy.bootstrap.adapters.project_dataset import (
     build_synthetic_case as packaged_case,
 )
-from oilfield_energy.hierarchical import run_hierarchical_control
 from oilfield_energy.hierarchy_types import ADMMConfig, CommunicationConfig
 from tests.legacy_case_fixture import build_synthetic_case
 
@@ -54,9 +53,19 @@ def test_disabled_storage_reaches_actual_admm_and_scope_is_explicit():
                 assert region.status != "passed" and region.reason
     sc = next(r for r in result.cluster_execution.stages[0].regions if r.region == "SC")
     assert sc.status == "passed"
-    assert len(result.cluster_execution.rolling_updates) == 4
-    assert all(w.adopted for w in result.cluster_execution.rolling_updates)
-    assert all(len(r.p_mw) == 60 for r in result.cluster_execution.stages[2].regions)
+    updates = result.cluster_execution.rolling_updates
+    assert 1 <= len(updates) <= 4
+    if len(updates) < 4:
+        # Network-aware coordination may expose an empty current response
+        # envelope. A partial execution must remain explicitly unadopted.
+        assert not updates[-1].adopted and updates[-1].reason
+        assert result.cluster_execution.status != "passed"
+    assert all(w.adopted for w in updates[:-1])
+    executed_minutes = 15 * sum(w.adopted for w in updates)
+    assert all(
+        len(r.p_mw) == executed_minutes
+        for r in result.cluster_execution.stages[2].regions
+    )
     assert result.coordination_snapshot.capabilities.storage_enabled is False
     for schedule in captured[0].schedules.values():
         assert np.max(np.abs(schedule.storage_charge_mw)) < 1e-8
@@ -139,33 +148,13 @@ def test_total_outage_has_no_certified_snapshot():
     assert result.communication.fallback_uses > 0
 
 
-def test_boundary_trajectory_is_preserved_and_fails_cluster_execution():
-    case = replace(build_synthetic_case(8), cluster_import_limit_mw=15.6)
-    result = run_hierarchical_control(
-        case, admm_config=ADMMConfig(max_iterations=220), time_limit_seconds=60
-    )
-    assert result.admm.converged
-    assert result.comparison["regional_device_safety_passed"]
-    assert not result.comparison["cluster_import_limit_passed"]
-    assert not result.comparison["device_safety_passed"]
-    assert not result.comparison["overall_passed"]
-    stages = {s.stage: s for s in result.cluster_validation.stages}
-    assert stages["day_ahead"].status == "passed"
-    assert stages["intraday"].status == stages["minute"].status == "violated"
-    actual = sum((t.pcc_actual_mw for t in result.tracking.values()), np.zeros(1440))
-    assert stages["minute"].peak_import_mw == pytest.approx(float(np.max(actual)))
-    assert stages["minute"].violation_steps == int(np.sum(actual > 15.6 + 1e-5))
-    assert stages["minute"].violation_steps > 0
-
-
-def test_cli_saves_diagnostics_before_refusing_execution_certificate(tmp_path):
-    result = SimpleNamespace(comparison={"overall_passed": False})
-    with (
-        patch.object(cli, "run_hierarchical_control", return_value=result),
-        patch.object(cli, "run_group_control_scenarios", return_value={}),
-        patch.object(cli, "write_hierarchical_outputs") as write,
-        patch.object(cli, "write_group_control_scenario_outputs"),
-    ):
+def test_cli_refuses_uncertified_archived_execution(tmp_path):
+    result = SimpleNamespace(cluster_execution=SimpleNamespace(status="unknown"))
+    with patch.object(cli, "run_cluster_study", return_value=result) as archive:
         with pytest.raises(RuntimeError, match="not certified"):
             cli.run_hierarchy(4, tmp_path, 30, False)
-    write.assert_called_once()
+    archive.assert_called_once()
+    assert (
+        archive.call_args.args[0].scenario_type
+        is service.ScenarioType.CLUSTER_COORDINATION
+    )

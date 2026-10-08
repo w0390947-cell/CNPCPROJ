@@ -1,9 +1,19 @@
 """Run every stage automatically using injected numerical operations."""
 
+from .safety_controller import ClusterSafetyController as ClusterSafetyController
+from .safety_replay import replay_cluster_safety as replay_cluster_safety
+from .safety_network import bind_cluster_domain as bind_cluster_domain
+
 from collections.abc import Callable, Sequence
 
-from oilfield_energy.modules.power_flow.api import assess_cluster_import
-from oilfield_energy.modules.power_flow.contracts import RegionalImport
+from oilfield_energy.modules.power_flow.api import (
+    assess_cluster_import,
+    assess_cluster_power_factor,
+)
+from oilfield_energy.modules.power_flow.contracts import (
+    RegionalImport,
+    RegionalPCCPower,
+)
 
 from .contracts import (
     ClusterExecution,
@@ -13,7 +23,19 @@ from .contracts import (
     ExecutionStatus,
     RegionalExecution,
 )
+from .recovery import (
+    RecoveryResult as RecoveryResult,
+)
+from .recovery import (
+    RecoveryTrial as RecoveryTrial,
+)
+from .recovery import (
+    run_reference_recovery as run_reference_recovery,
+)
 from .reserve import observe_storage_reserve as observe_storage_reserve
+from .reserve_delivery import certify_reserve_service as certify_reserve_service
+from .reserve_delivery import certify_cluster_reserve as certify_cluster_reserve
+from .reserve_delivery import reserve_activation_command as reserve_activation_command
 from .rolling import run_feedback_loop as run_feedback_loop
 
 
@@ -29,13 +51,7 @@ def combined_status(values: Sequence[ExecutionStatus]) -> ExecutionStatus:
 
 def executable_regional_plan(region: RegionalExecution) -> bool:
     """Required plan certificates must all exist and pass before adoption."""
-    required = {"DEVICE_PLAN", "AC_NETWORK", "P_TRACKING", "Q_TRACKING"}
-    passed = {c.code for c in region.checks if c.status == "passed"}
-    return (
-        region.status == "passed"
-        and required <= passed
-        and all(c.status == "passed" for c in region.checks)
-    )
+    return region.executable_plan
 
 
 def verify_execution(
@@ -58,15 +74,19 @@ def verify_execution(
     }
     for stage, label in labels.items():
         progress(label)
-        regions = run_stage(stage) if converged else ()
-        if regions and ({r.region for r in regions} != set(names) or len(regions) != len(names)):
+        regions = (
+            run_stage(stage) if converged or policy.cluster_safety is not None else ()
+        )
+        if regions and (
+            {r.region for r in regions} != set(names) or len(regions) != len(names)
+        ):
             raise ValueError("execution evidence must cover each region exactly once")
         trajectories = tuple(
             RegionalImport(
                 r.region,
                 r.time_minutes,
                 r.p_mw,
-                (all(c.status != "unknown" for c in r.checks),) * len(r.p_mw),
+                (_physical_evidence_valid(r),) * len(r.p_mw),
             )
             for r in regions
             if r.p_mw
@@ -80,6 +100,28 @@ def verify_execution(
         )
         statuses: list[ExecutionStatus] = [r.status for r in regions]
         statuses.append(assessment.status)
+        pf_assessment = None
+        if policy.cluster_power_factor is not None and (
+            stage != "minute" or policy.cluster_safety is not None
+        ):
+            pf_assessment = assess_cluster_power_factor(
+                stage=stage,
+                expected_regions=names,
+                trajectories=tuple(
+                    RegionalPCCPower(
+                        r.region,
+                        r.time_minutes,
+                        r.p_mw,
+                        r.q_mvar,
+                        (_physical_evidence_valid(r),) * len(r.p_mw),
+                    )
+                    for r in regions
+                    if r.p_mw
+                ),
+                policy=policy.cluster_power_factor,
+                computed=bool(trajectories),
+            )
+            statuses.append(pf_assessment.status)
         status = combined_status(statuses)
         stages.append(
             ExecutionStage(
@@ -88,6 +130,7 @@ def verify_execution(
                 reason="ADMM 未收敛，未将其参考作为执行目标" if not converged else "",
                 regions=regions,
                 cluster_import=assessment,
+                cluster_power_factor=pf_assessment,
             )
         )
     return ClusterExecution(
@@ -98,3 +141,12 @@ def verify_execution(
         dataset_sha256=dataset_sha256,
         stages=tuple(stages),
     )
+
+
+def _physical_evidence_valid(region: RegionalExecution) -> bool:
+    continuous = [c for c in region.checks if c.code == "CLUSTER_INTERVAL_SAFETY"]
+    if continuous:
+        return all(c.status == "passed" for c in continuous)
+    if region.adoption_basis == "ac_feasible_recovery" and region.adoption_checks_passed:
+        return True
+    return all(c.status != "unknown" for c in region.checks)
