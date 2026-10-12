@@ -113,6 +113,8 @@ $RECYCLE.BIN/
 /network_v2_verification_results/
 
 # Local documentation and task notes
+/docs/architecture/
+/docs/modeling/
 /docs3/
 /todo/
 

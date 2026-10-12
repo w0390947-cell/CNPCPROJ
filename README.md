@@ -2,21 +2,11 @@
 
 ## 1. 环境准备
 
-单微电网正式执行现统一为经济优化、安全监督、备用续接和实际状态反馈的一条算法。
-硬任务共同续接、原始储能期限及未获保证时的安全仿真规则见 [任务模型](docs/modeling/Single_Task_Continuation.md) 和 [ADR 0050](docs/architecture/decisions/0050-single-task-continuation.md)。
-模型、保证条件与分项验收见 [统一单微电网说明](docs/modeling/Single_Microgrid_Execution.md)，
-迁移见 [ADR 0046](docs/architecture/decisions/0046-unified-single-execution.md)。
-旧执行代码、专用测试和历史运行入口已退出正式包，见 [清退决策](docs/architecture/decisions/0048-single-retirement.md)。
-旧结果仅在 [归档环境](archives/single_retirement_20261005/README.md) 读取；显式边界输入使用 `single_boundary`。
-清退范围、数值对照、安装包验证和既有失败见 [清退验证记录](docs/modeling/Single_Retirement_Validation.md)。
-正式目标在下发前联合认证期限可达、负荷反馈与安全续接，原请求及接纳值分开保存；外部固定目标不改写。
-有限保证时段、目标拒绝和本次跟踪修复见 [ADR 0049](docs/architecture/decisions/0049-single-target-admission.md)
-及 [验证记录](docs/modeling/Single_Tracking_Validation.md)。
-
-- Python：建议使用 3.12，项目声明的最低版本为 3.10。
+- Python：使用 3.12 执行以下命令。
 - Node.js：22.13.0 或更高版本，并安装随附的 npm。
 - Windows 使用 PowerShell；Linux 以下以 Ubuntu 24.04、Bash 和 systemd 为例。
 - 首次安装依赖需要联网。请在目标机器重新安装依赖，不要复制其他系统的 `.venv`、`node_modules` 或构建产物。
+- 上传源码时保留 `web/frontend/.openai/hosting.json`、`web/frontend/package-lock.json` 和 `src/oilfield_energy/bootstrap/assets/`，避免漏传隐藏目录及运行数据。
 
 以下 Windows 路径 `C:\path\to\CNPCPROJ`、Linux 路径 `/srv/cnpcproj`、部署账户 `deploy`、IP 和域名均需按实际环境替换。除明确切换目录的步骤外，命令在项目根目录执行。
 
@@ -35,15 +25,16 @@ npm.cmd --version
 py -3.12 -m venv .venv
 & '.\.venv\Scripts\python.exe' -m pip install --upgrade pip
 & '.\.venv\Scripts\python.exe' -m pip install -e .
+& '.\.venv\Scripts\python.exe' -m pip check
 
 Set-Location '.\web\frontend'
-npm.cmd ci
+npm.cmd ci --include=dev
 ```
 
 没有 `py` 启动器时，可将 `py -3.12` 替换为已安装的 Python 3.12 命令，例如 `python`。以下步骤直接调用虚拟环境中的程序，无需激活环境或修改 PowerShell 执行策略。
 
 ### 2.2 启动后端
-cd
+
 在第一个 PowerShell 窗口执行，并保持窗口开启：
 
 ```powershell
@@ -74,13 +65,20 @@ Invoke-RestMethod 'http://127.0.0.1:8000/api/health'
 Invoke-RestMethod 'http://127.0.0.1:8000/api/demo/catalog'
 ```
 
-健康检查应返回 `status: ok`，`solvers` 应包含 `SCIP`；设备目录接口应正常返回数据。接口文档地址为 `http://127.0.0.1:8000/docs`。进入网页后确认服务在线，再运行一次短时段仿真检查前后端连接。
+按以下顺序确认启动成功：
+
+1. 健康检查返回 `status: ok`，且 `solvers` 包含 `SCIP`；设备目录接口正常返回数据。
+2. 访问 `http://127.0.0.1:3000`，确认页面加载正常、后端服务在线。
+3. 访问 `http://127.0.0.1:3000/demo-lab`，确认设备数据持续更新。
+4. 在网页中选择“光伏群控策略验证”（`/group-control`），点击“运行群控场景”，确认任务状态更新且结果返回。完整优化仿真可在连通性检查通过后运行。
+
+后端接口文档地址为 `http://127.0.0.1:8000/docs`。减少优化算例的计划点数仍然覆盖 24 小时，不等于只模拟较短时长，也不保证很快完成。
 
 停止时，在前后端各自的窗口按 `Ctrl+C`。以后启动只需重复 2.2 和 2.3；依赖变化时重新执行安装命令。
 
 ## 3. Linux 服务器部署
 
-使用一个访问地址同时提供网页和 `/api/` 接口：Nginx 将网页转发到 `127.0.0.1:3000`，将 API 和 WebSocket 转发到 `127.0.0.1:8000`。局域网使用服务器 IP，公网使用域名和 HTTPS。
+按以下步骤部署为同域访问：网页和 `/api/` 共用服务器 IP 或域名，由 Nginx 转发。前后端分别绑定服务器本机的 3000、8000 端口；客户端访问 Nginx 的 80 或 443 端口。
 
 ### 3.1 安装环境与依赖
 
@@ -104,16 +102,17 @@ cd /srv/cnpcproj
 python3.12 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -e .
+.venv/bin/python -m pip check
 
 cd web/frontend
-npm ci
+npm ci --include=dev
 ```
 
-构建前不要省略 npm 的开发依赖，Vite 和构建插件也在其中。运行账户需要能够写入项目下的 `artifacts/` 和 `results/`。
+保留 `--include=dev`，构建所需的 Vite 和插件也在开发依赖中。运行账户需要能够写入项目下的 `artifacts/` 和 `results/`；默认设备记录位于 `artifacts/system-demo-live/`，网页任务结果位于 `results/web_sessions/`。
 
 ### 3.2 配置 Linux 自托管构建
 
-当前默认前端配置面向 Cloudflare Workers，`npm start` 使用 Wrangler 本地预览。Linux 自托管需在**服务器部署副本**中切换为 [vinext 的 Node.js standalone 构建](https://github.com/cloudflare/vinext#cli-reference)。
+在**服务器部署副本**中切换为 [vinext 的 Node.js standalone 构建](https://github.com/cloudflare/vinext#cli-reference)。本节使用 `node dist/standalone/server.js` 启动；仓库的 `npm start` 执行 Wrangler 本地预览，不用于本节部署。
 
 在 `/srv/cnpcproj/web/frontend` 中先备份配置：
 
@@ -154,6 +153,8 @@ npm run build
 test -f dist/standalone/server.js
 ```
 
+确认构建成功并生成 `dist/standalone/server.js` 后，再配置后台服务；构建失败时不要启动旧产物。
+
 地址必须包含 `http://` 或 `https://`，不带末尾 `/`，也不附加 `/api`。它会写入浏览器脚本，不能填写服务器的 `127.0.0.1`，也不能留空或使用相对路径，因为 WebSocket 连接需要完整 URL。换域名、IP、端口或切换 HTTPS 后，都要重新构建。
 
 ### 3.3 配置后台服务
@@ -181,7 +182,7 @@ TimeoutStopSec=60
 WantedBy=multi-user.target
 ```
 
-保留 `oilfield-web` 入口和单实例运行方式。直接改成 `uvicorn oilfield_energy.web_api:app` 会缺少设备模拟服务；当前任务管理和模拟状态也未配置为多个进程共享。
+使用 `oilfield-web` 启动，并只运行一个后端实例。不要替换为 `uvicorn oilfield_energy.web_api:app`，该方式不会装配设备模拟服务；不要为后端增加多个 worker。
 
 创建 `/etc/systemd/system/cnpc-frontend.service`，写入：
 
@@ -207,6 +208,7 @@ WantedBy=multi-user.target
 ```
 
 将 `/usr/bin/node` 换成 3.1 中 `command -v node` 返回的实际路径。systemd 不会自动加载交互式 Shell 中的 Node.js 版本管理器。
+前端绑定地址使用 `HOST`，不要替换成 `HOSTNAME`。
 
 ```bash
 sudo systemctl daemon-reload
@@ -265,7 +267,14 @@ sudo systemctl enable --now nginx
 sudo systemctl reload nginx
 ```
 
-符号链接只需创建一次。若启用了主机防火墙，允许局域网客户端访问 TCP 80；后端 8000 和前端 3000 保持仅本机可访问。在另一台电脑访问 `http://192.168.1.100`，确认健康检查、设备目录和网页仿真均可用。
+符号链接只需创建一次。若启用了主机防火墙，允许局域网客户端访问 TCP 80；后端 8000 和前端 3000 保持仅本机可访问。在另一台电脑检查：
+
+```bash
+curl --fail http://192.168.1.100/api/health
+curl --fail http://192.168.1.100/api/demo/catalog
+```
+
+访问 `http://192.168.1.100` 和 `http://192.168.1.100/demo-lab`，按 2.4 检查页面、设备数据和任务结果。需要检查实时推送时，在浏览器开发者工具的网络面板查看 `/api/simulations/.../stream`，确认 WebSocket 握手返回 `101` 并持续收到状态。
 
 ### 3.5 配置公网域名与 HTTPS
 
@@ -308,26 +317,35 @@ curl --fail -u operator https://energy.example.com/api/health
 curl --fail -u operator https://energy.example.com/api/demo/catalog
 ```
 
-打开 `https://energy.example.com`，运行一次短时段仿真，确认结果返回、任务状态更新和设备模拟页面正常。
+打开 `https://energy.example.com`，按 2.4 检查页面、设备数据和任务结果，并确认 WebSocket 使用 `wss://` 地址且握手成功。
 
 ### 3.6 更新、日志与停止
 
-更新前等待运行中的仿真结束，备份需要保留的 `artifacts/`、`results/`、服务器构建配置及 Nginx 配置，然后停止服务：
+更新前等待运行中的仿真结束，然后停止服务：
 
 ```bash
 sudo systemctl stop cnpc-frontend cnpc-api
 ```
+
+服务停止后，备份需要保留的 `artifacts/`、`results/`、服务器构建配置及 Nginx 配置。
 
 更新源码后，保留或重新应用 3.2 的自托管配置，再执行：
 
 ```bash
 cd /srv/cnpcproj
 .venv/bin/python -m pip install -e .
+.venv/bin/python -m pip check
 
 cd web/frontend
-npm ci
+npm ci --include=dev
 export NEXT_PUBLIC_API_BASE_URL='https://energy.example.com'
 npm run build
+test -f dist/standalone/server.js
+```
+
+确认安装及构建成功后，启动服务：
+
+```bash
 sudo systemctl start cnpc-api cnpc-frontend
 ```
 
@@ -344,7 +362,7 @@ sudo systemctl stop cnpc-frontend cnpc-api
 sudo systemctl disable cnpc-frontend cnpc-api
 ```
 
-## 4. 命令行运行
+## 4. 命令行启动（可选）
 
 命令行计算只需安装 Python 依赖，无需启动 Web 服务或安装前端依赖。以下命令从项目根目录执行，按需要选择。
 
@@ -354,73 +372,25 @@ sudo systemctl disable cnpc-frontend cnpc-api
 # 查看全部命令和参数
 & '.\.venv\Scripts\python.exe' run_model.py --help
 
-# 默认运行，96 个时段
-& '.\.venv\Scripts\python.exe' run_model.py
-
-# 24 时段小算例
-& '.\.venv\Scripts\python.exe' run_model.py --steps 24 --output results/quick
+# 默认完整运行，包含单微电网和集群计算，全天 96 个计划点
+& '.\.venv\Scripts\python.exe' run_model.py --steps 96 --output results/run-001
 
 # 多层级滚动控制（每次使用新的输出目录）
 & '.\.venv\Scripts\python.exe' run_model.py cluster --output results/cluster-001
 
 # 群调群控场景
 & '.\.venv\Scripts\python.exe' run_model.py group-scenarios --output results/group_control_scenarios
-
-# 生成合成研究资料；每次使用新的输出目录
-& '.\.venv\Scripts\oilfield-study-inputs.exe' --output artifacts/shancheng-inputs-001
 ```
 
 ### 4.2 Linux Bash
 
 ```bash
 .venv/bin/python run_model.py --help
-.venv/bin/python run_model.py
-.venv/bin/python run_model.py --steps 24 --output results/quick
+.venv/bin/python run_model.py --steps 96 --output results/run-001
 .venv/bin/python run_model.py cluster --output results/cluster-001
 .venv/bin/python run_model.py group-scenarios --output results/group_control_scenarios
-
-.venv/bin/oilfield-study-inputs --output artifacts/shancheng-inputs-001
 ```
 
 `oilfield-opt` 与 `run_model.py` 使用相同入口。计算完成后，以终端显示的结果路径为准。完整模拟耗时较长，保持进程运行，勿将启动成功当作计算完成。
 
-专利一正式执行使用网页／服务的 `single_microgrid` 或 `oilfield-opt`。
-`oilfield-study-inputs` 只生成合成资料。历史回归和旧结果读取通过 `tools/replay_single_baseline.py` 在隔离归档中运行。
-
-集群网页、CLI 和批量研究共享同一套滚动规划、状态反馈与采用规则。
-`cluster --input request.json` 接收与网页一致的请求；`cluster-batch --input requests.json`
-接收请求数组。每项归档 `result.json` 与 `cluster_execution.json`，不合格时返回非零。
-`hierarchical` 仅保留为有提示的命令别名，原独立 Python 算法及旧报告格式已退役。
-算法标识和测试迁移见 [集群权威实现说明](docs/modeling/Cluster_Algorithm_Authority.md)。
-当前集群正式执行统一为 v6，新增[联合连续安全、认证后备与条件递归可行性](docs/modeling/Cluster_Recursive_Safety.md)；安全运行与经济目标跟踪分别记录。
-
-### 4.3 使用自备输入运行
-
-审计 Excel 或执行固定设备潮流对照时，需要先准备对应的输入文件。以下为 PowerShell 示例，替换路径后执行：
-
-```powershell
-& '.\.venv\Scripts\python.exe' run_model.py field-audit `
-  --short-circuit-workbook 'C:\data\母线容量、阻抗.xlsx' `
-  --line-load-workbook 'C:\data\线路负荷统计0901.xlsx' `
-  --output results/field_data
-
-& '.\.venv\Scripts\python.exe' run_model.py compare-power-flow `
-  --input 'C:\data\fixed_device_comparison.json' `
-  --output results/fixed_device_comparison
-```
-
-Linux 使用 `.venv/bin/python`，将输入路径替换为服务器路径；多行命令使用反斜杠 `\` 续行，也可将整条命令写成一行。
-
-## 5. 启动与部署故障处理
-
-| 现象 | 处理步骤 |
-| --- | --- |
-| 找不到 `oilfield-web`、`oilfield-study-inputs` 或 Python 模块 | 回到项目根目录，使用目标虚拟环境的 Python 重新执行 `-m pip install -e .`。 |
-| 健康检查没有 `SCIP` | 使用同一虚拟环境执行 `python -m pip show pyscipopt`，检查安装错误，再重新安装项目依赖。 |
-| 本机正常，远程网页显示服务离线 | 检查构建时的 API 地址是否为客户端可访问的完整地址；修正后重新构建并重启前端。 |
-| HTTPS 页面请求失败 | API 地址也必须使用 `https://`，并与访问域名一致；重新构建后刷新页面。 |
-| 设备接口返回 404 或 503 | 检查是否使用当前虚拟环境的 `oilfield-web` 启动，排除旧服务占用 8000，并查看后端日志。 |
-| 任务状态无法实时更新 | 检查 Nginx WebSocket 转发配置，以及连接地址是否为正确的 `ws://` 或 `wss://`。 |
-| Nginx 返回 502 | 检查两个 systemd 服务状态，分别请求服务器本机的 3000、8000 端口，再查看日志。 |
-| `npm start` 无法运行独立构建 | Linux 自托管使用 `node dist/standalone/server.js` 或上述 systemd 服务。仓库现有 `npm start` 指向 Wrangler。 |
-| 修改配置后仍访问旧地址 | 修改 API 地址需重新构建；修改 systemd 单元需执行 `daemon-reload` 并重启；修改 Nginx 配置需检查后 reload。 |
+重新执行默认完整运行或集群运行时，更换 `--output`，不要复用已存在的研究输出目录。其他输入选项通过 `--help` 查看。
