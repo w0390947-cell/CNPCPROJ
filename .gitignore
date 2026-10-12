@@ -112,6 +112,9 @@ $RECYCLE.BIN/
 /network_v2_transformer_verification_results/
 /network_v2_verification_results/
 
+# Local historical archives
+/archives/
+
 # Local documentation and task notes
 /docs/architecture/
 /docs/modeling/
