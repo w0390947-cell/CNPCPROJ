@@ -115,6 +115,9 @@ $RECYCLE.BIN/
 # Local historical archives
 /archives/
 
+# Local examples
+/examples/
+
 # Local documentation and task notes
 /docs/architecture/
 /docs/modeling/
@@ -122,7 +125,7 @@ $RECYCLE.BIN/
 /todo/
 
 # Local field/customer source material. Keep synthetic public examples in
-# docs/examples, examples and tests/fixtures under version control.
+# docs/examples and tests/fixtures under version control.
 /母线容量、阻抗.xlsx
 /线路负荷统计0901.xlsx
 /西交大-资料提供.doc
