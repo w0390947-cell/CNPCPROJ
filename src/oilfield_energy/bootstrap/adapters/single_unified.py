@@ -57,6 +57,7 @@ from .cluster_rolling import forecast_grid, window_case
 from .project_dataset import build_synthetic_case
 from .single_model import assemble_single_physical_model
 from .single_planning import prepare_single_case
+from .single_provenance import SingleRunCapture, capture_single_inputs
 
 
 def _checkpoint(domain: UnifiedDomain, state: TubeState, step: int) -> DeviceCheckpoint:
@@ -325,20 +326,33 @@ class SingleNumericalPorts:
         )
 
 
-def run_unified_single(
-    case: ProjectCase,
-    reference: OptimizationResult,
-    region: str,
-    *,
-    storage_enabled: bool,
-    time_limit_seconds: float,
-    packaged_inputs: bool,
-    events: list[ScenarioEvent],
-    policy: ExecutionPolicy,
-    progress: Callable[[RollingProgress], None] | None = None,
+def describe_single_forecast(case: ProjectCase, step_minutes: int) -> PlantInputs:
+    """Preserve the forecast grid used to construct the execution envelopes."""
+    mg = case.microgrids[0]
+
+    def series(rows: dict[str, NDArray[np.float64]]) -> tuple[BusSeries, ...]:
+        return tuple(
+            BusSeries(bus_id=b, values=tuple(float(v) for v in values))
+            for b, values in rows.items()
+        )
+
+    return PlantInputs(
+        start=datetime(2026, 9, 1, tzinfo=timezone.utc),
+        step_minutes=step_minutes,
+        load_p=series(mg.load_p_mw),
+        load_q=series(mg.load_q_mvar),
+        wind_available=series(mg.wind_available_mw),
+        pv_available=series(mg.pv_available_mw),
+    )
+
+
+def prepare_unified_single(
+    case: ProjectCase, region: str, *, storage_enabled: bool,
+    packaged_inputs: bool, events: list[ScenarioEvent], policy: ExecutionPolicy,
     boundary: SingleBoundaryRequest | None = None,
     research: SingleResearchPolicy | None = None,
-) -> SingleExecution:
+):
+    """Build the exact execution domain and declared initial state without solving."""
     research = research or SingleResearchPolicy(
         forecast_interpolation="linear" if packaged_inputs else "hold"
     )
@@ -359,20 +373,7 @@ def run_unified_single(
     intraday = forecast_grid(intraday, policy.update_minutes)
     mg = intraday.microgrids[0]
 
-    def series(rows: dict[str, NDArray[np.float64]]) -> tuple[BusSeries, ...]:
-        return tuple(
-            BusSeries(bus_id=b, values=tuple(float(v) for v in values))
-            for b, values in rows.items()
-        )
-
-    forecast = PlantInputs(
-        start=datetime(2026, 9, 1, tzinfo=timezone.utc),
-        step_minutes=policy.update_minutes,
-        load_p=series(mg.load_p_mw),
-        load_q=series(mg.load_q_mvar),
-        wind_available=series(mg.wind_available_mw),
-        pv_available=series(mg.pv_available_mw),
-    )
+    forecast = describe_single_forecast(intraday, policy.update_minutes)
     network, devices = assemble_single_physical_model(
         mg, intraday, policy, storage_enabled=storage_enabled
     )
@@ -436,6 +437,37 @@ def run_unified_single(
             q_mvar=tuple(boundary.initial_state.q_mvar[i] for i in axis),
             energy_mwh=boundary.initial_state.energy_mwh,
         )
+    return domain, initial, intraday, plants, basis, total
+
+
+def run_unified_single(
+    case: ProjectCase,
+    reference: OptimizationResult,
+    region: str,
+    *,
+    storage_enabled: bool,
+    time_limit_seconds: float,
+    packaged_inputs: bool,
+    events: list[ScenarioEvent],
+    policy: ExecutionPolicy,
+    progress: Callable[[RollingProgress], None] | None = None,
+    live: Callable[[dict], None] | None = None,
+    boundary: SingleBoundaryRequest | None = None,
+    research: SingleResearchPolicy | None = None,
+    input_capture: SingleRunCapture | None = None,
+) -> SingleExecution:
+    if input_capture is None:
+        input_capture = capture_single_inputs(case, policy, {
+            "region": region, "storage_enabled": storage_enabled,
+            "time_limit_seconds": time_limit_seconds, "packaged_inputs": packaged_inputs,
+            "events": [event.model_dump(mode="json") for event in events],
+            "boundary": boundary.model_dump(mode="json") if boundary else None,
+            "research": research.model_dump(mode="json") if research else None,
+        }, phase="before_execution")
+    domain, initial, intraday, plants, basis, total = prepare_unified_single(
+        case, region, storage_enabled=storage_enabled, packaged_inputs=packaged_inputs,
+        events=events, policy=policy, boundary=boundary, research=research,
+    )
     ports = SingleNumericalPorts(
         intraday,
         reference,
@@ -466,6 +498,25 @@ def run_unified_single(
                 )
             )
 
+    input_forecast = describe_single_forecast(intraday, policy.update_minutes)
+    input_record = input_capture.with_execution({
+        "intraday_case": intraday,
+        "plant_inputs": plants[region].model_dump(mode="json"),
+        "domain": domain.model_dump(mode="json"),
+        "initial_state": initial.model_dump(mode="json"),
+        "total_steps": total, "update_steps": policy.update_minutes,
+        "reference_storage_energy_mwh": list(map(float, reference.microgrids[region]["storage_energy_mwh"])),
+        "reference_step_minutes": case.assumptions.dt_hours * 60,
+        "input_forecast": input_forecast.model_dump(mode="json"),
+    }, basis)
+
+    def publish(event: dict) -> None:
+        if live:
+            if event["kind"] == "initial":
+                event = {**event, "input_forecast": input_forecast.model_dump(mode="json"),
+                         "input_record": input_record.model_dump(mode="json")}
+            live(event)
+
     execution = run_unified_feedback(
         domain,
         initial,
@@ -477,6 +528,7 @@ def run_unified_single(
         observe=ports.observe,
         propose=ports.propose,
         progress=report,
+        live=publish if live else None,
     )
     last = execution.steps[-1].after if execution.steps else initial
     return SingleExecution(
@@ -515,4 +567,6 @@ def run_unified_single(
         total_minutes=total,
         completed_minutes=len(execution.steps),
         unified=execution,
+        input_forecast=input_forecast,
+        input_record=input_record,
     )

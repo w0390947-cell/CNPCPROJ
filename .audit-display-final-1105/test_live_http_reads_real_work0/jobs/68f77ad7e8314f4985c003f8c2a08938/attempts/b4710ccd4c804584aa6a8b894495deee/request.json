@@ -1,0 +1,22 @@
+{
+  "name": "单微网快速仿真",
+  "patent2_case": null,
+  "scenario_type": "single_microgrid",
+  "region": "SC",
+  "steps": 8,
+  "storage_enabled": true,
+  "solver": {
+    "formulation": "misocp",
+    "time_limit_seconds": 60.0,
+    "quality_policy": null
+  },
+  "admm_max_iterations": 220,
+  "communication_loss_probability": 0.05,
+  "communication_max_delay_iterations": 2,
+  "communication_outage_region": "YA_B",
+  "communication_outage_start_iteration": 12,
+  "communication_outage_end_iteration": 22,
+  "events": [],
+  "single_boundary": null,
+  "single_research": null
+}

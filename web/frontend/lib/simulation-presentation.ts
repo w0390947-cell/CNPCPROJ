@@ -57,24 +57,6 @@ export function minuteFrames(points: ProfileFrame[]): ProfileFrame[] {
   return frames;
 }
 
-export const groupScenarioLabels: Record<string, string> = {
-  normal_operation: '正常运行', emergency_curtailment: '紧急限发',
-  stable_three_consecutive: '连续三次越限', stable_three_of_five: '五周期三次越限',
-  consecutive_three_trigger: '连续三次越限', three_in_five_debounce: '五周期三次越限',
-  recovery_response_failure: '恢复响应偏差', communication_failure_and_reentry: '通信故障与恢复复归',
-  successful_progressive_recovery: '渐进恢复成功', recovery_abort: '恢复中止',
-  insufficient_pv_capacity: '光伏调节能力不足', secondary_curtailment: '二次限发',
-};
-export const stateLabels: Record<string, string> = {
-  normal: '正常运行', prepared: '调控准备', risk_observing: '风险观察', curtailing: '执行限发',
-  curtailed_hold: '限发保持', restore_wait: '恢复等待', restoring: '恢复监测',
-  restoring_dwell: '恢复监测', recovery_aborted: '恢复中止', recovery_inhibit: '恢复闭锁',
-  output_block: '停止新写入', hard_override: '硬保护接管',
-};
-export const actionLabels: Record<string, string> = {
-  none: '保持监测', curtail: '下发限发', restore: '增量恢复',
-  abort_restore: '中止恢复', abort_recovery: '中止恢复', hold: '保持限发', block: '停止新写入',
-};
 
 export function outageAtIteration(result: SimulationResult | null, iteration: number, region?: string): boolean {
   const c = result?.communication;

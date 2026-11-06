@@ -1,0 +1,210 @@
+.panel {
+  padding: 24px;
+  background: var(--science-panel, #fff);
+  border: 1px solid var(--science-border, #d6dee8);
+  border-radius: 8px;
+  color: var(--science-text, #23364a);
+}
+.heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.heading h2 {
+  margin: 0;
+  font-size: 19px;
+}
+.heading select {
+  margin-left: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--science-border, #d6dee8);
+  border-radius: 4px;
+  background: #fff;
+  color: inherit;
+}
+.panel p {
+  line-height: 1.7;
+}
+.note {
+  font-size: 13px;
+  color: var(--science-muted, #5b6b7d);
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 22px;
+  font-size: 13px;
+}
+.legend span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.legend i {
+  display: inline-block;
+  width: 24px;
+}
+.forecastKey {
+  border-top: 2px dashed #2563a6;
+}
+.bandKey {
+  height: 10px;
+  background: rgb(124 165 205 / 42%);
+  border-top: 1.5px solid #456b91;
+  border-bottom: 1.5px solid #456b91;
+}
+.lowerKey {
+  border-top: 2px dotted #a16b16;
+}
+.observedKey {
+  border-top: 2px solid #16766a;
+}
+.charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+.chart {
+  margin: 0;
+  padding: 14px;
+  min-width: 0;
+  border: 1px solid var(--science-border, #d6dee8);
+  border-radius: 6px;
+}
+.chart figcaption {
+  font-size: 15px;
+  font-weight: 600;
+}
+.chart figcaption span {
+  color: var(--science-muted, #5b6b7d);
+  font-size: 13px;
+  font-weight: 400;
+}
+.panel .plot {
+  display: block;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 4px;
+  cursor: crosshair;
+}
+.panel .plot:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.plot:focus-visible {
+  outline: 2px solid #2563a6;
+  outline-offset: 2px;
+}
+.plot svg {
+  display: block;
+  width: 100%;
+}
+.plot text {
+  font-size: 11px;
+  fill: #536475;
+}
+.grid {
+  stroke: #e1e7ed;
+}
+.future {
+  fill: #67798b;
+  opacity: 0.055;
+}
+.band {
+  fill: #7ca5cd;
+  opacity: 0.42;
+}
+.bandBoundary {
+  fill: none;
+  stroke: #456b91;
+  stroke-width: 1.25;
+}
+.forecast {
+  fill: none;
+  stroke: #2563a6;
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
+.lower {
+  fill: none;
+  stroke: #a16b16;
+  stroke-width: 2;
+  stroke-dasharray: 2 4;
+}
+.observed {
+  fill: none;
+  stroke: #16766a;
+  stroke-width: 2;
+}
+.observedBand {
+  fill: #16766a;
+  opacity: 0.12;
+}
+.selection {
+  fill: #23364a;
+  opacity: 0.06;
+  pointer-events: none;
+}
+.cursor {
+  stroke: #23364a;
+  stroke-width: 1;
+  pointer-events: none;
+}
+.values {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  gap: 10px;
+  font-size: 12px;
+}
+.values dt {
+  color: #5b6b7d;
+}
+.values dd {
+  margin: 4px 0 0;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.chain {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding: 16px 0 0;
+  margin: 16px 0 0;
+  border-top: 1px solid #d6dee8;
+}
+.chain li {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.chain button {
+  align-self: flex-start;
+  border: 1px solid #c6d6e6;
+  background: #f5f8fc;
+  color: #245d97;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+@media (max-width: 1000px) {
+  .charts {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 650px) {
+  .panel {
+    padding: 16px;
+  }
+  .chain {
+    grid-template-columns: 1fr;
+  }
+}

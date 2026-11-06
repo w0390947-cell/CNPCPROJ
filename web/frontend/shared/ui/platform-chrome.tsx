@@ -1,71 +1,37 @@
 'use client';
-
-import {
-  Activity,
-  BookOpenText,
-  ChevronRight,
-  CircleGauge,
-  Network,
-  Zap,
-  type LucideIcon,
-} from 'lucide-react';
-
+import { ChevronRight, Network, Zap, type LucideIcon } from 'lucide-react';
 export type PlatformPageId =
+  | 'patent2'
   | 'demo_lab'
   | 'overview'
   | 'single_microgrid'
   | 'cluster_coordination'
-  | 'communication_fault'
-  | 'group_control'
-  | 'case_information';
-
+  | 'communication_fault';
 export type PlatformNavigationItem = {
   href: string;
   icon: LucideIcon;
   id: PlatformPageId;
   label: string;
 };
-
 const navigationItems: readonly PlatformNavigationItem[] = [
-  { id: 'demo_lab', label: '模拟设备演示', href: '/demo-lab', icon: Zap },
   {
     id: 'single_microgrid',
-    label: '单微网优化',
+    label: '新能源最优协同控制算法仿真',
     href: '/single-microgrid',
     icon: Zap,
   },
-  {
-    id: 'cluster_coordination',
-    label: '集群协调',
-    href: '/cluster-coordination',
-    icon: Network,
-  },
-  {
-    id: 'communication_fault',
-    label: '通信故障',
-    href: '/communication-fault',
-    icon: Activity,
-  },
-  {
-    id: 'group_control',
-    label: '光伏群控策略验证',
-    href: '/group-control',
-    icon: CircleGauge,
-  },
-  {
-    id: 'case_information',
-    label: '算例与数据说明',
-    href: '/case-information',
-    icon: BookOpenText,
-  },
+  { id: 'patent2', label: '多层级微电网集群控制算法仿真', href: '/patent2', icon: Network },
 ];
-
 type PlatformHeaderProps = {
   status: 'checking' | 'offline' | 'online';
-  statusLabel: string;
+  statusLabel?: string;
   timeLabel?: string;
 };
-
+const serviceStatusLabels = {
+  checking: '正在连接仿真服务',
+  offline: '仿真服务未连接',
+  online: '仿真服务已连接',
+};
 export function PlatformHeader({
   status,
   statusLabel,
@@ -83,20 +49,18 @@ export function PlatformHeader({
       <div className="topbar-status">
         <span className={`system-ready ${status}`}>
           <i />
-          {statusLabel}
+          {statusLabel ?? serviceStatusLabels[status]}
         </span>
         {timeLabel && <time>{timeLabel}</time>}
       </div>
     </header>
   );
 }
-
 type PlatformNavigationProps = {
   activeItem: PlatformPageId;
   isItemDisabled?: (item: PlatformNavigationItem) => boolean;
   onNavigate: (item: PlatformNavigationItem) => void;
 };
-
 export function PlatformNavigation({
   activeItem,
   isItemDisabled,

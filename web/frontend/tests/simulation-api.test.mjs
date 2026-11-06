@@ -2,12 +2,33 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   getHealth,
+  getSingleExampleLibrary,
+  getSingleExampleRecord,
   createSimulation,
   waitForSimulation,
   SimulationCancelledError,
 } from '../lib/simulation-api.ts';
 
 const status = (state = 'running') => ({ simulation_id: 'job-1', state });
+
+test('saved single examples use only read endpoints and preserve the server result', async (t) => {
+  const calls = [];
+  const result = {
+    metadata: { generated_at: '2026-11-01T08:56:57Z' },
+    recorded: true,
+  };
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    calls.push([String(url), options?.method ?? 'GET']);
+    return new Response(
+      JSON.stringify(String(url).endsWith('/core') ? result : ['core']),
+    );
+  });
+  assert.deepEqual(await getSingleExampleLibrary(), ['core']);
+  assert.deepEqual(await getSingleExampleRecord(), result);
+  assert.ok(calls[0][0].endsWith('/api/single-example/library'));
+  assert.ok(calls[1][0].endsWith('/api/single-example/library/core'));
+  assert.ok(calls.every(([, method]) => method === 'GET'));
+});
 
 test('new cluster tasks normalize old grids without changing other scenarios or the source configuration', async (t) => {
   const requests = [];
@@ -19,7 +40,6 @@ test('new cluster tasks normalize old grids without changing other scenarios or 
     'cluster_coordination',
     'single_microgrid',
     'communication_fault',
-    'group_control',
   ]) {
     for (const steps of [4, 8, 24, 96, 48]) {
       const configuration = Object.freeze({

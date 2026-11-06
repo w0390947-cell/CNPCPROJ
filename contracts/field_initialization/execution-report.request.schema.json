@@ -1,0 +1,377 @@
+{
+  "$defs": {
+    "CommandResult": {
+      "additionalProperties": false,
+      "properties": {
+        "timestamp_uncertainty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimestampUncertainty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "command_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "resource_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "transport_status": {
+          "enum": [
+            "accepted",
+            "rejected",
+            "unknown"
+          ],
+          "title": "Transport Status",
+          "type": "string"
+        },
+        "device_status": {
+          "enum": [
+            "applied",
+            "rejected",
+            "unknown"
+          ],
+          "title": "Device Status",
+          "type": "string"
+        },
+        "acknowledged_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Acknowledged At"
+        },
+        "applied_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Applied At"
+        },
+        "echoed_p_setpoint_mw": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Echoed P Setpoint Mw"
+        },
+        "echoed_q_setpoint_mvar": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Echoed Q Setpoint Mvar"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command_id",
+        "resource_id",
+        "transport_status",
+        "device_status",
+        "acknowledged_at",
+        "applied_at",
+        "echoed_p_setpoint_mw",
+        "echoed_q_setpoint_mvar",
+        "reason"
+      ],
+      "title": "CommandResult",
+      "type": "object"
+    },
+    "EnergyEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "sample_observed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sample Observed At"
+        },
+        "method": {
+          "enum": [
+            "measured_energy",
+            "bounded_estimate"
+          ],
+          "title": "Method",
+          "type": "string"
+        },
+        "interval_start": {
+          "format": "date-time",
+          "title": "Interval Start",
+          "type": "string"
+        },
+        "interval_end": {
+          "format": "date-time",
+          "title": "Interval End",
+          "type": "string"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        },
+        "energy_end_mwh": {
+          "title": "Energy End Mwh",
+          "type": "number"
+        },
+        "uncertainty_mwh": {
+          "minimum": 0,
+          "title": "Uncertainty Mwh",
+          "type": "number"
+        }
+      },
+      "required": [
+        "method",
+        "interval_start",
+        "interval_end",
+        "source_ref",
+        "energy_end_mwh",
+        "uncertainty_mwh"
+      ],
+      "title": "EnergyEvidence",
+      "type": "object"
+    },
+    "ExecutionReport": {
+      "additionalProperties": false,
+      "properties": {
+        "context_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Context Id",
+          "type": "string"
+        },
+        "cycle_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Cycle Id",
+          "type": "string"
+        },
+        "command_batch_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Command Batch Id",
+          "type": "string"
+        },
+        "feedback_stage": {
+          "enum": [
+            "transport",
+            "device_ack",
+            "cycle_end",
+            "exception"
+          ],
+          "title": "Feedback Stage",
+          "type": "string"
+        },
+        "reported_at": {
+          "format": "date-time",
+          "title": "Reported At",
+          "type": "string"
+        },
+        "command_results": {
+          "items": {
+            "$ref": "#/$defs/CommandResult"
+          },
+          "title": "Command Results",
+          "type": "array"
+        },
+        "observed_snapshot_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Observed Snapshot Id"
+        },
+        "energy_evidence": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EnergyEvidence"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "context_id",
+        "cycle_id",
+        "command_batch_id",
+        "feedback_stage",
+        "reported_at",
+        "command_results",
+        "observed_snapshot_id",
+        "energy_evidence",
+        "reason"
+      ],
+      "title": "ExecutionReport",
+      "type": "object"
+    },
+    "TimestampUncertainty": {
+      "additionalProperties": false,
+      "properties": {
+        "error_seconds": {
+          "minimum": 0,
+          "title": "Error Seconds",
+          "type": "number"
+        },
+        "clock_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Clock Revision",
+          "type": "string"
+        },
+        "provenance_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Provenance Ref",
+          "type": "string"
+        },
+        "valid_from": {
+          "format": "date-time",
+          "title": "Valid From",
+          "type": "string"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        }
+      },
+      "required": [
+        "error_seconds",
+        "clock_revision",
+        "provenance_ref",
+        "valid_from",
+        "valid_until"
+      ],
+      "title": "TimestampUncertainty",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "interface_version": {
+      "const": "single-microgrid-field-v0.1-draft",
+      "title": "Interface Version",
+      "type": "string"
+    },
+    "message_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Message Id",
+      "type": "string"
+    },
+    "correlation_id": {
+      "anyOf": [
+        {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Correlation Id"
+    },
+    "microgrid_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Microgrid Id",
+      "type": "string"
+    },
+    "run_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "operation": {
+      "const": "ReportExecution",
+      "title": "Operation",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/ExecutionReport"
+    }
+  },
+  "required": [
+    "interface_version",
+    "message_id",
+    "correlation_id",
+    "microgrid_id",
+    "run_id",
+    "created_at",
+    "operation",
+    "payload"
+  ],
+  "title": "ReportExecutionRequest",
+  "type": "object"
+}

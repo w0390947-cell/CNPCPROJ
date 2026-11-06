@@ -24,7 +24,6 @@ test('algorithm result links use the platform routes', () => {
       single_microgrid: '/single-microgrid',
       cluster_coordination: '/cluster-coordination',
       communication_fault: '/communication-fault',
-      group_control: '/group-control',
     },
   );
 });

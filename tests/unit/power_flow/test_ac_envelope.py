@@ -7,14 +7,16 @@ import numpy as np
 from scipy.optimize import root
 
 from oilfield_energy.modules.power_flow.api import (
-    certify_ac_box,
     certified_ac_loss_bounds,
+    certify_ac_box,
     refine_ac_balance_certificate,
 )
 from oilfield_energy.modules.power_flow.contracts import (
     EnvelopeBranch,
-    PowerInterval as I,
     RadialEnvelope,
+)
+from oilfield_energy.modules.power_flow.contracts import (
+    PowerInterval as I,
 )
 
 
@@ -41,6 +43,7 @@ def network():
 
 def test_fast_proposal_point_solver_matches_independent_quadratic_solution():
     from math import sqrt
+
     from oilfield_energy.modules.power_flow.api import radial_point_response
 
     p, q, r, x = 0.2, 0.02, 0.01, 0.02
@@ -51,6 +54,125 @@ def test_fast_proposal_point_solver_matches_independent_quadratic_solution():
     np.testing.assert_allclose(
         actual, (10 * (p + r * ell), 10 * (q + x * ell)), atol=1e-9, rtol=0
     )
+
+
+def test_uncertain_slack_encloses_independent_high_precision_solutions():
+    net = network().model_copy(
+        update={"slack_voltage_bounds_pu": I(low=0.998, high=1.002)}
+    )
+    pbox, qbox = (
+        (I(low=0, high=0), I(low=1.99, high=2.01)),
+        (I(low=0, high=0), I(low=0.19, high=0.21)),
+    )
+    cert = certify_ac_box(net, pbox, qbox)
+    assert cert.certified, cert.reason
+    assert cert.model == "radial-ac-disc-v2"
+    assert cert.slack_voltage_input_pu == net.slack_voltage_bounds_pu
+    losses = certified_ac_loss_bounds(net, cert)
+    refined = refine_ac_balance_certificate(
+        net, cert, I(low=1.99, high=2.01), I(low=0.19, high=0.21)
+    )
+    with localcontext() as ctx:
+        ctx.prec = 60
+        r, x = Decimal.from_float(0.01), Decimal.from_float(0.02)
+        for uv, pv, qv in product(
+            np.linspace(0.998, 1.002, 5),
+            np.linspace(1.99, 2.01, 5),
+            np.linspace(0.19, 0.21, 5),
+        ):
+            u, p, q = (
+                Decimal.from_float(float(uv)),
+                Decimal.from_float(float(pv)) / 10,
+                Decimal.from_float(float(qv)) / 10,
+            )
+            a = u * u - 2 * (r * p + x * q)
+            v2 = (a + (a * a - 4 * (r * r + x * x) * (p * p + q * q)).sqrt()) / 2
+            ell = (p * p + q * q) / v2
+            ps, qs = 10 * (p + r * ell), 10 * (q + x * ell)
+            for bounds, value in (
+                (cert.voltage_bounds[0], u),
+                (cert.voltage_bounds[1], v2.sqrt()),
+                (cert.branch_current_pu_bounds[0], ell.sqrt()),
+                (cert.pcc_p_mw, ps),
+                (cert.pcc_q_mvar, qs),
+                (refined.pcc_p_mw, ps),
+                (refined.pcc_q_mvar, qs),
+                (losses[0], 10 * r * ell),
+                (losses[1], 10 * x * ell),
+            ):
+                assert (
+                    Decimal.from_float(bounds.low)
+                    <= value
+                    <= Decimal.from_float(bounds.high)
+                )
+            assert (ps * ps + qs * qs).sqrt() <= Decimal.from_float(
+                cert.branch_mva_upper[0]
+            )
+
+
+def test_uncertain_slack_with_tap_and_shunts_matches_independent_nodal_equations():
+    net = network().model_copy(
+        update={
+            "slack_voltage_bounds_pu": I(low=0.998, high=1.002),
+            "shunt_q_mvar": (0.05, 0.4),
+            "branches": (
+                EnvelopeBranch(
+                    parent=0, child=1, r_pu=0.01, x_pu=0.02, tap=1.01, rating_mva=10
+                ),
+            ),
+        }
+    )
+    cert = certify_ac_box(
+        net,
+        (I(low=0.1, high=0.1), I(low=1.99, high=2.01)),
+        (I(low=0.01, high=0.01), I(low=0.59, high=0.61)),
+    )
+    assert cert.certified, cert.reason
+    refined = refine_ac_balance_certificate(
+        net, cert, I(low=2.09, high=2.11), I(low=0.60, high=0.62)
+    )
+    z, tap = 0.01 + 0.02j, 1.01
+    for u, p, q in product((0.998, 1.0, 1.002), (1.99, 2.0, 2.01), (0.59, 0.60, 0.61)):
+        demand = complex(p, q) / 10
+
+        def equation(values):
+            voltage = complex(*values)
+            residual = (
+                (voltage - u / tap) / z
+                + (demand / voltage).conjugate()
+                + 1j * 0.04 * voltage
+            )
+            return [residual.real, residual.imag]
+
+        solved = root(equation, [u / tap, 0.0])
+        assert solved.success
+        voltage = complex(*solved.x)
+        current = (u / tap - voltage) / z
+        pcc = (
+            u
+            * (current / tap + complex(0.01, -0.001) / u + 1j * 0.005 * u).conjugate()
+            * 10
+        )
+        assert cert.voltage_bounds[1].contains(abs(voltage))
+        assert cert.pcc_p_mw.contains(pcc.real) and cert.pcc_q_mvar.contains(pcc.imag)
+        assert refined.pcc_p_mw.contains(pcc.real) and refined.pcc_q_mvar.contains(
+            pcc.imag
+        )
+        assert (
+            max(u / tap, abs(voltage)) * abs(current) * 10 <= cert.branch_mva_upper[0]
+        )
+
+
+def test_root_voltage_uncertainty_is_not_reduced_to_its_safe_center():
+    net = network().model_copy(
+        update={"slack_voltage_bounds_pu": I(low=0.94, high=1.06)}
+    )
+    cert = certify_ac_box(
+        net,
+        (I(low=0, high=0), I(low=2, high=2)),
+        (I(low=0, high=0), I(low=0.2, high=0.2)),
+    )
+    assert not cert.certified
 
 
 def test_box_contains_exact_two_bus_high_voltage_solutions_at_corners_and_interior():

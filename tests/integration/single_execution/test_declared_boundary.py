@@ -76,10 +76,16 @@ def study():
 
 
 @pytest.fixture(scope="module")
-def result():
+def live_events():
+    return []
+
+
+@pytest.fixture(scope="module")
+def result(live_events):
     case, settings = study()
     return run_simulation(
-        SimulationRequest(steps=2, single_boundary=settings), input_case=case
+        SimulationRequest(steps=2, single_boundary=settings), input_case=case,
+        live_callback=live_events.append,
     )
 
 
@@ -97,6 +103,19 @@ def test_declared_boundary_uses_the_only_formal_executor(result):
         == e
     )
     verify_unified_execution(u)
+
+
+def test_live_records_match_committed_final_execution(result, live_events):
+    assert live_events[0]["kind"] == "initial"
+    assert live_events[0]["initial"] == result.single_execution.unified.initial.model_dump(mode="json")
+    assert live_events[0]["p_band_mw"] == result.single_execution.unified.domain.p_band_mw
+    assert live_events[0]["q_band_mvar"] == result.single_execution.unified.domain.q_band_mvar
+    cycles = [event for event in live_events if event["kind"] == "cycle"]
+    assert [event["minute"] for event in cycles] == list(range(1, 31))
+    for event, row in zip(cycles, result.single_execution.unified.steps):
+        assert event["row"] == row.model_dump(mode="json", exclude={"cycle_evidence", "observed"})
+        assert len(event["voltage"]) == 2
+    assert [event["minute"] for event in live_events if event["kind"] == "phase"] == [0, 15]
 
 
 def test_real_entry_recertifies_the_same_target_when_the_next_optimizer_fails(

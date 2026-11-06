@@ -48,7 +48,18 @@ from .application_storage_reachability import (
     storage_reachability_rows,
 )
 
+from .domain_security import (
+    calculate_load_change_rate,
+    calculate_pv_penetration,
+    calculate_risk_index,
+    calculate_thresholds,
+)
+
 __all__ = [
+    "calculate_load_change_rate",
+    "calculate_pv_penetration",
+    "calculate_risk_index",
+    "calculate_thresholds",
     "pq_planning_rows",
     "pq_witness_violation",
     "run_ac_feasibility_recovery",

@@ -59,10 +59,10 @@ export function CommandPanel({
       <PanelHeading
         headingId="commands"
         icon={Send}
-        title="下发模拟 P/Q 命令"
+        title="下发 P/Q 命令"
       />
       <p className="demo-panel-copy">
-        P、Q 正值表示向网络注入；储能充电为负 P。命令有效期为十个模拟分钟。
+        P、Q 正值表示向网络注入；储能充电为负 P。命令有效期为十分钟。
       </p>
       <div className="demo-device-select">
         <label htmlFor="demo-command-device">选择设备</label>
@@ -120,7 +120,7 @@ export function CommandPanel({
         >
           <Table>
             <TableCaption className="sr-only">
-              模拟设备命令的执行回执
+              设备命令的执行回执
             </TableCaption>
             <TableHeader>
               <TableRow>

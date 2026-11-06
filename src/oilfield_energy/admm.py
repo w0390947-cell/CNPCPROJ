@@ -9,6 +9,7 @@ from typing import Dict, Mapping, Sequence
 import numpy as np
 
 from .communication import SimulatedCommunicationChannel
+from .modules.dispatch.contracts import PlanningSecurityConfig
 from .data import MicrogridData, ProjectCase
 from .hierarchy_types import (
     ADMMConfig,
@@ -16,7 +17,6 @@ from .hierarchy_types import (
     ADMMResult,
     CommunicationConfig,
     CoordinationSignal,
-    GroupControlConfig,
     RegionalSchedule,
 )
 from .modules.control.api import accept_coordination_message
@@ -203,7 +203,7 @@ def run_admm_coordination(
     loss_calibration: Mapping[str, CoordinationNetworkCalibration | Mapping[str, np.ndarray]]
     | None = None,
     p_grid_security_floors_mw: Mapping[str, np.ndarray] | None = None,
-    group_control_config: GroupControlConfig | None = None,
+    planning_security_config: PlanningSecurityConfig | None = None,
     storage_enabled: bool = True,
     workspace: CoordinationWorkspace | None = None,
     network_candidates: Mapping[str, RegionalNetworkCandidate] | None = None,
@@ -249,7 +249,7 @@ def run_admm_coordination(
         case,
         microgrids,
         p_grid_security_floors_mw,
-        config=group_control_config,
+        config=planning_security_config,
     )
     controllers, coordinator = (workspace or CoordinationWorkspace()).prepare(
         case,

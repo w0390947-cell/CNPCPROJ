@@ -242,6 +242,7 @@ class RollingClusterEngine:
         ],
         progress: Callable[[str], None],
         rolling_progress: Callable[[RollingProgress], None] | None = None,
+        live: Callable[[dict], None] | None = None,
         diagnose_regions: RegionalDiagnostics | None = None,
     ):
         if policy.cluster_safety is None:
@@ -268,6 +269,7 @@ class RollingClusterEngine:
         self.solve_regions, self.progress = solve_regions, progress
         self.diagnose_regions = diagnose_regions
         self.rolling_progress = rolling_progress
+        self.live = live
         self.total = len(self.case.time_hours) * self.step
         self.names = tuple(m.name for m in self.case.microgrids)
         self.day_ahead = {r.region: r for r in day_ahead}
@@ -723,6 +725,14 @@ class RollingClusterEngine:
                     "采用保留的认证后续策略" if not self.safety.plans else ""
                 )
                 self._sync_safety()
+                if self.live is not None:
+                    controller = self.safety.controller
+                    self.live({
+                        "kind": "cluster_cycle", "minute": controller.minute,
+                        "step": controller.steps[-1].model_dump(mode="json"),
+                        "pcc": {n: list(self.safety.outputs[n][-1]) for n in self.names},
+                        "tasks": [t.model_dump(mode="json") for t in controller.tasks.values()],
+                    })
         except (ValueError, RuntimeError, FloatingPointError) as exc:
             self.safety.controller.failure = str(exc)
             raise
@@ -739,6 +749,21 @@ class RollingClusterEngine:
         return certificate is None or certificate.status == "certified"
 
     def run(self) -> None:
+        if self.live is not None and self.safety_domain is not None:
+            self.live({
+                "kind": "cluster_initial", "total": self.total,
+                "domain": self.safety_domain.model_dump(mode="json"),
+                "policy": self.policy.model_dump(mode="json"),
+                "observations": [c.model_dump(mode="json") for c in self.reserve_observations],
+                "tasks": [t.model_dump(mode="json") for t in self.reserve_tasks.values()],
+            })
+        def publish_window(update: RollingUpdate) -> None:
+            if self.live is not None:
+                self.live({
+                    "kind": "cluster_window", "window": update.model_dump(mode="json"),
+                    "observations": [c.model_dump(mode="json") for c in self.reserve_observations],
+                    "tasks": [t.model_dump(mode="json") for t in self.reserve_tasks.values()],
+                })
         self.updates = run_feedback_loop(
             total_minutes=self.total,
             policy=self.policy,
@@ -746,6 +771,7 @@ class RollingClusterEngine:
             advance=self.advance,
             progress=self.progress,
             rolling_progress=self.rolling_progress,
+            on_update=publish_window if self.live is not None else None,
         )
 
     def intraday_evidence(self) -> tuple[RegionalExecution, ...]:

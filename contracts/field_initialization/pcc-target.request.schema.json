@@ -1,0 +1,145 @@
+{
+  "$defs": {
+    "PccTarget": {
+      "additionalProperties": false,
+      "properties": {
+        "context_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Context Id",
+          "type": "string"
+        },
+        "target_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Target Id",
+          "type": "string"
+        },
+        "target_p_import_mw": {
+          "title": "Target P Import Mw",
+          "type": "number"
+        },
+        "target_q_import_mvar": {
+          "title": "Target Q Import Mvar",
+          "type": "number"
+        },
+        "effective_from": {
+          "format": "date-time",
+          "title": "Effective From",
+          "type": "string"
+        },
+        "response_deadline_at": {
+          "format": "date-time",
+          "title": "Response Deadline At",
+          "type": "string"
+        },
+        "hold_until": {
+          "format": "date-time",
+          "title": "Hold Until",
+          "type": "string"
+        },
+        "p_tolerance_mw": {
+          "exclusiveMinimum": 0,
+          "title": "P Tolerance Mw",
+          "type": "number"
+        },
+        "q_tolerance_mvar": {
+          "exclusiveMinimum": 0,
+          "title": "Q Tolerance Mvar",
+          "type": "number"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "context_id",
+        "target_id",
+        "target_p_import_mw",
+        "target_q_import_mvar",
+        "effective_from",
+        "response_deadline_at",
+        "hold_until",
+        "p_tolerance_mw",
+        "q_tolerance_mvar",
+        "source_ref"
+      ],
+      "title": "PccTarget",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "interface_version": {
+      "const": "single-microgrid-field-v0.1-draft",
+      "title": "Interface Version",
+      "type": "string"
+    },
+    "operation": {
+      "const": "RequestPccTarget",
+      "title": "Operation",
+      "type": "string"
+    },
+    "message_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Message Id",
+      "type": "string"
+    },
+    "correlation_id": {
+      "anyOf": [
+        {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Correlation Id"
+    },
+    "microgrid_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Microgrid Id",
+      "type": "string"
+    },
+    "run_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/PccTarget"
+    }
+  },
+  "required": [
+    "interface_version",
+    "operation",
+    "message_id",
+    "correlation_id",
+    "microgrid_id",
+    "run_id",
+    "created_at",
+    "payload"
+  ],
+  "title": "RequestPccTargetRequest",
+  "type": "object"
+}

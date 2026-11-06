@@ -1,5 +1,5 @@
-import SimulationDashboard from '@/components/simulation-dashboard';
+import SingleCasePage from '@/features/single-execution/case-page';
 
 export default function SingleMicrogridPage() {
-  return <SimulationDashboard key="single_microgrid" initialView="single_microgrid" />;
+  return <SingleCasePage />;
 }

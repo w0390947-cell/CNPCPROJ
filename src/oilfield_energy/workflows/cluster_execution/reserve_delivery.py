@@ -179,10 +179,23 @@ def certify_reserve_service(inputs: ReserveServiceInput) -> ReserveServiceCertif
         reasons.append("continuous AC box: " + network.reason)
     if nominal.pcc_p_mw is None or up.pcc_p_mw is None or down.pcc_p_mw is None:
         reasons.append("PCC delivery unavailable")
-    elif F(nominal.pcc_p_mw.low) - F(up.pcc_p_mw.high) < F(x.required_mw) or F(
-        down.pcc_p_mw.low
-    ) - F(nominal.pcc_p_mw.high) < F(x.required_mw):
-        reasons.append("PCC delivery bracket")
+    elif all(c.certified for c in (nominal, up, down)):
+        # Baseline and activated PCC power use the SAME observed demand.
+        # P_pcc = sum(demand) - P_storage + losses, so that common demand
+        # cancels in the increment. Subtracting independent PCC boxes would
+        # count load uncertainty twice. Keep outward loss bounds: no sampled
+        # sensitivity or assumed lossless delivery enters this certificate.
+        base_losses, _ = certified_ac_loss_bounds(x.network, nominal)
+        up_losses, _ = certified_ac_loss_bounds(x.network, up)
+        down_losses, _ = certified_ac_loss_bounds(x.network, down)
+        up_delivery = (
+            hi - F(x.baseline_power_mw.high) + F(base_losses.low) - F(up_losses.high)
+        )
+        down_delivery = (
+            F(x.baseline_power_mw.low) - lo + F(down_losses.low) - F(base_losses.high)
+        )
+        if min(up_delivery, down_delivery) < F(x.required_mw):
+            reasons.append("PCC delivery bracket")
     return ReserveServiceCertificate(
         inputs=x,
         status="unknown" if reasons else "certified",

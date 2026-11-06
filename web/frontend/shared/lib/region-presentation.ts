@@ -6,11 +6,11 @@ export const REGION_DEFINITIONS = [
   },
   {
     id: 'YA_B',
-    displayName: '延安合成微网 B（YA_B）',
+    displayName: '延安微网 B（YA_B）',
   },
   {
     id: 'YA_C',
-    displayName: '延安合成微网 C（YA_C）',
+    displayName: '延安微网 C（YA_C）',
   },
 ] as const;
 

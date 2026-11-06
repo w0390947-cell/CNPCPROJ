@@ -1,0 +1,15 @@
+{
+  "simulation_id": "00000000000000000000000000000003",
+  "name": "test",
+  "state": "failed",
+  "created_at": "2026-11-05T00:03:00Z",
+  "updated_at": "2026-11-05T00:03:00Z",
+  "stage": null,
+  "stage_label": null,
+  "stage_sequence": null,
+  "total_stages": 6,
+  "rolling": null,
+  "result_available": false,
+  "error_code": null,
+  "error_message": null
+}

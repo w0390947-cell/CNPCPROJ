@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  clockLabel, emptyFrame, groupScenarioLabels, minuteFrames, numberLabel,
+  clockLabel, emptyFrame, minuteFrames, numberLabel,
   outageAtIteration, profileFrames, resultConfiguration,
 } from '../lib/simulation-presentation.ts';
 
@@ -103,11 +103,6 @@ test('explicit global loss does not hide a separately configured default outage'
   assert.equal(outageAtIteration(r, 14, 'YA_B'), false);
 });
 
-test('all eight backend scenarios have readable labels', () => {
-  for (const name of ['normal_operation', 'emergency_curtailment', 'consecutive_three_trigger',
-    'three_in_five_debounce', 'secondary_curtailment', 'successful_progressive_recovery',
-    'recovery_response_failure', 'communication_failure_and_reentry']) assert.ok(groupScenarioLabels[name]);
-});
 
 test('event branch configuration comes from the saved request, not UI defaults', () => {
   const r = { request: { region: 'YA_C', steps: 96, storage_enabled: false,

@@ -45,7 +45,9 @@ def test_actual_feedback_preserves_original_deadlines_without_legacy_observation
     def forbidden(**kwargs):
         raise AssertionError("legacy constant-power observer is not v6 admission")
 
-    monkeypatch.setattr(cluster_rolling, "observe_storage_reserve", forbidden)
+    # The legacy observer is no longer imported by this adapter. Install the
+    # sentinel even when absent, so the test still fails if it is used again.
+    monkeypatch.setattr(cluster_rolling, "observe_storage_reserve", forbidden, raising=False)
     p = port(energy)
     for _ in range(20):
         p.advance("economic optimizer unavailable")

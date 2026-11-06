@@ -33,7 +33,7 @@ class ClusterSafetyPolicy(SafetyValue):
     maximum_return_minutes: int = Field(default=90, ge=1, le=240)
     within_minute: Literal["zero_order_hold"] = "zero_order_hold"
     device_intersample: Literal["linear_all_channels"] = "linear_all_channels"
-    initial_condition: Literal["case_energy_idle_resources"] = (
+    initial_condition: Literal["case_energy_idle_resources", "case_energy_declared_resources"] = (
         "case_energy_idle_resources"
     )
     terminal_boundary: Literal["last_declared_envelope_persists"] = (

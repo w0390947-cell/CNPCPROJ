@@ -1,5 +1,6 @@
 import type { ClusterExecution } from '@/shared/api/generated/cluster-execution';
 import { planTimeLabel } from './presentation';
+import { executionDisplayText } from '../../shared/lib/execution-display-text';
 import styles from './style.module.css';
 
 export function ReserveDetails({ execution }: { execution: ClusterExecution }) {
@@ -22,7 +23,7 @@ export function ReserveDetails({ execution }: { execution: ClusterExecution }) {
           ? `首次未能确认完整备用后，须在 ${policy.recovery_minutes} 分钟内恢复；截止时间不随重规划重置。`
           : `备用消耗后按 ${policy.recovery_minutes} 分钟恢复要求重算。`}
       </p>
-      <p>{policy.source}</p>
+      <p>{executionDisplayText(policy.source)}</p>
       {execution.safety ? <p>
         逐分钟使用实际 P/Q/E 重新观察完整备用；原恢复期限不重置。新一轮调用须在完整恢复、返回认证待命状态并重新认证后接纳。已接纳调用 {execution.safety.reserve_events?.length ?? 0} 轮。
       </p> : <p>

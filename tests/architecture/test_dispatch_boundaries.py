@@ -41,7 +41,7 @@ def test_new_dispatch_is_solver_and_io_independent():
 
 
 def test_legacy_consumers_only_use_dispatch_public_boundary():
-    for name in ("model", "misocp_model", "regional_control", "hierarchy_types", "service", "admm"):
+    for name in ("model", "misocp_model", "regional_control", "hierarchy_types", "service", "admm", "planning_security"):
         path = ROOT / "src/oilfield_energy" / (name + ".py")
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             if isinstance(node, ast.ImportFrom):

@@ -1,0 +1,1979 @@
+{
+  "$defs": {
+    "ArtifactReference": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Revision",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "revision",
+        "sha256"
+      ],
+      "title": "ArtifactReference",
+      "type": "object"
+    },
+    "Authority": {
+      "additionalProperties": false,
+      "properties": {
+        "owner_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Owner Id",
+          "type": "string"
+        },
+        "epoch": {
+          "minimum": 0,
+          "title": "Epoch",
+          "type": "integer"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        },
+        "permission_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Permission Revision",
+          "type": "string"
+        },
+        "write_enabled": {
+          "default": false,
+          "title": "Write Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "owner_id",
+        "epoch",
+        "valid_until",
+        "permission_revision"
+      ],
+      "title": "Authority",
+      "type": "object"
+    },
+    "Availability": {
+      "additionalProperties": false,
+      "properties": {
+        "resource_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "available_p_mw": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "method_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Method Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource_id",
+        "available_p_mw",
+        "method_ref"
+      ],
+      "title": "Availability",
+      "type": "object"
+    },
+    "BoundedTimingPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "profile": {
+          "enum": [
+            "bounded_monotone_v1",
+            "bounded_uncertain_v1"
+          ],
+          "title": "Profile",
+          "type": "string"
+        },
+        "revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Revision",
+          "type": "string"
+        },
+        "provenance_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Provenance Ref",
+          "type": "string"
+        },
+        "response_semantics": {
+          "enum": [
+            "monotone_no_overshoot_exact_settling",
+            "monotone_no_overshoot_bounded_settling"
+          ],
+          "title": "Response Semantics",
+          "type": "string"
+        },
+        "clock_error_bound_seconds": {
+          "minimum": 0,
+          "title": "Clock Error Bound Seconds",
+          "type": "number"
+        },
+        "prepare_max_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Prepare Max Seconds",
+          "type": "number"
+        },
+        "transport_max_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Transport Max Seconds",
+          "type": "number"
+        },
+        "apply_not_before_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Apply Not Before Seconds",
+          "type": "number"
+        },
+        "apply_not_after_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Apply Not After Seconds",
+          "type": "number"
+        },
+        "application_skew_max_seconds": {
+          "minimum": 0,
+          "title": "Application Skew Max Seconds",
+          "type": "number"
+        },
+        "snapshot_delivery_max_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Snapshot Delivery Max Seconds",
+          "type": "number"
+        },
+        "resources": {
+          "items": {
+            "$ref": "#/$defs/ResourceTiming"
+          },
+          "maxItems": 128,
+          "minItems": 1,
+          "title": "Resources",
+          "type": "array"
+        }
+      },
+      "required": [
+        "profile",
+        "revision",
+        "provenance_ref",
+        "response_semantics",
+        "clock_error_bound_seconds",
+        "prepare_max_seconds",
+        "transport_max_seconds",
+        "apply_not_before_seconds",
+        "apply_not_after_seconds",
+        "application_skew_max_seconds",
+        "snapshot_delivery_max_seconds",
+        "resources"
+      ],
+      "title": "BoundedTimingPolicy",
+      "type": "object"
+    },
+    "Bounds": {
+      "additionalProperties": false,
+      "properties": {
+        "low": {
+          "title": "Low",
+          "type": "number"
+        },
+        "high": {
+          "title": "High",
+          "type": "number"
+        }
+      },
+      "required": [
+        "low",
+        "high"
+      ],
+      "title": "Bounds",
+      "type": "object"
+    },
+    "BusLoad": {
+      "additionalProperties": false,
+      "properties": {
+        "bus_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "p_mw": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "q_mvar": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "scope_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Scope Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bus_id",
+        "p_mw",
+        "q_mvar",
+        "scope_ref"
+      ],
+      "title": "BusLoad",
+      "type": "object"
+    },
+    "ControlPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "observation_uncertainty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ObservationUncertaintyPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "bounded_timing": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BoundedTimingPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "execution_step_seconds": {
+          "const": 60,
+          "title": "Execution Step Seconds",
+          "type": "integer"
+        },
+        "planning_update_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Planning Update Seconds",
+          "type": "integer"
+        },
+        "planning_horizon_seconds": {
+          "exclusiveMinimum": 0,
+          "maximum": 86400,
+          "title": "Planning Horizon Seconds",
+          "type": "integer"
+        },
+        "response_deadline_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Response Deadline Seconds",
+          "type": "integer"
+        },
+        "p_tracking_tolerance_mw": {
+          "exclusiveMinimum": 0,
+          "title": "P Tracking Tolerance Mw",
+          "type": "number"
+        },
+        "q_tracking_tolerance_mvar": {
+          "exclusiveMinimum": 0,
+          "title": "Q Tracking Tolerance Mvar",
+          "type": "number"
+        },
+        "pcc_model_tolerance_mw": {
+          "minimum": 0,
+          "title": "Pcc Model Tolerance Mw",
+          "type": "number"
+        },
+        "pcc_model_tolerance_mvar": {
+          "minimum": 0,
+          "title": "Pcc Model Tolerance Mvar",
+          "type": "number"
+        },
+        "alpha_q": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Alpha Q",
+          "type": "number"
+        },
+        "q_change_limit_mvar_per_cycle": {
+          "minimum": 0,
+          "title": "Q Change Limit Mvar Per Cycle",
+          "type": "number"
+        },
+        "settling_resolution": {
+          "exclusiveMinimum": 0,
+          "maximum": 0.001,
+          "title": "Settling Resolution",
+          "type": "number"
+        },
+        "voltage_min_pu": {
+          "exclusiveMinimum": 0,
+          "title": "Voltage Min Pu",
+          "type": "number"
+        },
+        "voltage_max_pu": {
+          "exclusiveMinimum": 0,
+          "title": "Voltage Max Pu",
+          "type": "number"
+        },
+        "pcc_min_mw": {
+          "minimum": 0,
+          "title": "Pcc Min Mw",
+          "type": "number"
+        },
+        "pcc_max_mw": {
+          "exclusiveMinimum": 0,
+          "title": "Pcc Max Mw",
+          "type": "number"
+        },
+        "pf_min": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Pf Min",
+          "type": "number"
+        },
+        "telemetry_max_age_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Telemetry Max Age Seconds",
+          "type": "number"
+        },
+        "snapshot_max_skew_seconds": {
+          "minimum": 0,
+          "title": "Snapshot Max Skew Seconds",
+          "type": "number"
+        },
+        "future_clock_skew_seconds": {
+          "minimum": 0,
+          "title": "Future Clock Skew Seconds",
+          "type": "number"
+        },
+        "compute_budget_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Compute Budget Seconds",
+          "type": "number"
+        },
+        "dispatch_lead_seconds": {
+          "minimum": 0,
+          "title": "Dispatch Lead Seconds",
+          "type": "number"
+        },
+        "transport_timeout_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Transport Timeout Seconds",
+          "type": "number"
+        },
+        "feedback_timeout_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Feedback Timeout Seconds",
+          "type": "number"
+        },
+        "model_error_policy_ref": {
+          "enum": [
+            "exact-normalized-snapshot-v1",
+            "bounded-observation-v1"
+          ],
+          "title": "Model Error Policy Ref",
+          "type": "string"
+        },
+        "availability_method_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Availability Method Ref",
+          "type": "string"
+        },
+        "local_fallback_policy_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Local Fallback Policy Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "execution_step_seconds",
+        "planning_update_seconds",
+        "planning_horizon_seconds",
+        "response_deadline_seconds",
+        "p_tracking_tolerance_mw",
+        "q_tracking_tolerance_mvar",
+        "pcc_model_tolerance_mw",
+        "pcc_model_tolerance_mvar",
+        "alpha_q",
+        "q_change_limit_mvar_per_cycle",
+        "settling_resolution",
+        "voltage_min_pu",
+        "voltage_max_pu",
+        "pcc_min_mw",
+        "pcc_max_mw",
+        "pf_min",
+        "telemetry_max_age_seconds",
+        "snapshot_max_skew_seconds",
+        "future_clock_skew_seconds",
+        "compute_budget_seconds",
+        "dispatch_lead_seconds",
+        "transport_timeout_seconds",
+        "feedback_timeout_seconds",
+        "model_error_policy_ref",
+        "availability_method_ref",
+        "local_fallback_policy_ref"
+      ],
+      "title": "ControlPolicy",
+      "type": "object"
+    },
+    "Device": {
+      "additionalProperties": false,
+      "properties": {
+        "resource_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "bus_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "wind",
+            "pv",
+            "storage",
+            "svg"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "p_min_mw": {
+          "title": "P Min Mw",
+          "type": "number"
+        },
+        "p_max_mw": {
+          "title": "P Max Mw",
+          "type": "number"
+        },
+        "q_min_mvar": {
+          "title": "Q Min Mvar",
+          "type": "number"
+        },
+        "q_max_mvar": {
+          "title": "Q Max Mvar",
+          "type": "number"
+        },
+        "s_max_mva": {
+          "exclusiveMinimum": 0,
+          "title": "S Max Mva",
+          "type": "number"
+        },
+        "q_abs_over_p_max": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Q Abs Over P Max"
+        },
+        "p_control_enabled": {
+          "title": "P Control Enabled",
+          "type": "boolean"
+        },
+        "q_control_enabled": {
+          "title": "Q Control Enabled",
+          "type": "boolean"
+        },
+        "alpha_p": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Alpha P",
+          "type": "number"
+        },
+        "p_change_limit_mw_per_cycle": {
+          "minimum": 0,
+          "title": "P Change Limit Mw Per Cycle",
+          "type": "number"
+        },
+        "energy_min_mwh": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Energy Min Mwh"
+        },
+        "energy_max_mwh": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Energy Max Mwh"
+        },
+        "eta_charge": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 1,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Eta Charge"
+        },
+        "eta_discharge": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 1,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Eta Discharge"
+        },
+        "provenance_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Provenance Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource_id",
+        "bus_id",
+        "kind",
+        "p_min_mw",
+        "p_max_mw",
+        "q_min_mvar",
+        "q_max_mvar",
+        "s_max_mva",
+        "q_abs_over_p_max",
+        "p_control_enabled",
+        "q_control_enabled",
+        "alpha_p",
+        "p_change_limit_mw_per_cycle",
+        "provenance_ref"
+      ],
+      "title": "Device",
+      "type": "object"
+    },
+    "DeviceState": {
+      "additionalProperties": false,
+      "properties": {
+        "status_timestamp_uncertainty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimestampUncertainty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "resource_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "p_mw": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "q_mvar": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "energy_mwh": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MeasuredValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "online": {
+          "title": "Online",
+          "type": "boolean"
+        },
+        "remote_enabled": {
+          "title": "Remote Enabled",
+          "type": "boolean"
+        },
+        "blocked": {
+          "title": "Blocked",
+          "type": "boolean"
+        },
+        "status_observed_at": {
+          "format": "date-time",
+          "title": "Status Observed At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource_id",
+        "p_mw",
+        "q_mvar",
+        "online",
+        "remote_enabled",
+        "blocked",
+        "status_observed_at"
+      ],
+      "title": "DeviceState",
+      "type": "object"
+    },
+    "EnergyTask": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Task Id",
+          "type": "string"
+        },
+        "deadline_at": {
+          "format": "date-time",
+          "title": "Deadline At",
+          "type": "string"
+        },
+        "energy_min_mwh": {
+          "minimum": 0,
+          "title": "Energy Min Mwh",
+          "type": "number"
+        },
+        "energy_max_mwh": {
+          "minimum": 0,
+          "title": "Energy Max Mwh",
+          "type": "number"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "deadline_at",
+        "energy_min_mwh",
+        "energy_max_mwh",
+        "required",
+        "source_ref"
+      ],
+      "title": "EnergyTask",
+      "type": "object"
+    },
+    "ForecastLoad": {
+      "additionalProperties": false,
+      "properties": {
+        "bus_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "p_forecast_mw": {
+          "minimum": 0,
+          "title": "P Forecast Mw",
+          "type": "number"
+        },
+        "q_forecast_mvar": {
+          "title": "Q Forecast Mvar",
+          "type": "number"
+        },
+        "p_bounds_mw": {
+          "$ref": "#/$defs/Bounds"
+        },
+        "q_bounds_mvar": {
+          "$ref": "#/$defs/Bounds"
+        }
+      },
+      "required": [
+        "bus_id",
+        "p_forecast_mw",
+        "q_forecast_mvar",
+        "p_bounds_mw",
+        "q_bounds_mvar"
+      ],
+      "title": "ForecastLoad",
+      "type": "object"
+    },
+    "ForecastPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "format": "date-time",
+          "title": "At",
+          "type": "string"
+        },
+        "bus_loads": {
+          "items": {
+            "$ref": "#/$defs/ForecastLoad"
+          },
+          "title": "Bus Loads",
+          "type": "array"
+        },
+        "renewables": {
+          "items": {
+            "$ref": "#/$defs/ForecastRenewable"
+          },
+          "title": "Renewables",
+          "type": "array"
+        }
+      },
+      "required": [
+        "at",
+        "bus_loads",
+        "renewables"
+      ],
+      "title": "ForecastPoint",
+      "type": "object"
+    },
+    "ForecastRenewable": {
+      "additionalProperties": false,
+      "properties": {
+        "resource_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "available_forecast_mw": {
+          "minimum": 0,
+          "title": "Available Forecast Mw",
+          "type": "number"
+        },
+        "minimum_available_mw": {
+          "minimum": 0,
+          "title": "Minimum Available Mw",
+          "type": "number"
+        },
+        "bound_method_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Bound Method Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource_id",
+        "available_forecast_mw",
+        "minimum_available_mw",
+        "bound_method_ref"
+      ],
+      "title": "ForecastRenewable",
+      "type": "object"
+    },
+    "HeldSetpoint": {
+      "additionalProperties": false,
+      "properties": {
+        "timestamp_uncertainty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimestampUncertainty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "held_since": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Held Since"
+        },
+        "since_uncertainty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimestampUncertainty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "resource_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "p_mw": {
+          "title": "P Mw",
+          "type": "number"
+        },
+        "q_mvar": {
+          "title": "Q Mvar",
+          "type": "number"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource_id",
+        "p_mw",
+        "q_mvar",
+        "observed_at",
+        "source_ref"
+      ],
+      "title": "HeldSetpoint",
+      "type": "object"
+    },
+    "InitializePayload": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": [
+            "shadow",
+            "closed_loop"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "model_package": {
+          "$ref": "#/$defs/ModelPackage"
+        },
+        "initial_snapshot": {
+          "$ref": "#/$defs/Snapshot"
+        },
+        "planning_inputs": {
+          "$ref": "#/$defs/PlanningInputs"
+        },
+        "control_policy": {
+          "$ref": "#/$defs/ControlPolicy"
+        },
+        "authority": {
+          "$ref": "#/$defs/Authority"
+        }
+      },
+      "required": [
+        "mode",
+        "model_package",
+        "initial_snapshot",
+        "planning_inputs",
+        "control_policy",
+        "authority"
+      ],
+      "title": "InitializePayload",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "LoadScope": {
+      "additionalProperties": false,
+      "properties": {
+        "scope_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Scope Ref",
+          "type": "string"
+        },
+        "bus_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "members": {
+          "items": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "\\S",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Members",
+          "type": "array"
+        },
+        "semantics": {
+          "const": "gross_load",
+          "title": "Semantics",
+          "type": "string"
+        },
+        "provenance_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Provenance Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "scope_ref",
+        "bus_id",
+        "members",
+        "semantics",
+        "provenance_ref"
+      ],
+      "title": "LoadScope",
+      "type": "object"
+    },
+    "MeasuredValue": {
+      "additionalProperties": false,
+      "properties": {
+        "uncertainty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MeasurementUncertainty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "quality": {
+          "enum": [
+            "good",
+            "bad",
+            "questionable",
+            "unknown"
+          ],
+          "title": "Quality",
+          "type": "string"
+        },
+        "source_kind": {
+          "enum": [
+            "measured",
+            "estimated"
+          ],
+          "title": "Source Kind",
+          "type": "string"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        },
+        "value_semantics": {
+          "enum": [
+            "instantaneous",
+            "interval_average",
+            "interval_energy"
+          ],
+          "title": "Value Semantics",
+          "type": "string"
+        },
+        "interval_start": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Interval Start"
+        },
+        "interval_end": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Interval End"
+        }
+      },
+      "required": [
+        "value",
+        "observed_at",
+        "quality",
+        "source_kind",
+        "source_ref",
+        "value_semantics"
+      ],
+      "title": "MeasuredValue",
+      "type": "object"
+    },
+    "MeasurementLimit": {
+      "additionalProperties": false,
+      "properties": {
+        "source_kind": {
+          "enum": [
+            "measured",
+            "estimated"
+          ],
+          "title": "Source Kind",
+          "type": "string"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        },
+        "calibration_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Calibration Revision",
+          "type": "string"
+        },
+        "max_absolute_error": {
+          "minimum": 0,
+          "title": "Max Absolute Error",
+          "type": "number"
+        },
+        "max_timestamp_error_seconds": {
+          "minimum": 0,
+          "title": "Max Timestamp Error Seconds",
+          "type": "number"
+        },
+        "alignment_rate_per_second": {
+          "minimum": 0,
+          "title": "Alignment Rate Per Second",
+          "type": "number"
+        },
+        "provenance_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Provenance Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_kind",
+        "source_ref",
+        "calibration_revision",
+        "max_absolute_error",
+        "max_timestamp_error_seconds",
+        "alignment_rate_per_second",
+        "provenance_ref"
+      ],
+      "title": "MeasurementLimit",
+      "type": "object"
+    },
+    "MeasurementUncertainty": {
+      "additionalProperties": false,
+      "properties": {
+        "absolute_error": {
+          "minimum": 0,
+          "title": "Absolute Error",
+          "type": "number"
+        },
+        "calibration_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Calibration Revision",
+          "type": "string"
+        },
+        "provenance_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Provenance Ref",
+          "type": "string"
+        },
+        "valid_from": {
+          "format": "date-time",
+          "title": "Valid From",
+          "type": "string"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        },
+        "timestamp": {
+          "$ref": "#/$defs/TimestampUncertainty"
+        }
+      },
+      "required": [
+        "absolute_error",
+        "calibration_revision",
+        "provenance_ref",
+        "valid_from",
+        "valid_until",
+        "timestamp"
+      ],
+      "title": "MeasurementUncertainty",
+      "type": "object"
+    },
+    "ModelPackage": {
+      "additionalProperties": false,
+      "properties": {
+        "network_model": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ArtifactReference"
+            },
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/JsonValue"
+              },
+              "type": "object"
+            }
+          ],
+          "title": "Network Model"
+        },
+        "operating_mode_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Operating Mode Id",
+          "type": "string"
+        },
+        "devices": {
+          "items": {
+            "$ref": "#/$defs/Device"
+          },
+          "maxItems": 128,
+          "minItems": 1,
+          "title": "Devices",
+          "type": "array"
+        },
+        "point_mapping": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ArtifactReference"
+            },
+            {
+              "items": {
+                "$ref": "#/$defs/PointMapping"
+              },
+              "type": "array"
+            }
+          ],
+          "title": "Point Mapping"
+        },
+        "load_scopes": {
+          "items": {
+            "$ref": "#/$defs/LoadScope"
+          },
+          "maxItems": 512,
+          "minItems": 1,
+          "title": "Load Scopes",
+          "type": "array"
+        },
+        "model_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Model Revision",
+          "type": "string"
+        },
+        "mapping_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Mapping Revision",
+          "type": "string"
+        },
+        "provenance_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Provenance Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "network_model",
+        "operating_mode_id",
+        "devices",
+        "point_mapping",
+        "load_scopes",
+        "model_revision",
+        "mapping_revision",
+        "provenance_ref"
+      ],
+      "title": "ModelPackage",
+      "type": "object"
+    },
+    "ObservationUncertaintyPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "root_voltage_bounds_pu": {
+          "$ref": "#/$defs/Bounds"
+        },
+        "profile": {
+          "const": "bounded_observation_v1",
+          "title": "Profile",
+          "type": "string"
+        },
+        "revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Revision",
+          "type": "string"
+        },
+        "clock_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Clock Revision",
+          "type": "string"
+        },
+        "provenance_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Provenance Ref",
+          "type": "string"
+        },
+        "valid_from": {
+          "format": "date-time",
+          "title": "Valid From",
+          "type": "string"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        },
+        "boundary_radius_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Boundary Radius Seconds",
+          "type": "number"
+        },
+        "measurements": {
+          "items": {
+            "$ref": "#/$defs/MeasurementLimit"
+          },
+          "maxItems": 4096,
+          "minItems": 1,
+          "title": "Measurements",
+          "type": "array"
+        }
+      },
+      "required": [
+        "root_voltage_bounds_pu",
+        "profile",
+        "revision",
+        "clock_revision",
+        "provenance_ref",
+        "valid_from",
+        "valid_until",
+        "boundary_radius_seconds",
+        "measurements"
+      ],
+      "title": "ObservationUncertaintyPolicy",
+      "type": "object"
+    },
+    "Pcc": {
+      "additionalProperties": false,
+      "properties": {
+        "bus_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "p_import_mw": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "q_import_mvar": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "voltage_pu": {
+          "$ref": "#/$defs/MeasuredValue"
+        }
+      },
+      "required": [
+        "bus_id",
+        "p_import_mw",
+        "q_import_mvar",
+        "voltage_pu"
+      ],
+      "title": "Pcc",
+      "type": "object"
+    },
+    "PlanningInputs": {
+      "additionalProperties": false,
+      "properties": {
+        "input_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Input Revision",
+          "type": "string"
+        },
+        "issued_at": {
+          "format": "date-time",
+          "title": "Issued At",
+          "type": "string"
+        },
+        "effective_from": {
+          "format": "date-time",
+          "title": "Effective From",
+          "type": "string"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        },
+        "forecast_interpolation": {
+          "enum": [
+            "linear",
+            "hold"
+          ],
+          "title": "Forecast Interpolation",
+          "type": "string"
+        },
+        "forecast_points": {
+          "items": {
+            "$ref": "#/$defs/ForecastPoint"
+          },
+          "maxItems": 1441,
+          "minItems": 2,
+          "title": "Forecast Points",
+          "type": "array"
+        },
+        "tariff_intervals": {
+          "items": {
+            "$ref": "#/$defs/Tariff"
+          },
+          "maxItems": 1440,
+          "minItems": 1,
+          "title": "Tariff Intervals",
+          "type": "array"
+        },
+        "cost_rates": {
+          "$ref": "#/$defs/Rates"
+        },
+        "energy_task": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EnergyTask"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "terminal_boundary_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Terminal Boundary Ref",
+          "type": "string"
+        },
+        "terminal_boundary_policy": {
+          "const": "last_bounds_until_valid_until",
+          "title": "Terminal Boundary Policy",
+          "type": "string"
+        },
+        "context_id": {
+          "title": "Context Id",
+          "type": "null"
+        }
+      },
+      "required": [
+        "input_revision",
+        "issued_at",
+        "effective_from",
+        "valid_until",
+        "source_ref",
+        "forecast_interpolation",
+        "forecast_points",
+        "tariff_intervals",
+        "cost_rates",
+        "energy_task",
+        "terminal_boundary_ref",
+        "terminal_boundary_policy",
+        "context_id"
+      ],
+      "title": "PlanningInputs",
+      "type": "object"
+    },
+    "PointMapping": {
+      "additionalProperties": false,
+      "properties": {
+        "mapping_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Mapping Id",
+          "type": "string"
+        },
+        "point_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Point Id",
+          "type": "string"
+        },
+        "entity_kind": {
+          "enum": [
+            "bus_load",
+            "resource",
+            "pcc",
+            "operating_state"
+          ],
+          "title": "Entity Kind",
+          "type": "string"
+        },
+        "entity_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Entity Id",
+          "type": "string"
+        },
+        "quantity": {
+          "enum": [
+            "p",
+            "q",
+            "energy",
+            "voltage",
+            "online",
+            "remote_enabled",
+            "blocked",
+            "p_setpoint",
+            "q_setpoint"
+          ],
+          "title": "Quantity",
+          "type": "string"
+        },
+        "access": {
+          "enum": [
+            "read",
+            "write"
+          ],
+          "title": "Access",
+          "type": "string"
+        },
+        "raw_unit": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Raw Unit",
+          "type": "string"
+        },
+        "normalized_unit": {
+          "enum": [
+            "MW",
+            "Mvar",
+            "MWh",
+            "pu",
+            "1"
+          ],
+          "title": "Normalized Unit",
+          "type": "string"
+        },
+        "engineering_multiplier": {
+          "exclusiveMinimum": 0,
+          "title": "Engineering Multiplier",
+          "type": "number"
+        },
+        "direction_rule_ref": {
+          "enum": [
+            "identity",
+            "negate"
+          ],
+          "title": "Direction Rule Ref",
+          "type": "string"
+        },
+        "quality_rule_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Quality Rule Ref",
+          "type": "string"
+        },
+        "timestamp_rule_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Timestamp Rule Ref",
+          "type": "string"
+        },
+        "scope_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Scope Ref",
+          "type": "string"
+        },
+        "provenance_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Provenance Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mapping_id",
+        "point_id",
+        "entity_kind",
+        "entity_id",
+        "quantity",
+        "access",
+        "raw_unit",
+        "normalized_unit",
+        "engineering_multiplier",
+        "direction_rule_ref",
+        "quality_rule_ref",
+        "timestamp_rule_ref",
+        "scope_ref",
+        "provenance_ref"
+      ],
+      "title": "PointMapping",
+      "type": "object"
+    },
+    "Rates": {
+      "additionalProperties": false,
+      "properties": {
+        "curtailment_cny_per_mwh": {
+          "minimum": 0,
+          "title": "Curtailment Cny Per Mwh",
+          "type": "number"
+        },
+        "storage_throughput_cny_per_mwh": {
+          "minimum": 0,
+          "title": "Storage Throughput Cny Per Mwh",
+          "type": "number"
+        },
+        "loss_cny_per_mwh": {
+          "minimum": 0,
+          "title": "Loss Cny Per Mwh",
+          "type": "number"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "curtailment_cny_per_mwh",
+        "storage_throughput_cny_per_mwh",
+        "loss_cny_per_mwh",
+        "source_ref"
+      ],
+      "title": "Rates",
+      "type": "object"
+    },
+    "ResourceTiming": {
+      "additionalProperties": false,
+      "properties": {
+        "zero_p_is_exact": {
+          "default": false,
+          "title": "Zero P Is Exact",
+          "type": "boolean"
+        },
+        "zero_q_is_exact": {
+          "default": false,
+          "title": "Zero Q Is Exact",
+          "type": "boolean"
+        },
+        "settled_p_error_mw": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Settled P Error Mw",
+          "type": "number"
+        },
+        "settled_q_error_mvar": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Settled Q Error Mvar",
+          "type": "number"
+        },
+        "resource_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "settling_max_seconds": {
+          "minimum": 0,
+          "title": "Settling Max Seconds",
+          "type": "number"
+        },
+        "provenance_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Provenance Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource_id",
+        "settling_max_seconds",
+        "provenance_ref"
+      ],
+      "title": "ResourceTiming",
+      "type": "object"
+    },
+    "Snapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "snapshot_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Snapshot Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 0,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "snapshot_at": {
+          "format": "date-time",
+          "title": "Snapshot At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "model_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Model Revision",
+          "type": "string"
+        },
+        "mapping_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Mapping Revision",
+          "type": "string"
+        },
+        "operating_mode_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Operating Mode Id",
+          "type": "string"
+        },
+        "permission_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Permission Revision",
+          "type": "string"
+        },
+        "bus_loads": {
+          "items": {
+            "$ref": "#/$defs/BusLoad"
+          },
+          "maxItems": 512,
+          "minItems": 1,
+          "title": "Bus Loads",
+          "type": "array"
+        },
+        "device_states": {
+          "items": {
+            "$ref": "#/$defs/DeviceState"
+          },
+          "maxItems": 128,
+          "minItems": 1,
+          "title": "Device States",
+          "type": "array"
+        },
+        "renewable_availability": {
+          "items": {
+            "$ref": "#/$defs/Availability"
+          },
+          "title": "Renewable Availability",
+          "type": "array"
+        },
+        "pcc": {
+          "$ref": "#/$defs/Pcc"
+        },
+        "operating_state_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Operating State Ref",
+          "type": "string"
+        },
+        "held_setpoints": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/HeldSetpoint"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Held Setpoints"
+        },
+        "context_id": {
+          "title": "Context Id",
+          "type": "null"
+        }
+      },
+      "required": [
+        "snapshot_id",
+        "sequence",
+        "snapshot_at",
+        "received_at",
+        "model_revision",
+        "mapping_revision",
+        "operating_mode_id",
+        "permission_revision",
+        "bus_loads",
+        "device_states",
+        "renewable_availability",
+        "pcc",
+        "operating_state_ref",
+        "context_id"
+      ],
+      "title": "Snapshot",
+      "type": "object"
+    },
+    "Tariff": {
+      "additionalProperties": false,
+      "properties": {
+        "start_at": {
+          "format": "date-time",
+          "title": "Start At",
+          "type": "string"
+        },
+        "end_at": {
+          "format": "date-time",
+          "title": "End At",
+          "type": "string"
+        },
+        "import_price_cny_per_mwh": {
+          "minimum": 0,
+          "title": "Import Price Cny Per Mwh",
+          "type": "number"
+        }
+      },
+      "required": [
+        "start_at",
+        "end_at",
+        "import_price_cny_per_mwh"
+      ],
+      "title": "Tariff",
+      "type": "object"
+    },
+    "TimestampUncertainty": {
+      "additionalProperties": false,
+      "properties": {
+        "error_seconds": {
+          "minimum": 0,
+          "title": "Error Seconds",
+          "type": "number"
+        },
+        "clock_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Clock Revision",
+          "type": "string"
+        },
+        "provenance_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Provenance Ref",
+          "type": "string"
+        },
+        "valid_from": {
+          "format": "date-time",
+          "title": "Valid From",
+          "type": "string"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        }
+      },
+      "required": [
+        "error_seconds",
+        "clock_revision",
+        "provenance_ref",
+        "valid_from",
+        "valid_until"
+      ],
+      "title": "TimestampUncertainty",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "interface_version": {
+      "const": "single-microgrid-field-v0.1-draft",
+      "title": "Interface Version",
+      "type": "string"
+    },
+    "operation": {
+      "const": "InitializeRun",
+      "title": "Operation",
+      "type": "string"
+    },
+    "message_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Message Id",
+      "type": "string"
+    },
+    "correlation_id": {
+      "title": "Correlation Id",
+      "type": "null"
+    },
+    "microgrid_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Microgrid Id",
+      "type": "string"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "null"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/InitializePayload"
+    }
+  },
+  "required": [
+    "interface_version",
+    "operation",
+    "message_id",
+    "correlation_id",
+    "microgrid_id",
+    "run_id",
+    "created_at",
+    "payload"
+  ],
+  "title": "InitializeRequest",
+  "type": "object"
+}

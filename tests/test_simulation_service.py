@@ -85,6 +85,7 @@ class SimulationServiceTests(unittest.TestCase):
             ],
         )
         self.assertEqual([item.sequence for item in self.progress if item.rolling is None], list(range(1, 7)))
+        self.assertTrue(all(item.total_stages == 6 for item in self.progress))
         self.assertTrue(any(item.rolling is not None for item in self.progress))
 
     def test_contract_rejects_reversed_communication_outage(self) -> None:
@@ -113,11 +114,6 @@ class MultiScenarioServiceTests(unittest.TestCase):
             communication_outage_start_iteration=3,
             communication_outage_end_iteration=8,
         ))
-        cls.group = run_simulation(SimulationRequest(
-            name="群控状态机回归",
-            scenario_type=ScenarioType.GROUP_CONTROL,
-            steps=4,
-        ))
 
     def test_cluster_coordination_contains_real_admm_and_three_regions(self) -> None:
         self.assertEqual(self.cluster.executive_summary.overall_passed,
@@ -143,17 +139,9 @@ class MultiScenarioServiceTests(unittest.TestCase):
             3,
         )
 
-    def test_group_control_contains_auditable_state_machine_trajectories(self) -> None:
-        self.assertTrue(self.group.executive_summary.overall_passed)
-        self.assertEqual(self.group.group_control.scenario_count, 8)
-        self.assertTrue(self.group.group_control.all_passed)
-        self.assertGreater(len(self.group.group_control.records), 8)
-        self.assertGreater(len(self.group.group_control.events), 0)
-        actions = {record.action for record in self.group.group_control.records}
-        self.assertTrue({"curtail", "restore", "abort_recovery"}.issubset(actions))
 
     def test_all_scenario_results_are_strict_json(self) -> None:
-        for result in (self.cluster, self.fault, self.group):
+        for result in (self.cluster, self.fault):
             json.dumps(result.model_dump(mode="json"), ensure_ascii=False, allow_nan=False)
 
     def test_cluster_timeseries_has_real_aggregate_balance_inputs(self) -> None:

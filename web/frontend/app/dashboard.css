@@ -772,104 +772,6 @@ a:focus-visible {
 .branch-comparison > div > b {
   overflow-wrap: anywhere;
 }
-.scenario-picker {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-bottom: 18px;
-}
-.scenario-picker [data-slot='select-trigger'] {
-  width: min(100%, 280px);
-  height: 38px;
-  font-size: 14px;
-  background: #142b3c;
-}
-.scenario-picker > span {
-  color: #8ca9bc;
-  font-size: 13px;
-}
-.group-state-machine {
-  padding: 8px 0;
-  height: auto;
-}
-.threshold-readout {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  border-bottom: 1px solid #2c4658;
-  padding-bottom: 16px;
-}
-.threshold-readout span {
-  font-size: 12px;
-  color: #96afc2;
-}
-.threshold-readout strong {
-  font: 500 16px var(--font-mono);
-  margin-top: 7px;
-  display: block;
-  color: #cae2ef;
-}
-.state-flow {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  padding: 16px 0;
-}
-.state-step-wrap {
-  display: block;
-  min-width: 0;
-}
-.state-step {
-  min-width: 0;
-  width: 100%;
-  min-height: 64px;
-  border: 1px solid #2f4a5e;
-  background: #142a3a;
-  border-radius: 5px;
-  padding: 9px;
-}
-.state-step b {
-  font-size: 13px;
-  font-weight: 500;
-}
-.state-step small {
-  font: 12px var(--font-mono);
-  color: #6b9eb6;
-}
-.state-step.active {
-  background: #164e52;
-  border-color: #4dcfba;
-  box-shadow: none;
-}
-.state-step.active b {
-  color: #a5efe0;
-}
-.control-decision {
-  height: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  padding: 12px;
-  background: #0d1c29;
-  border: 1px solid #30475a;
-  border-radius: 6px;
-}
-.control-decision span {
-  font-size: 12px;
-  color: #8daabd;
-}
-.control-decision b {
-  font-size: 14px;
-  color: #c2d8e6;
-  font-weight: 500;
-}
-.control-decision code {
-  font: 12px var(--font-mono);
-  color: #a8becb;
-  overflow-wrap: anywhere;
-}
 .playback-bar {
   position: sticky;
   bottom: 0;
@@ -1046,9 +948,6 @@ a:focus-visible {
   }
   .topbar-status {
     gap: 10px;
-  }
-  .threshold-readout {
-    grid-template-columns: 1fr 1fr;
   }
 }
 @media (max-width: 1000px) {
@@ -1307,9 +1206,6 @@ a:focus-visible {
   }
   .capacity-row [data-slot='progress'] {
     display: none;
-  }
-  .state-flow {
-    grid-template-columns: repeat(2, 1fr);
   }
   .playback-bar {
     grid-template-columns: 1fr;

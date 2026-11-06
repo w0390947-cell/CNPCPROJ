@@ -165,7 +165,7 @@ export function DemoLab() {
         tabIndex={-1}
       >
         <div className="section-heading demo-section-heading">
-          <h2>模拟设备与算法演示</h2>
+          <h2>设备与算法演示</h2>
           <ConnectionSummary catalog={catalog} frame={frame} />
         </div>
 
@@ -173,8 +173,8 @@ export function DemoLab() {
           className={`context-strip ${connectionError ? 'service-offline' : ''}`}
         >
           <Info aria-hidden="true" size={17} />
-          <span className="context-badge">参数化模拟</span>
-          <span>设备持续运行 · 每个服务周期推进一分钟模拟时间</span>
+          <span className="context-badge">运行算例</span>
+          <span>设备持续运行 · 每个服务周期推进一分钟运行时间</span>
           <span className="result-origin">
             {frame
               ? `${frame.simulated_at} · ${frame.quality_valid ? '量测质量有效' : '量测质量无效'}`
@@ -203,7 +203,7 @@ export function DemoLab() {
         {busy && (
           <output className="demo-busy">
             <LoaderCircle aria-hidden="true" className="spin" />
-            正在处理模拟操作…
+            正在处理操作…
           </output>
         )}
 

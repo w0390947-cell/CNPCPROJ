@@ -186,8 +186,12 @@ def case_from_bundle(bundle: Bundle, steps: int) -> ProjectCase:
     data: dict[str, Any] = cast(dict[str, Any], bundle.case)
     identity_fields = {"dataset_id", "dataset_revision", "dataset_sha256", "profile_kind"}
     # Reserve envelopes belong to a computed planning window, not a source bundle.
-    source_fields = {f.name for f in fields(ProjectCase)} - {"storage_reserves", "reactive_plans"}
-    if set(data) - identity_fields != source_fields - identity_fields:
+    planning_fields = {"storage_reserves", "reactive_plans"}
+    source_fields = {f.name for f in fields(ProjectCase)} - planning_fields
+    # Historical dataclass captures included these empty default maps. Accept
+    # their absence or empty representation, never a computed planning envelope.
+    if (set(data) - identity_fields - planning_fields != source_fields - identity_fields
+            or any(data.get(key, {}) != {} for key in planning_fields)):
         raise ValueError("unexpected case fields")
     original = np.array(data["time_hours"], dtype=float)
     if len(original) != 96 or not np.allclose(original, np.arange(96) / 4):
@@ -364,7 +368,6 @@ def build_bundle() -> Bundle:
                 "single_microgrid",
                 "cluster_coordination",
                 "communication_fault",
-                "group_control",
             )
         },
     )

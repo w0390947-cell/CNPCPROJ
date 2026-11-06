@@ -14,6 +14,11 @@ from pydantic import (
     model_validator,
 )
 
+from .contracts_security import (
+    PlanningSecurityConfig as PlanningSecurityConfig,
+    SecurityThresholdInput as SecurityThresholdInput,
+    SecurityThresholds as SecurityThresholds,
+)
 from .contracts_network import (
     JointNetworkEvidence as JointNetworkEvidence,
 )

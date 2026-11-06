@@ -1,5 +1,5 @@
-import SimulationDashboard from '@/components/simulation-dashboard';
+import { redirect } from 'next/navigation';
 
 export default function CommunicationFaultPage() {
-  return <SimulationDashboard key="communication_fault" initialView="communication_fault" />;
+  redirect('/patent2');
 }

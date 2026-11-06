@@ -15,7 +15,7 @@ export function jobProgressPresentation(
   const totalStages = status?.total_stages ?? 6;
   const sequence = status?.stage_sequence ?? 1;
   const withinStage =
-    sequence === 4 && rolling
+    sequence === totalStages - 2 && rolling
       ? rolling.completed_windows / rolling.total_windows
       : 0;
   const finished = status?.state === 'succeeded' && status.result_available;

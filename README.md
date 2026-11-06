@@ -70,7 +70,7 @@ Invoke-RestMethod 'http://127.0.0.1:8000/api/demo/catalog'
 1. 健康检查返回 `status: ok`，且 `solvers` 包含 `SCIP`；设备目录接口正常返回数据。
 2. 访问 `http://127.0.0.1:3000`，确认页面加载正常、后端服务在线。
 3. 访问 `http://127.0.0.1:3000/demo-lab`，确认设备数据持续更新。
-4. 在网页中选择“光伏群控策略验证”（`/group-control`），点击“运行群控场景”，确认任务状态更新且结果返回。完整优化仿真可在连通性检查通过后运行。
+4. 在网页中选择“单微网优化”，确认 8.2 十节点实施例页面及运行按钮正常显示。该页面运行固定的全天算例；按需启动后检查任务状态和结果。
 
 后端接口文档地址为 `http://127.0.0.1:8000/docs`。减少优化算例的计划点数仍然覆盖 24 小时，不等于只模拟较短时长，也不保证很快完成。
 
@@ -378,8 +378,6 @@ sudo systemctl disable cnpc-frontend cnpc-api
 # 多层级滚动控制（每次使用新的输出目录）
 & '.\.venv\Scripts\python.exe' run_model.py cluster --output results/cluster-001
 
-# 群调群控场景
-& '.\.venv\Scripts\python.exe' run_model.py group-scenarios --output results/group_control_scenarios
 ```
 
 ### 4.2 Linux Bash
@@ -388,9 +386,10 @@ sudo systemctl disable cnpc-frontend cnpc-api
 .venv/bin/python run_model.py --help
 .venv/bin/python run_model.py --steps 96 --output results/run-001
 .venv/bin/python run_model.py cluster --output results/cluster-001
-.venv/bin/python run_model.py group-scenarios --output results/group_control_scenarios
 ```
 
 `oilfield-opt` 与 `run_model.py` 使用相同入口。计算完成后，以终端显示的结果路径为准。完整模拟耗时较长，保持进程运行，勿将启动成功当作计算完成。
 
 重新执行默认完整运行或集群运行时，更换 `--output`，不要复用已存在的研究输出目录。其他输入选项通过 `--help` 查看。
+
+独立光伏群控功能已移除；正式协同优化使用的动态安全阈值保留。接口与旧结果迁移见 [规划安全阈值说明](docs3/Planning_Security_Thresholds.md)。

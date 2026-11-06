@@ -115,8 +115,8 @@ def test_real_single_microgrid_solver_accepts_authoritative_topology(region):
     assert len(result.topology_nodes) == (10 if region == "SC" else 7)
 
 
-def test_real_cluster_and_group_use_unified_inputs():
-    for scenario in (ScenarioType.CLUSTER_COORDINATION, ScenarioType.GROUP_CONTROL):
+def test_real_cluster_uses_unified_inputs():
+    for scenario in (ScenarioType.CLUSTER_COORDINATION,):
         result = run_simulation(SimulationRequest(scenario_type=scenario, steps=8))
         assert result.metadata.dataset_sha256 == load_dataset()[1]
         assert result.executive_summary.overall_passed == all(

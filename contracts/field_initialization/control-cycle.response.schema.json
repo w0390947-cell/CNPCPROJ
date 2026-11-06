@@ -1,0 +1,788 @@
+{
+  "$defs": {
+    "Authority": {
+      "additionalProperties": false,
+      "properties": {
+        "owner_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Owner Id",
+          "type": "string"
+        },
+        "epoch": {
+          "minimum": 0,
+          "title": "Epoch",
+          "type": "integer"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        },
+        "permission_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Permission Revision",
+          "type": "string"
+        },
+        "write_enabled": {
+          "default": false,
+          "title": "Write Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "owner_id",
+        "epoch",
+        "valid_until",
+        "permission_revision"
+      ],
+      "title": "Authority",
+      "type": "object"
+    },
+    "ControlCycleResponsePayload": {
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {
+          "enum": [
+            "accepted",
+            "rejected"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "errors": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/InterfaceError"
+          },
+          "title": "Errors",
+          "type": "array"
+        },
+        "data": {
+          "$ref": "#/$defs/ControlCycleResult"
+        }
+      },
+      "required": [
+        "outcome",
+        "data"
+      ],
+      "title": "ControlCycleResponsePayload",
+      "type": "object"
+    },
+    "ControlCycleResult": {
+      "additionalProperties": false,
+      "properties": {
+        "timed_proof": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimedCycleProof"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "decision": {
+          "enum": [
+            "shadow_only",
+            "dispatchable",
+            "withheld"
+          ],
+          "title": "Decision",
+          "type": "string"
+        },
+        "cycle_id": {
+          "title": "Cycle Id",
+          "type": "string"
+        },
+        "context_id": {
+          "title": "Context Id",
+          "type": "string"
+        },
+        "snapshot_id": {
+          "title": "Snapshot Id",
+          "type": "string"
+        },
+        "command_batch_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Command Batch Id"
+        },
+        "target_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Target Id"
+        },
+        "apply_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Apply At"
+        },
+        "cycle_end_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Cycle End At"
+        },
+        "dispatch_deadline_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dispatch Deadline At"
+        },
+        "feedback_due_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Feedback Due At"
+        },
+        "authority": {
+          "$ref": "#/$defs/Authority"
+        },
+        "commands": {
+          "items": {
+            "$ref": "#/$defs/DeviceCommand"
+          },
+          "title": "Commands",
+          "type": "array"
+        },
+        "predicted_endpoint": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PredictedEndpoint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "model_check": {
+          "$ref": "#/$defs/CycleModelCheck"
+        },
+        "strategy_source": {
+          "anyOf": [
+            {
+              "enum": [
+                "retained_feedback",
+                "backup",
+                "terminal"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Strategy Source"
+        },
+        "energy_feedback": {
+          "default": false,
+          "title": "Energy Feedback",
+          "type": "boolean"
+        },
+        "target_response_deadline_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Response Deadline At"
+        },
+        "target_guaranteed_until": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Guaranteed Until"
+        },
+        "energy_task_deadline_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Energy Task Deadline At"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "evaluated_at": {
+          "format": "date-time",
+          "title": "Evaluated At",
+          "type": "string"
+        },
+        "time_basis": {
+          "default": "synchronous_model_only",
+          "enum": [
+            "synchronous_model_only",
+            "software_synchronous_v1",
+            "bounded_monotone_v1",
+            "bounded_uncertain_v1"
+          ],
+          "title": "Time Basis",
+          "type": "string"
+        },
+        "mode": {
+          "default": "shadow",
+          "enum": [
+            "shadow",
+            "closed_loop"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "dispatch_enabled": {
+          "default": false,
+          "title": "Dispatch Enabled",
+          "type": "boolean"
+        },
+        "execution_confirmed": {
+          "const": false,
+          "default": false,
+          "title": "Execution Confirmed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "decision",
+        "cycle_id",
+        "context_id",
+        "snapshot_id",
+        "command_batch_id",
+        "target_id",
+        "apply_at",
+        "cycle_end_at",
+        "authority",
+        "commands",
+        "predicted_endpoint",
+        "model_check",
+        "strategy_source",
+        "reason",
+        "evaluated_at"
+      ],
+      "title": "ControlCycleResult",
+      "type": "object"
+    },
+    "CycleModelCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "passed",
+            "unproven"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "evidence_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Evidence Ref"
+        },
+        "guaranteed_until": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Guaranteed Until"
+        }
+      },
+      "required": [
+        "status",
+        "evidence_ref",
+        "guaranteed_until"
+      ],
+      "title": "CycleModelCheck",
+      "type": "object"
+    },
+    "DeviceCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "command_id": {
+          "title": "Command Id",
+          "type": "string"
+        },
+        "resource_id": {
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "p_setpoint_mw": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "P Setpoint Mw"
+        },
+        "q_setpoint_mvar": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Q Setpoint Mvar"
+        }
+      },
+      "required": [
+        "command_id",
+        "resource_id",
+        "p_setpoint_mw",
+        "q_setpoint_mvar"
+      ],
+      "title": "DeviceCommand",
+      "type": "object"
+    },
+    "InterfaceError": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "field_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Field Path"
+        },
+        "resource_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resource Id"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        },
+        "required_action": {
+          "default": "Correct the input or resolve the stated prerequisite.",
+          "title": "Required Action",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "InterfaceError",
+      "type": "object"
+    },
+    "Interval": {
+      "additionalProperties": false,
+      "properties": {
+        "low": {
+          "title": "Low",
+          "type": "number"
+        },
+        "high": {
+          "title": "High",
+          "type": "number"
+        }
+      },
+      "required": [
+        "low",
+        "high"
+      ],
+      "title": "Interval",
+      "type": "object"
+    },
+    "PredictedDeviceState": {
+      "additionalProperties": false,
+      "properties": {
+        "resource_id": {
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "p_mw": {
+          "title": "P Mw",
+          "type": "number"
+        },
+        "q_mvar": {
+          "title": "Q Mvar",
+          "type": "number"
+        }
+      },
+      "required": [
+        "resource_id",
+        "p_mw",
+        "q_mvar"
+      ],
+      "title": "PredictedDeviceState",
+      "type": "object"
+    },
+    "PredictedEndpoint": {
+      "additionalProperties": false,
+      "properties": {
+        "device_states": {
+          "items": {
+            "$ref": "#/$defs/PredictedDeviceState"
+          },
+          "title": "Device States",
+          "type": "array"
+        },
+        "storage_energy_mwh": {
+          "title": "Storage Energy Mwh",
+          "type": "number"
+        }
+      },
+      "required": [
+        "device_states",
+        "storage_energy_mwh"
+      ],
+      "title": "PredictedEndpoint",
+      "type": "object"
+    },
+    "TimedCycleProof": {
+      "additionalProperties": false,
+      "properties": {
+        "profile": {
+          "default": "bounded_monotone_v1",
+          "enum": [
+            "bounded_monotone_v1",
+            "bounded_uncertain_v1"
+          ],
+          "title": "Profile",
+          "type": "string"
+        },
+        "clock_error_bound_seconds": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Clock Error Bound Seconds",
+          "type": "number"
+        },
+        "clock_revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Clock Revision"
+        },
+        "physical_apply_earliest_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Physical Apply Earliest At"
+        },
+        "physical_apply_latest_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Physical Apply Latest At"
+        },
+        "profile_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Profile Revision",
+          "type": "string"
+        },
+        "energy_task_guarantee": {
+          "enum": [
+            "not_required",
+            "maintained",
+            "unproven"
+          ],
+          "title": "Energy Task Guarantee",
+          "type": "string"
+        },
+        "application_skew_max_seconds": {
+          "minimum": 0,
+          "title": "Application Skew Max Seconds",
+          "type": "number"
+        },
+        "start_step": {
+          "minimum": 0,
+          "title": "Start Step",
+          "type": "integer"
+        },
+        "apply_not_before_at": {
+          "format": "date-time",
+          "title": "Apply Not Before At",
+          "type": "string"
+        },
+        "apply_not_after_at": {
+          "format": "date-time",
+          "title": "Apply Not After At",
+          "type": "string"
+        },
+        "prepare_deadline_at": {
+          "format": "date-time",
+          "title": "Prepare Deadline At",
+          "type": "string"
+        },
+        "dispatch_deadline_at": {
+          "format": "date-time",
+          "title": "Dispatch Deadline At",
+          "type": "string"
+        },
+        "endpoint": {
+          "$ref": "#/$defs/TubeBox"
+        },
+        "path": {
+          "$ref": "#/$defs/TubeBox"
+        },
+        "continuation_commands": {
+          "items": {
+            "$ref": "#/$defs/TubeCommand"
+          },
+          "title": "Continuation Commands",
+          "type": "array"
+        },
+        "continuation_endpoints": {
+          "items": {
+            "$ref": "#/$defs/TubeBox"
+          },
+          "title": "Continuation Endpoints",
+          "type": "array"
+        },
+        "guaranteed_until": {
+          "format": "date-time",
+          "title": "Guaranteed Until",
+          "type": "string"
+        },
+        "proof_digest": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Proof Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "profile_revision",
+        "energy_task_guarantee",
+        "application_skew_max_seconds",
+        "start_step",
+        "apply_not_before_at",
+        "apply_not_after_at",
+        "prepare_deadline_at",
+        "dispatch_deadline_at",
+        "endpoint",
+        "path",
+        "continuation_commands",
+        "continuation_endpoints",
+        "guaranteed_until",
+        "proof_digest"
+      ],
+      "title": "TimedCycleProof",
+      "type": "object"
+    },
+    "TubeBox": {
+      "additionalProperties": false,
+      "properties": {
+        "p_mw": {
+          "items": {
+            "$ref": "#/$defs/Interval"
+          },
+          "title": "P Mw",
+          "type": "array"
+        },
+        "q_mvar": {
+          "items": {
+            "$ref": "#/$defs/Interval"
+          },
+          "title": "Q Mvar",
+          "type": "array"
+        },
+        "energy_mwh": {
+          "$ref": "#/$defs/Interval"
+        }
+      },
+      "required": [
+        "p_mw",
+        "q_mvar",
+        "energy_mwh"
+      ],
+      "title": "TubeBox",
+      "type": "object"
+    },
+    "TubeCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "p_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "P Mw",
+          "type": "array"
+        },
+        "q_mvar": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Q Mvar",
+          "type": "array"
+        }
+      },
+      "required": [
+        "p_mw",
+        "q_mvar"
+      ],
+      "title": "TubeCommand",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "interface_version": {
+      "const": "single-microgrid-field-v0.1-draft",
+      "default": "single-microgrid-field-v0.1-draft",
+      "title": "Interface Version",
+      "type": "string"
+    },
+    "operation": {
+      "const": "PrepareControlCycle",
+      "default": "PrepareControlCycle",
+      "title": "Operation",
+      "type": "string"
+    },
+    "message_id": {
+      "title": "Message Id",
+      "type": "string"
+    },
+    "correlation_id": {
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "microgrid_id": {
+      "title": "Microgrid Id",
+      "type": "string"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/ControlCycleResponsePayload"
+    }
+  },
+  "required": [
+    "message_id",
+    "correlation_id",
+    "microgrid_id",
+    "run_id",
+    "created_at",
+    "payload"
+  ],
+  "title": "PrepareControlCycleResponse",
+  "type": "object"
+}

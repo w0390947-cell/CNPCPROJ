@@ -10,6 +10,7 @@ export type Schema = {
   required?: string[];
   additionalProperties?: boolean | Schema;
   items?: Schema;
+  prefixItems?: Schema[];
   minimum?: number;
   maximum?: number;
   exclusiveMinimum?: number;
@@ -91,7 +92,7 @@ export function validate(
       if (schema.maxItems !== undefined && value.length > schema.maxItems)
         fail();
       value.forEach((item, i) =>
-        validate(item, schema.items ?? {}, root, `${path}[${i}]`),
+        validate(item, schema.prefixItems?.[i] ?? schema.items ?? {}, root, `${path}[${i}]`),
       );
       break;
     case 'object': {

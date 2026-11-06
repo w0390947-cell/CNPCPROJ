@@ -111,6 +111,18 @@ def test_replay_rejects_a_modified_actual_state():
         replay_cluster_safety(ClusterSafetyEvidence.model_validate(raw))
 
 
+def test_identical_proposal_cache_never_crosses_a_completed_clock_boundary():
+    d = safety_domain(reserve=False)
+    c = ClusterSafetyController(d)
+    commands = c.terminal
+    first = c.certify_candidate(commands)
+    assert c.certify_candidate(commands) is first
+    c.advance(observed(d), commands)
+    second = c.certify_candidate(commands)
+    assert second is not first
+    assert (first.start_minute, second.start_minute) == (0, 1)
+
+
 def test_recoverable_future_firm_drop_does_not_abort_an_already_certified_tail():
     d = safety_domain()
     regions = []

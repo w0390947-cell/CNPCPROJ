@@ -1,4 +1,5 @@
 import type { SingleExecution } from '../../shared/api/generated/single-execution';
+import { executionDisplayText } from '../../shared/lib/execution-display-text';
 
 type Props = {
   execution: SingleExecution;
@@ -140,14 +141,8 @@ export function SingleExecutionPanel({
               <tr>
                 <td>计划经济性改善至少 10%</td>
                 <td>
-                  {economicPassed == null
-                    ? '未评价'
-                    : economicPassed
-                      ? '通过'
-                      : '未通过'}
-                  {improvementPercent != null
-                    ? `（${improvementPercent.toFixed(2)}%）`
-                    : ''}
+                  {economicPassed == null ? '未评价' : economicPassed ? '通过' : '未通过'}
+                  {improvementPercent != null ? `（${improvementPercent.toFixed(2)}%）` : ''}
                 </td>
                 <td>无储能优化方案与选定方案的计划综合成本</td>
               </tr>
@@ -158,7 +153,7 @@ export function SingleExecutionPanel({
             {backup} 次，原目标反馈续接 {retained} 次，安全终态保持 {terminal}{' '}
             次。
           </p>
-          <p>边界来源：{u.domain.bound_source}</p>
+          <p>边界来源：{executionDisplayText(u.domain.bound_source)}</p>
           <p>
             原目标优先；同目标获证候选先比较指令干预量，再比较预测成本。
             已接纳目标中记录分配试验 {allocationTrials.length}{' '}
@@ -175,7 +170,7 @@ export function SingleExecutionPanel({
               经济规划不可用时，可重新认证原目标的有限反馈窗口；认证失败则执行原安全尾部。
             </p>
             <p>
-              安全保证不自动代表经济目标跟踪通过。周期末跟踪结果不构成周期内连续跟踪或现场暂态稳定证明。
+              安全保证不自动代表经济目标跟踪通过。周期末跟踪结果与周期内连续跟踪分别评价。
             </p>
             <p>
               负荷相对误差 {percent(u.domain.research.load_relative_error)}

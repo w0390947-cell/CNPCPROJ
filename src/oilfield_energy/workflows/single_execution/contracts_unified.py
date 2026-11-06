@@ -17,6 +17,7 @@ from oilfield_energy.workflows.cluster_execution.contracts import RegionalExecut
 
 from .contracts_domain import BoundedBusLoad, FirmGeneration, SingleValue
 from .contracts_tasks import HardTaskAssessment, TaskContinuation, TerminalEnergyTask
+from .contracts_preparation import PreparedUnifiedCycle
 
 
 class SingleResearchPolicy(SingleValue, frozen=True):
@@ -115,7 +116,8 @@ class TargetTrackingCertificate(SingleValue, frozen=True):
     scope: Literal["finite_forecast_box_feedback"] = "finite_forecast_box_feedback"
     target_p_mw: float
     target_q_mvar: float
-    deadline_step: int = Field(ge=0)
+    # A retained absolute deadline can precede a newly admitted forecast origin.
+    deadline_step: int
     guaranteed_until_step: int = Field(gt=0)
     nominal: TubeCommand
     construction: int = Field(default=0, ge=0)
@@ -338,6 +340,8 @@ class UnifiedStep(SingleValue, frozen=True):
     pcc_p_mw: PowerInterval
     pcc_q_mvar: PowerInterval
     tracking_certified: bool
+    # Additive display evidence. Historical records keep None; never manufacture it.
+    cycle_evidence: PreparedUnifiedCycle | None = None
 
 
 class UnifiedExecution(SingleValue, frozen=True):
@@ -430,6 +434,21 @@ class UnifiedExecution(SingleValue, frozen=True):
             ):
                 raise ValueError("unified evidence has a causal gap")
             plan = self.plans[row.plan_index]
+            cycle = row.cycle_evidence
+            if cycle is not None and (
+                cycle.command != row.command
+                or cycle.predicted_endpoint != row.after
+                or cycle.transition.command != row.command
+                or not cycle.path_network.certified
+                or not cycle.endpoint_network.certified
+                or cycle.endpoint_network.pcc_p_mw != row.pcc_p_mw
+                or cycle.endpoint_network.pcc_q_mvar != row.pcc_q_mvar
+                or len(cycle.path_network.voltage_bounds) != len(self.domain.network.buses)
+                or len(cycle.path_network.branch_mva_upper) != len(self.domain.network.branches)
+                or len(cycle.endpoint_network.voltage_bounds) != len(self.domain.network.buses)
+                or len(cycle.endpoint_network.branch_mva_upper) != len(self.domain.network.branches)
+            ):
+                raise ValueError("cycle display evidence differs from the executed certificate")
             if row.plan_offset != k - plan.start_step:
                 raise ValueError("backup clock was reset")
             command = (

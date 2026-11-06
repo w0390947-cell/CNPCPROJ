@@ -181,7 +181,7 @@ export function ResourceAvailabilityPanel({
           )}
           <p className="demo-resource-note">
             <Info aria-hidden="true" />
-            合成资料基准曲线 · 15 分钟分辨率 ·
+            资料基准曲线 · 15 分钟分辨率 ·
             非实时天气预测。当前值包含故障影响，后端为最终权威。
           </p>
         </>

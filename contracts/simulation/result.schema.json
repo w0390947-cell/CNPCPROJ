@@ -5,10 +5,24 @@
       "description": "Bounds imply existence and uniqueness only inside the recorded voltage discs.",
       "properties": {
         "model": {
-          "const": "radial-ac-disc-v1",
           "default": "radial-ac-disc-v1",
+          "enum": [
+            "radial-ac-disc-v1",
+            "radial-ac-disc-v2"
+          ],
           "title": "Model",
           "type": "string"
+        },
+        "slack_voltage_input_pu": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "certified": {
           "title": "Certified",
@@ -694,6 +708,29 @@
         "q_mvar"
       ],
       "title": "BoundedBusLoad",
+      "type": "object"
+    },
+    "BusSeries": {
+      "additionalProperties": false,
+      "properties": {
+        "bus_id": {
+          "minLength": 1,
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "values": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Values",
+          "type": "array"
+        }
+      },
+      "required": [
+        "bus_id",
+        "values"
+      ],
+      "title": "BusSeries",
       "type": "object"
     },
     "ClusterContinuation": {
@@ -1397,8 +1434,11 @@
           "type": "string"
         },
         "initial_condition": {
-          "const": "case_energy_idle_resources",
           "default": "case_energy_idle_resources",
+          "enum": [
+            "case_energy_idle_resources",
+            "case_energy_declared_resources"
+          ],
           "title": "Initial Condition",
           "type": "string"
         },
@@ -3460,12 +3500,28 @@
           "type": "string"
         },
         "economic_improvement_percent": {
-          "title": "Economic Improvement Percent",
-          "type": "number"
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Economic Improvement Percent"
         },
         "baseline_economic_cost_cny": {
-          "title": "Baseline Economic Cost Cny",
-          "type": "number"
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Baseline Economic Cost Cny"
         },
         "optimized_economic_cost_cny": {
           "title": "Optimized Economic Cost Cny",
@@ -3495,8 +3551,6 @@
       "required": [
         "overall_passed",
         "headline",
-        "economic_improvement_percent",
-        "baseline_economic_cost_cny",
         "optimized_economic_cost_cny",
         "optimized_peak_import_mw",
         "total_active_loss_mwh",
@@ -3553,175 +3607,6 @@
         "q_mvar"
       ],
       "title": "FixedShuntReference",
-      "type": "object"
-    },
-    "GroupControlEventRecord": {
-      "additionalProperties": false,
-      "properties": {
-        "scenario": {
-          "title": "Scenario",
-          "type": "string"
-        },
-        "time_minute": {
-          "title": "Time Minute",
-          "type": "number"
-        },
-        "event_type": {
-          "title": "Event Type",
-          "type": "string"
-        },
-        "reason": {
-          "title": "Reason",
-          "type": "string"
-        },
-        "previous_state": {
-          "title": "Previous State",
-          "type": "string"
-        },
-        "new_state": {
-          "title": "New State",
-          "type": "string"
-        },
-        "requested_power_mw": {
-          "title": "Requested Power Mw",
-          "type": "number"
-        },
-        "achieved_power_mw": {
-          "title": "Achieved Power Mw",
-          "type": "number"
-        }
-      },
-      "required": [
-        "scenario",
-        "time_minute",
-        "event_type",
-        "reason",
-        "previous_state",
-        "new_state",
-        "requested_power_mw",
-        "achieved_power_mw"
-      ],
-      "title": "GroupControlEventRecord",
-      "type": "object"
-    },
-    "GroupControlRecord": {
-      "additionalProperties": false,
-      "properties": {
-        "scenario": {
-          "title": "Scenario",
-          "type": "string"
-        },
-        "time_minute": {
-          "title": "Time Minute",
-          "type": "number"
-        },
-        "pcc_power_mw": {
-          "title": "Pcc Power Mw",
-          "type": "number"
-        },
-        "risk_limit_mw": {
-          "title": "Risk Limit Mw",
-          "type": "number"
-        },
-        "safety_threshold_mw": {
-          "title": "Safety Threshold Mw",
-          "type": "number"
-        },
-        "restore_threshold_mw": {
-          "title": "Restore Threshold Mw",
-          "type": "number"
-        },
-        "risk_index": {
-          "title": "Risk Index",
-          "type": "number"
-        },
-        "state": {
-          "title": "State",
-          "type": "string"
-        },
-        "action": {
-          "title": "Action",
-          "type": "string"
-        },
-        "trigger_reason": {
-          "title": "Trigger Reason",
-          "type": "string"
-        },
-        "requested_curtailment_mw": {
-          "title": "Requested Curtailment Mw",
-          "type": "number"
-        },
-        "requested_restoration_mw": {
-          "title": "Requested Restoration Mw",
-          "type": "number"
-        },
-        "remaining_curtailment_mw": {
-          "title": "Remaining Curtailment Mw",
-          "type": "number"
-        }
-      },
-      "required": [
-        "scenario",
-        "time_minute",
-        "pcc_power_mw",
-        "risk_limit_mw",
-        "safety_threshold_mw",
-        "restore_threshold_mw",
-        "risk_index",
-        "state",
-        "action",
-        "trigger_reason",
-        "requested_curtailment_mw",
-        "requested_restoration_mw",
-        "remaining_curtailment_mw"
-      ],
-      "title": "GroupControlRecord",
-      "type": "object"
-    },
-    "GroupControlSummary": {
-      "additionalProperties": false,
-      "properties": {
-        "all_passed": {
-          "title": "All Passed",
-          "type": "boolean"
-        },
-        "scenario_count": {
-          "title": "Scenario Count",
-          "type": "integer"
-        },
-        "scenario_checks": {
-          "additionalProperties": {
-            "additionalProperties": {
-              "type": "boolean"
-            },
-            "type": "object"
-          },
-          "title": "Scenario Checks",
-          "type": "object"
-        },
-        "records": {
-          "items": {
-            "$ref": "#/$defs/GroupControlRecord"
-          },
-          "title": "Records",
-          "type": "array"
-        },
-        "events": {
-          "items": {
-            "$ref": "#/$defs/GroupControlEventRecord"
-          },
-          "title": "Events",
-          "type": "array"
-        }
-      },
-      "required": [
-        "all_passed",
-        "scenario_count",
-        "scenario_checks",
-        "records",
-        "events"
-      ],
-      "title": "GroupControlSummary",
       "type": "object"
     },
     "HardTaskAssessment": {
@@ -4453,9 +4338,397 @@
       "title": "PQPlanningWitness",
       "type": "object"
     },
+    "Patent2Branch": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "parent": {
+          "title": "Parent",
+          "type": "string"
+        },
+        "child": {
+          "title": "Child",
+          "type": "string"
+        },
+        "r_pu": {
+          "title": "R Pu",
+          "type": "number"
+        },
+        "x_pu": {
+          "title": "X Pu",
+          "type": "number"
+        },
+        "s_max_mva": {
+          "title": "S Max Mva",
+          "type": "number"
+        },
+        "tap_ratio": {
+          "title": "Tap Ratio",
+          "type": "number"
+        }
+      },
+      "required": [
+        "name",
+        "parent",
+        "child",
+        "r_pu",
+        "x_pu",
+        "s_max_mva",
+        "tap_ratio"
+      ],
+      "title": "Patent2Branch",
+      "type": "object"
+    },
+    "Patent2Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "inputs": {
+          "$ref": "#/$defs/Patent2Inputs"
+        },
+        "replayed_minutes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Replayed Minutes"
+        },
+        "replay_error": {
+          "default": "",
+          "title": "Replay Error",
+          "type": "string"
+        },
+        "code_sha256": {
+          "title": "Code Sha256",
+          "type": "string"
+        },
+        "code_snapshot_phase": {
+          "default": "after_run",
+          "enum": [
+            "before_run",
+            "after_run"
+          ],
+          "title": "Code Snapshot Phase",
+          "type": "string"
+        }
+      },
+      "required": [
+        "inputs",
+        "code_sha256"
+      ],
+      "title": "Patent2Evidence",
+      "type": "object"
+    },
+    "Patent2Inputs": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "patent2-example-v1",
+          "default": "patent2-example-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "scenario": {
+          "enum": [
+            "normal",
+            "low_energy"
+          ],
+          "title": "Scenario",
+          "type": "string"
+        },
+        "duration_minutes": {
+          "const": 60,
+          "default": 60,
+          "title": "Duration Minutes",
+          "type": "integer"
+        },
+        "source_start_minute": {
+          "const": 0,
+          "default": 0,
+          "title": "Source Start Minute",
+          "type": "integer"
+        },
+        "price_cny_per_mwh": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Price Cny Per Mwh",
+          "type": "array"
+        },
+        "cluster_limit_mw": {
+          "title": "Cluster Limit Mw",
+          "type": "number"
+        },
+        "regions": {
+          "items": {
+            "$ref": "#/$defs/Patent2Region"
+          },
+          "title": "Regions",
+          "type": "array"
+        },
+        "input_sha256": {
+          "title": "Input Sha256",
+          "type": "string"
+        },
+        "input_snapshot_json": {
+          "title": "Input Snapshot Json",
+          "type": "string"
+        }
+      },
+      "required": [
+        "scenario",
+        "price_cny_per_mwh",
+        "cluster_limit_mw",
+        "regions",
+        "input_sha256",
+        "input_snapshot_json"
+      ],
+      "title": "Patent2Inputs",
+      "type": "object"
+    },
+    "Patent2Region": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "buses": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Buses",
+          "type": "array"
+        },
+        "branches": {
+          "items": {
+            "$ref": "#/$defs/Patent2Branch"
+          },
+          "title": "Branches",
+          "type": "array"
+        },
+        "initial_energy_mwh": {
+          "title": "Initial Energy Mwh",
+          "type": "number"
+        },
+        "minimum_energy_mwh": {
+          "title": "Minimum Energy Mwh",
+          "type": "number"
+        },
+        "maximum_energy_mwh": {
+          "title": "Maximum Energy Mwh",
+          "type": "number"
+        },
+        "storage_power_mw": {
+          "title": "Storage Power Mw",
+          "type": "number"
+        },
+        "eta_charge": {
+          "title": "Eta Charge",
+          "type": "number"
+        },
+        "eta_discharge": {
+          "title": "Eta Discharge",
+          "type": "number"
+        },
+        "load_p_mw": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Load P Mw",
+          "type": "object"
+        },
+        "load_q_mvar": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Load Q Mvar",
+          "type": "object"
+        },
+        "wind_available_mw": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Wind Available Mw",
+          "type": "object"
+        },
+        "pv_available_mw": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Pv Available Mw",
+          "type": "object"
+        },
+        "initial_p_mw": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Initial P Mw",
+          "type": "object"
+        },
+        "initial_q_mvar": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Initial Q Mvar",
+          "type": "object"
+        }
+      },
+      "required": [
+        "name",
+        "buses",
+        "branches",
+        "initial_energy_mwh",
+        "minimum_energy_mwh",
+        "maximum_energy_mwh",
+        "storage_power_mw",
+        "eta_charge",
+        "eta_discharge",
+        "load_p_mw",
+        "load_q_mvar",
+        "wind_available_mw",
+        "pv_available_mw",
+        "initial_p_mw",
+        "initial_q_mvar"
+      ],
+      "title": "Patent2Region",
+      "type": "object"
+    },
+    "PlantInputs": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "default": "synthetic-plant-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        },
+        "step_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Step Minutes",
+          "type": "integer"
+        },
+        "load_p": {
+          "items": {
+            "$ref": "#/$defs/BusSeries"
+          },
+          "title": "Load P",
+          "type": "array"
+        },
+        "load_q": {
+          "items": {
+            "$ref": "#/$defs/BusSeries"
+          },
+          "title": "Load Q",
+          "type": "array"
+        },
+        "wind_available": {
+          "items": {
+            "$ref": "#/$defs/BusSeries"
+          },
+          "title": "Wind Available",
+          "type": "array"
+        },
+        "pv_available": {
+          "items": {
+            "$ref": "#/$defs/BusSeries"
+          },
+          "title": "Pv Available",
+          "type": "array"
+        }
+      },
+      "required": [
+        "start",
+        "step_minutes",
+        "load_p",
+        "load_q",
+        "wind_available",
+        "pv_available"
+      ],
+      "title": "PlantInputs",
+      "type": "object"
+    },
+    "PreparedUnifiedCycle": {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "$ref": "#/$defs/TubeCommand"
+        },
+        "predicted_endpoint": {
+          "$ref": "#/$defs/TubeState"
+        },
+        "transition": {
+          "$ref": "#/$defs/TubeTransition"
+        },
+        "path_network": {
+          "$ref": "#/$defs/ACBoxCertificate"
+        },
+        "endpoint_network": {
+          "$ref": "#/$defs/ACBoxCertificate"
+        },
+        "expected_next": {
+          "$ref": "#/$defs/TubeBox"
+        },
+        "feedback_policy": {
+          "title": "Feedback Policy",
+          "type": "boolean"
+        },
+        "energy_feedback": {
+          "title": "Energy Feedback",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "command",
+        "predicted_endpoint",
+        "transition",
+        "path_network",
+        "endpoint_network",
+        "expected_next",
+        "feedback_policy",
+        "energy_feedback"
+      ],
+      "title": "PreparedUnifiedCycle",
+      "type": "object"
+    },
     "RadialEnvelope": {
       "additionalProperties": false,
       "properties": {
+        "slack_voltage_bounds_pu": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "network_id": {
           "minLength": 1,
           "title": "Network Id",
@@ -4916,6 +5189,36 @@
             "type": "number"
           },
           "title": "Q Target Mvar",
+          "type": "array"
+        },
+        "p_target_samples_mw": {
+          "default": [],
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "P Target Samples Mw",
+          "type": "array"
+        },
+        "q_target_samples_mvar": {
+          "default": [],
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Q Target Samples Mvar",
           "type": "array"
         },
         "storage_power_mw": {
@@ -6298,8 +6601,7 @@
       "enum": [
         "single_microgrid",
         "cluster_coordination",
-        "communication_fault",
-        "group_control"
+        "communication_fault"
       ],
       "title": "ScenarioType",
       "type": "string"
@@ -6308,7 +6610,7 @@
       "additionalProperties": false,
       "properties": {
         "schema_version": {
-          "default": "1.26.0",
+          "default": "2.0.0",
           "title": "Schema Version",
           "type": "string"
         },
@@ -6415,6 +6717,22 @@
           "minLength": 1,
           "title": "Name",
           "type": "string"
+        },
+        "patent2_case": {
+          "anyOf": [
+            {
+              "enum": [
+                "normal",
+                "low_energy"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Patent2 Case"
         },
         "scenario_type": {
           "$ref": "#/$defs/ScenarioType",
@@ -6759,6 +7077,28 @@
             }
           ],
           "default": null
+        },
+        "input_forecast": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlantInputs"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "input_record": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SingleInputRecord"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -6796,6 +7136,129 @@
         "generation"
       ],
       "title": "SingleForecastEnvelope",
+      "type": "object"
+    },
+    "SingleInputRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "single-input-snapshot-v1",
+          "default": "single-input-snapshot-v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "recorded_at": {
+          "title": "Recorded At",
+          "type": "string"
+        },
+        "code_snapshot_phase": {
+          "enum": [
+            "before_run",
+            "before_execution"
+          ],
+          "title": "Code Snapshot Phase",
+          "type": "string"
+        },
+        "code_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Code Sha256",
+          "type": "string"
+        },
+        "snapshot_scope": {
+          "enum": [
+            "reference_only",
+            "reference_and_execution"
+          ],
+          "title": "Snapshot Scope",
+          "type": "string"
+        },
+        "input_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Input Sha256",
+          "type": "string"
+        },
+        "input_snapshot_json": {
+          "title": "Input Snapshot Json",
+          "type": "string"
+        },
+        "dataset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Id"
+        },
+        "dataset_revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Revision"
+        },
+        "dataset_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Sha256"
+        },
+        "execution_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Execution Version"
+        },
+        "input_basis": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Basis"
+        },
+        "runtime_versions": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Runtime Versions",
+          "type": "object"
+        }
+      },
+      "required": [
+        "recorded_at",
+        "code_snapshot_phase",
+        "code_sha256",
+        "snapshot_scope",
+        "input_sha256",
+        "input_snapshot_json",
+        "runtime_versions"
+      ],
+      "title": "SingleInputRecord",
       "type": "object"
     },
     "SingleResearchPolicy": {
@@ -7382,7 +7845,6 @@
           "type": "number"
         },
         "deadline_step": {
-          "minimum": 0,
           "title": "Deadline Step",
           "type": "integer"
         },
@@ -7555,8 +8017,16 @@
           "type": "number"
         },
         "p_grid_baseline_mw": {
-          "title": "P Grid Baseline Mw",
-          "type": "number"
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "P Grid Baseline Mw"
         },
         "p_grid_optimized_mw": {
           "title": "P Grid Optimized Mw",
@@ -7645,7 +8115,6 @@
         "price_cny_per_mwh",
         "load_mw",
         "load_mvar",
-        "p_grid_baseline_mw",
         "p_grid_optimized_mw",
         "q_grid_optimized_mvar",
         "power_factor",
@@ -8214,6 +8683,31 @@
       "title": "TubeState",
       "type": "object"
     },
+    "TubeTransition": {
+      "additionalProperties": false,
+      "properties": {
+        "initial": {
+          "$ref": "#/$defs/TubeBox"
+        },
+        "command": {
+          "$ref": "#/$defs/TubeCommand"
+        },
+        "endpoint": {
+          "$ref": "#/$defs/TubeBox"
+        },
+        "path": {
+          "$ref": "#/$defs/TubeBox"
+        }
+      },
+      "required": [
+        "initial",
+        "command",
+        "endpoint",
+        "path"
+      ],
+      "title": "TubeTransition",
+      "type": "object"
+    },
     "UnifiedDomain": {
       "additionalProperties": false,
       "properties": {
@@ -8582,6 +9076,17 @@
         "tracking_certified": {
           "title": "Tracking Certified",
           "type": "boolean"
+        },
+        "cycle_evidence": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PreparedUnifiedCycle"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -8731,6 +9236,17 @@
   },
   "additionalProperties": false,
   "properties": {
+    "patent2_evidence": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Patent2Evidence"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
     "metadata": {
       "$ref": "#/$defs/SimulationMetadata"
     },
@@ -8798,17 +9314,6 @@
       "anyOf": [
         {
           "$ref": "#/$defs/CommunicationSummary"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null
-    },
-    "group_control": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/GroupControlSummary"
         },
         {
           "type": "null"

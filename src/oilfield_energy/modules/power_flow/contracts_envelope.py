@@ -21,6 +21,7 @@ class EnvelopeBranch(EnvelopeValue, frozen=True):
 
 
 class RadialEnvelope(EnvelopeValue, frozen=True):
+    slack_voltage_bounds_pu: PowerInterval | None = None
     network_id: str = Field(min_length=1)
     buses: tuple[str, ...]
     branches: tuple[EnvelopeBranch, ...]
@@ -44,6 +45,13 @@ class RadialEnvelope(EnvelopeValue, frozen=True):
             or len(self.shunt_q_mvar) != n
             or self.voltage_min_pu >= self.voltage_max_pu
             or self.pcc_min_mw >= self.pcc_max_mw
+            or self.slack_voltage_bounds_pu is not None
+            and not (
+                0
+                < self.slack_voltage_bounds_pu.low
+                <= self.slack_voltage_pu
+                <= self.slack_voltage_bounds_pu.high
+            )
         ):
             raise ValueError("invalid network envelope")
         seen = {self.slack}
@@ -61,7 +69,8 @@ class RadialEnvelope(EnvelopeValue, frozen=True):
 class ACBoxCertificate(EnvelopeValue, frozen=True):
     """Bounds imply existence and uniqueness only inside the recorded voltage discs."""
 
-    model: Literal["radial-ac-disc-v1"] = "radial-ac-disc-v1"
+    model: Literal["radial-ac-disc-v1", "radial-ac-disc-v2"] = "radial-ac-disc-v1"
+    slack_voltage_input_pu: PowerInterval | None = None
     certified: bool
     reason: str = ""
     voltage_center: tuple[tuple[float, float], ...] = ()
@@ -81,6 +90,12 @@ class ACBoxCertificate(EnvelopeValue, frozen=True):
 
     @model_validator(mode="after")
     def complete(self) -> "ACBoxCertificate":
+        if (self.model == "radial-ac-disc-v2") != (
+            self.slack_voltage_input_pu is not None
+        ):
+            raise ValueError(
+                "An uncertain-source AC certificate must identify its voltage input range"
+            )
         if self.balance_scope == "aggregate_constrained_box" and (
             self.aggregate_p_mw is None or self.aggregate_q_mvar is None
         ):

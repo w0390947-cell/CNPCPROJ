@@ -7,6 +7,7 @@ stage applies the same strict regional and joint adoption checks.
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
+from math import isfinite
 from typing import cast
 
 import numpy as np
@@ -316,6 +317,11 @@ def _solve_regional_plan(
         else None
     )
     security = build_planning_security_trajectories(case, [name])
+    target_relative_gap = (
+        request.policy.computation_quality.relative_gap
+        if request.policy.computation_quality is not None
+        else 1e-4
+    )
     checked = solve_case_ac_consistent(
         case,
         [name],
@@ -326,6 +332,7 @@ def _solve_regional_plan(
         if diagnostic or targets is None
         else request.policy.tracking_limits,
         time_limit_seconds=request.seconds,
+        relative_gap=target_relative_gap,
         quality_policy=request.policy.computation_quality,
         recovery_policy=request.policy.ac_recovery,
         p_grid_security_floors_mw={name: security[name].effective_floor_mw},
@@ -442,9 +449,7 @@ def _solve_regional_plan(
                 actual=selected.relative_gap
                 if selected.phase == "original_objective"
                 else None,
-                limit=request.policy.computation_quality.relative_gap
-                if request.policy.computation_quality
-                else 1e-4,
+                limit=target_relative_gap,
                 reason="原目标最优性已证明"
                 if recovery.original_optimality == "proven"
                 else "可行恢复计划；原经济目标最优性未证明",
@@ -460,6 +465,29 @@ def _solve_regional_plan(
                 actual=quality.attempts[quality.selected_attempt - 1].relative_gap,
                 limit=quality.target_relative_gap,
                 reason=quality.status,
+            )
+        )
+    else:
+        # Disabling budget escalation does not waive the adoption precision.
+        # A feasible incumbent at a time limit is not an optimality certificate.
+        gap = result.mip_gap
+        gap = gap if gap is not None and isfinite(gap) and gap >= 0 else None
+        quality_passed = (
+            gap is not None
+            and gap <= target_relative_gap
+            and result.message.removeprefix("SCIP status: ")
+            in {"optimal", "gaplimit", "timelimit"}
+        )
+        checks.append(
+            ExecutionCheck(
+                code="OPTIMIZATION_QUALITY",
+                label="优化最优性精度",
+                status="passed" if quality_passed else "unknown",
+                actual=gap,
+                limit=target_relative_gap,
+                reason="单次求解达到声明精度"
+                if quality_passed
+                else "单次求解未证明声明精度，不能采用普通计划",
             )
         )
     if not request.storage_enabled:
@@ -666,6 +694,7 @@ class ExecutionEngines:
         ]
         | None = None,
         rolling_progress: Callable[[RollingProgress], None] | None = None,
+        live: Callable[[dict], None] | None = None,
     ):
         self.case, self.intraday, self.plants = case, intraday, plants
         self.admm: ClusterReference = admm
@@ -695,6 +724,7 @@ class ExecutionEngines:
         self.communication_config = communication_config or CommunicationConfig()
         self.progress = progress
         self.rolling_progress = rolling_progress
+        self.live = live
         self.loss_calibration = loss_calibration
         self.day_ahead: tuple[RegionalExecution, ...] = ()
         self.rolling: RollingClusterEngine | None = None
@@ -874,6 +904,7 @@ class ExecutionEngines:
                 diagnose_regions=self.diagnose_windows,
                 progress=self.progress,
                 rolling_progress=self.rolling_progress,
+                live=self.live,
             )
             with OwnedProcessPool(self.policy.regional_plan_workers) as pool:
                 self.plan_pool = pool
@@ -928,6 +959,7 @@ def run_cluster_execution(
     events: list[ScenarioEvent],
     progress: Callable[[str], None],
     rolling_progress: Callable[[RollingProgress], None] | None = None,
+    live: Callable[[dict], None] | None = None,
     policy: ExecutionPolicy | None = None,
     admm_config: ADMMConfig | None = None,
     communication_config: CommunicationConfig | None = None,
@@ -975,6 +1007,18 @@ def run_cluster_execution(
                 "dynamic_tracking": DynamicTrackingPolicy().model_dump(),
             }
         )
+    assert policy.cluster_safety is not None
+    policy = policy.model_copy(
+        update={
+            "cluster_safety": policy.cluster_safety.model_copy(
+                update={
+                    "initial_condition": "case_energy_declared_resources"
+                    if any(m.initial_resource_p_mw for m in case.microgrids)
+                    else "case_energy_idle_resources"
+                }
+            )
+        }
+    )
     intraday, plants, basis = _execution_inputs(case, packaged_inputs, events)
     engines = ExecutionEngines(
         case,
@@ -989,6 +1033,7 @@ def run_cluster_execution(
         progress,
         loss_calibration,
         rolling_progress,
+        live,
     )
     result = verify_execution(
         names=tuple(m.name for m in case.microgrids),

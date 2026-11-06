@@ -89,9 +89,6 @@ def observe(request: SimulationRequest, output: Path) -> dict[str, Any]:
         "drop_ticks": sorted({m["tick"] for m in drops}),
         "communication": payload["communication"],
         "history_count": len(payload["admm_history"]),
-        "group_digest": hashlib.sha256(
-            json.dumps(payload["group_control"], sort_keys=True).encode()
-        ).hexdigest(),
         "trajectory_digest": hashlib.sha256(
             json.dumps(
                 {key: payload[key] for key in ("timeseries", "cluster_timeseries", "admm_history")},
@@ -116,11 +113,6 @@ def collect(output: Path, expect_repaired: bool = False) -> dict[str, Any]:
         "loss_yac": ("communication_fault", [loss_c]),
         "cluster_normal": ("cluster_coordination", []),
         "cluster_with_outage": ("cluster_coordination", [outage_a]),
-        "group_normal": ("group_control", []),
-        "group_with_load_drop": (
-            "group_control",
-            [event("load_halved", "load_drop", "SC", 0, 1440, 0.5)],
-        ),
         "single_normal": ("single_microgrid", []),
         "single_unsampled": (
             "single_microgrid",
@@ -142,7 +134,7 @@ def collect(output: Path, expect_repaired: bool = False) -> dict[str, Any]:
         try:
             request = SimulationRequest.model_validate(payload)
         except ValidationError as exc:
-            if not expect_repaired or name not in {"cluster_with_outage", "group_with_load_drop"}:
+            if not expect_repaired or name not in {"cluster_with_outage"}:
                 raise
             runs[name] = {"request_rejected": True, "reason": str(exc)}
             write(output / f"{name}_rejection.json", runs[name])
@@ -156,7 +148,6 @@ def collect(output: Path, expect_repaired: bool = False) -> dict[str, Any]:
             == runs["outage_reversed"]["trajectory_digest"]
         )
         assert runs["cluster_with_outage"]["request_rejected"]
-        assert runs["group_with_load_drop"]["request_rejected"]
 
     source = build_synthetic_case(steps=96)
     initial = {

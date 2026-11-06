@@ -1,0 +1,3363 @@
+{
+  "kind": "cluster_window",
+  "window": {
+    "start_minute": 0,
+    "end_minute": 15,
+    "horizon_end_minute": 60,
+    "status": "unknown",
+    "adopted": false,
+    "continuation_available": true,
+    "reserve_tasks": [
+      {
+        "region": "SC",
+        "direction": "up",
+        "first_minute": 0,
+        "deadline_minute": 15,
+        "last_observed_minute": 0,
+        "required_mw": 0.365043994,
+        "status": "unknown",
+        "completed_minute": null,
+        "breached": false,
+        "deadline_status": "pending",
+        "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure"
+      },
+      {
+        "region": "SC",
+        "direction": "down",
+        "first_minute": 0,
+        "deadline_minute": 15,
+        "last_observed_minute": 0,
+        "required_mw": 0.365043994,
+        "status": "unknown",
+        "completed_minute": null,
+        "breached": false,
+        "deadline_status": "pending",
+        "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure"
+      },
+      {
+        "region": "YA_B",
+        "direction": "up",
+        "first_minute": 0,
+        "deadline_minute": 15,
+        "last_observed_minute": 0,
+        "required_mw": 0.24588996200000002,
+        "status": "unknown",
+        "completed_minute": null,
+        "breached": false,
+        "deadline_status": "pending",
+        "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure"
+      },
+      {
+        "region": "YA_B",
+        "direction": "down",
+        "first_minute": 0,
+        "deadline_minute": 15,
+        "last_observed_minute": 0,
+        "required_mw": 0.24588996200000002,
+        "status": "unknown",
+        "completed_minute": null,
+        "breached": false,
+        "deadline_status": "pending",
+        "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure"
+      },
+      {
+        "region": "YA_C",
+        "direction": "up",
+        "first_minute": 0,
+        "deadline_minute": 15,
+        "last_observed_minute": 0,
+        "required_mw": 0.230274278,
+        "status": "unknown",
+        "completed_minute": null,
+        "breached": false,
+        "deadline_status": "pending",
+        "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure"
+      },
+      {
+        "region": "YA_C",
+        "direction": "down",
+        "first_minute": 0,
+        "deadline_minute": 15,
+        "last_observed_minute": 0,
+        "required_mw": 0.230274278,
+        "status": "unknown",
+        "completed_minute": null,
+        "breached": false,
+        "deadline_status": "pending",
+        "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure"
+      }
+    ],
+    "reserve_certificates": [],
+    "reserve_correction_round": 0,
+    "reserve_import_margin_mw": 0.0,
+    "reserve_attempt_certificates": [],
+    "reason": "联合连续安全/后续可行性未获证明：joint continuous power factor unproven",
+    "reference_recovery": {
+      "version": "coordination-recovery-v3",
+      "policy": {
+        "version": "coordination-recovery-v1",
+        "max_recoordinations": 3,
+        "calibration_tolerance_mw": 1e-06,
+        "calibration_tolerance_mvar": 1e-06
+      },
+      "power_factor_policy": {
+        "target": 0.95,
+        "numerical_tolerance": 1e-09,
+        "version": "cluster-plan-power-factor-v1"
+      },
+      "network_candidate_policy": {
+        "version": "network-candidates-v1",
+        "max_combination_checks": 4096
+      },
+      "network_coordination_policy": {
+        "version": "network-physical-coordination-v1",
+        "max_joint_attempts": 2,
+        "joint_time_limit_seconds": 60.0,
+        "deviation_tolerance": 1e-05,
+        "relative_gap": 1e-07
+      },
+      "accepted": true,
+      "stop_reason": "accepted",
+      "reason": "",
+      "rounds": [
+        {
+          "round": 1,
+          "outcome": "passed",
+          "reason": "",
+          "coordination_stop_reason": "residual_tolerances_met",
+          "admm_iterations": 18,
+          "coordination_quality": [],
+          "p_target_mw": {
+            "SC": [
+              6.1633181745097865,
+              5.516352805446294,
+              5.487252270281011,
+              4.995703410608085
+            ],
+            "YA_B": [
+              5.343507619320407,
+              4.997877236514932,
+              4.894076065556714,
+              4.751555995786055
+            ],
+            "YA_C": [
+              4.70291858368547,
+              4.314054362891809,
+              4.2370969324323875,
+              3.9410986653420323
+            ]
+          },
+          "q_target_mvar": {
+            "SC": [
+              2.4122713293009843,
+              2.136540820677173,
+              2.123912740273365,
+              1.9152027073634685
+            ],
+            "YA_B": [
+              1.6661044865933645,
+              1.5622981477923497,
+              1.5335028395461074,
+              1.4979606058863102
+            ],
+            "YA_C": [
+              1.2495090244402594,
+              1.1749823658045173,
+              1.1474283936564895,
+              1.085982363755127
+            ]
+          },
+          "regions": [
+            {
+              "region": "SC",
+              "status": "passed",
+              "reason": "",
+              "solver_stop_reason": "misocp_cone_and_ac_tolerances_met",
+              "optimization_quality": [],
+              "ac_recovery": null,
+              "adoption_basis": "standard",
+              "checks": [
+                {
+                  "code": "DEVICE_PLAN",
+                  "label": "设备与运行约束",
+                  "status": "passed",
+                  "actual": null,
+                  "limit": null,
+                  "unit": "",
+                  "reason": ""
+                },
+                {
+                  "code": "AC_NETWORK",
+                  "label": "独立 AC 潮流与一致性",
+                  "status": "passed",
+                  "actual": null,
+                  "limit": null,
+                  "unit": "",
+                  "reason": ""
+                },
+                {
+                  "code": "P_TRACKING",
+                  "label": "有功目标最大偏差",
+                  "status": "passed",
+                  "actual": 5.162829097571375e-08,
+                  "limit": 0.05,
+                  "unit": "MW",
+                  "reason": ""
+                },
+                {
+                  "code": "Q_TRACKING",
+                  "label": "无功目标最大偏差",
+                  "status": "passed",
+                  "actual": 4.104714580899227e-05,
+                  "limit": 0.05,
+                  "unit": "Mvar",
+                  "reason": ""
+                },
+                {
+                  "code": "OPTIMIZATION_QUALITY",
+                  "label": "优化最优性精度",
+                  "status": "passed",
+                  "actual": 5.092988090596804e-05,
+                  "limit": 0.0001,
+                  "unit": "",
+                  "reason": "单次求解达到声明精度"
+                },
+                {
+                  "code": "STORAGE_RESERVE_CAPACITY",
+                  "label": "备用部署后的储能变流器容量",
+                  "status": "passed",
+                  "actual": 0.0,
+                  "limit": 1e-06,
+                  "unit": "MVA",
+                  "reason": ""
+                },
+                {
+                  "code": "STORAGE_RESERVE_ENERGY",
+                  "label": "计划储能备用电量",
+                  "status": "passed",
+                  "actual": 0.0,
+                  "limit": 1e-06,
+                  "unit": "MWh",
+                  "reason": ""
+                },
+                {
+                  "code": "STORAGE_RESERVE_POWER",
+                  "label": "计划储能双向功率备用",
+                  "status": "passed",
+                  "actual": 0.0,
+                  "limit": 1e-06,
+                  "unit": "MW",
+                  "reason": ""
+                },
+                {
+                  "code": "STORAGE_REACHABILITY",
+                  "label": "储能名义动态可达性与电量递推",
+                  "status": "passed",
+                  "actual": null,
+                  "limit": null,
+                  "unit": "",
+                  "reason": ""
+                },
+                {
+                  "code": "REACTIVE_PLAN_ENVELOPE",
+                  "label": "无功备用与计划过渡约束",
+                  "status": "passed",
+                  "actual": 3.12368064747659e-09,
+                  "limit": 1e-06,
+                  "unit": "Mvar",
+                  "reason": ""
+                }
+              ],
+              "economic_cost_cny": 1570.5279904187437,
+              "time_minutes": [
+                0.0,
+                15.0,
+                30.0,
+                45.0
+              ],
+              "p_mw": [
+                6.1633181228814955,
+                5.516352760288343,
+                5.487252225414065,
+                4.995703450564623
+              ],
+              "q_mvar": [
+                2.412271315266319,
+                2.136540815110567,
+                2.123912734578532,
+                1.9151616602176595
+              ],
+              "p_target_mw": [
+                6.1633181745097865,
+                5.516352805446294,
+                5.487252270281011,
+                4.995703410608085
+              ],
+              "q_target_mvar": [
+                2.4122713293009843,
+                2.136540820677173,
+                2.123912740273365,
+                1.9152027073634685
+              ],
+              "storage_power_mw": [
+                -0.40456495478954124,
+                -0.00011794050737658363,
+                -0.0001812401970455706,
+                1.3171580714387565e-05
+              ],
+              "storage_energy_mwh": [
+                0.5,
+                0.5960841793903355,
+                0.596112192888657,
+                0.5961552400632749,
+                0.5961517714862166
+              ],
+              "storage_reachability": {
+                "version": "storage-reachability-v1",
+                "inputs": {
+                  "policy": {
+                    "version": "storage-reachability-v1",
+                    "power_tolerance_mw": 1e-06,
+                    "energy_tolerance_mwh": 1e-06
+                  },
+                  "resource_id": "SC:storage:SC_FLEX",
+                  "start_minute": 0.0,
+                  "steps": 4,
+                  "planning_minutes": 15.0,
+                  "execution_minutes": 1.0,
+                  "time_constant_minutes": 2.0,
+                  "ramp_mw_per_minute": 0.65,
+                  "maximum_power_mw": 2.5,
+                  "initial_power_mw": 0.0,
+                  "initial_energy_mwh": 0.5,
+                  "minimum_energy_mwh": 0.5,
+                  "maximum_energy_mwh": 5.0,
+                  "terminal_energy_mwh": 0.5960642089473684,
+                  "terminal_tolerance_mwh": 0.05,
+                  "eta_charge": 0.95,
+                  "eta_discharge": 0.95
+                },
+                "status": "passed",
+                "p_mw": [
+                  -0.40456495478954124,
+                  -0.00011794050737658363,
+                  -0.0001812401970455706,
+                  1.3171580714387565e-05
+                ],
+                "energy_mwh": [
+                  0.5,
+                  0.5960841793903355,
+                  0.596112192888657,
+                  0.5961552400632749,
+                  0.5961517714862166
+                ],
+                "first_command_mw": [
+                  -1.0281994385993865,
+                  0.6233347387082563,
+                  -0.00027881629409672975,
+                  0.0003128561857068223
+                ],
+                "maximum_power_violation_mw": 1.5382118322138094e-17,
+                "maximum_energy_violation_mwh": 7.883458552626621e-09
+              },
+              "storage_reachability_windows": [],
+              "resource_p_mw": {
+                "SC:wind:SC_WT1": [
+                  2.136064021356174,
+                  2.186011821855653,
+                  2.3069885230654195,
+                  2.3662993236595864
+                ],
+                "SC:wind:SC_WT2": [
+                  2.303052223026054,
+                  2.616027526155805,
+                  2.502094225016474,
+                  2.7709252277058427
+                ],
+                "SC:pv:SC_PV1": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "SC:pv:SC_PV2": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "SC:storage:SC_FLEX": [
+                  -0.40456495478954124,
+                  -0.00011794050737658363,
+                  -0.0001812401970455706,
+                  1.3171580714387565e-05
+                ],
+                "SC:svg:SC_FLEX": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "resource_q_mvar": {
+                "SC:wind:SC_WT1": [
+                  0.34123736056035076,
+                  0.5902229563345618,
+                  0.6035178944032098,
+                  0.4916138994901568
+                ],
+                "SC:wind:SC_WT2": [
+                  0.3903967252359819,
+                  0.48387060780437036,
+                  0.5399884715696301,
+                  0.47659596019970124
+                ],
+                "SC:pv:SC_PV1": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "SC:pv:SC_PV2": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "SC:storage:SC_FLEX": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "SC:svg:SC_FLEX": [
+                  1.100137333595584,
+                  1.080502905342986,
+                  1.0127812683109794,
+                  1.3285261379999072
+                ]
+              },
+              "dynamic_tracking": {}
+            },
+            {
+              "region": "YA_B",
+              "status": "passed",
+              "reason": "",
+              "solver_stop_reason": "misocp_cone_and_ac_tolerances_met",
+              "optimization_quality": [],
+              "ac_recovery": null,
+              "adoption_basis": "standard",
+              "checks": [
+                {
+                  "code": "DEVICE_PLAN",
+                  "label": "设备与运行约束",
+                  "status": "passed",
+                  "actual": null,
+                  "limit": null,
+                  "unit": "",
+                  "reason": ""
+                },
+                {
+                  "code": "AC_NETWORK",
+                  "label": "独立 AC 潮流与一致性",
+                  "status": "passed",
+                  "actual": null,
+                  "limit": null,
+                  "unit": "",
+                  "reason": ""
+                },
+                {
+                  "code": "P_TRACKING",
+                  "label": "有功目标最大偏差",
+                  "status": "passed",
+                  "actual": 4.322455726679664e-08,
+                  "limit": 0.05,
+                  "unit": "MW",
+                  "reason": ""
+                },
+                {
+                  "code": "Q_TRACKING",
+                  "label": "无功目标最大偏差",
+                  "status": "passed",
+                  "actual": 7.446174787872906e-10,
+                  "limit": 0.05,
+                  "unit": "Mvar",
+                  "reason": ""
+                },
+                {
+                  "code": "OPTIMIZATION_QUALITY",
+                  "label": "优化最优性精度",
+                  "status": "passed",
+                  "actual": 7.078611561936688e-06,
+                  "limit": 0.0001,
+                  "unit": "",
+                  "reason": "单次求解达到声明精度"
+                },
+                {
+                  "code": "STORAGE_RESERVE_CAPACITY",
+                  "label": "备用部署后的储能变流器容量",
+                  "status": "passed",
+                  "actual": 0.0,
+                  "limit": 1e-06,
+                  "unit": "MVA",
+                  "reason": ""
+                },
+                {
+                  "code": "STORAGE_RESERVE_ENERGY",
+                  "label": "计划储能备用电量",
+                  "status": "passed",
+                  "actual": 0.0,
+                  "limit": 1e-06,
+                  "unit": "MWh",
+                  "reason": ""
+                },
+                {
+                  "code": "STORAGE_RESERVE_POWER",
+                  "label": "计划储能双向功率备用",
+                  "status": "passed",
+                  "actual": 0.0,
+                  "limit": 1e-06,
+                  "unit": "MW",
+                  "reason": ""
+                },
+                {
+                  "code": "STORAGE_REACHABILITY",
+                  "label": "储能名义动态可达性与电量递推",
+                  "status": "passed",
+                  "actual": null,
+                  "limit": null,
+                  "unit": "",
+                  "reason": ""
+                },
+                {
+                  "code": "REACTIVE_PLAN_ENVELOPE",
+                  "label": "无功备用与计划过渡约束",
+                  "status": "passed",
+                  "actual": 0.0,
+                  "limit": 1e-06,
+                  "unit": "Mvar",
+                  "reason": ""
+                }
+              ],
+              "economic_cost_cny": 1453.859039963456,
+              "time_minutes": [
+                0.0,
+                15.0,
+                30.0,
+                45.0
+              ],
+              "p_mw": [
+                5.34350757609585,
+                4.997877196775013,
+                4.894076026854825,
+                4.751555958755099
+              ],
+              "q_mvar": [
+                1.666104485848747,
+                1.5622981475585034,
+                1.533502839341995,
+                1.4979606056455368
+              ],
+              "p_target_mw": [
+                5.343507619320407,
+                4.997877236514932,
+                4.894076065556714,
+                4.751555995786055
+              ],
+              "q_target_mvar": [
+                1.6661044865933645,
+                1.5622981477923497,
+                1.5335028395461074,
+                1.4979606058863102
+              ],
+              "storage_power_mw": [
+                -0.27253823510164177,
+                -0.00011959053925359585,
+                -0.00018603064818876878,
+                1.1791773930755999e-05
+              ],
+              "storage_energy_mwh": [
+                0.4,
+                0.46472783330040707,
+                0.4647562385172472,
+                0.4648004232599596,
+                0.4647973155630133
+              ],
+              "storage_reachability": {
+                "version": "storage-reachability-v1",
+                "inputs": {
+                  "policy": {
+                    "version": "storage-reachability-v1",
+                    "power_tolerance_mw": 1e-06,
+                    "energy_tolerance_mwh": 1e-06
+                  },
+                  "resource_id": "YA_B:storage:YA_B_FLEX",
+                  "start_minute": 0.0,
+                  "steps": 4,
+                  "planning_minutes": 15.0,
+                  "execution_minutes": 1.0,
+                  "time_constant_minutes": 2.0,
+                  "ramp_mw_per_minute": 0.65,
+                  "maximum_power_mw": 2.0,
+                  "initial_power_mw": 0.0,
+                  "initial_energy_mwh": 0.4,
+                  "minimum_energy_mwh": 0.4,
+                  "maximum_energy_mwh": 4.0,
+                  "terminal_energy_mwh": 0.4647078847368421,
+                  "terminal_tolerance_mwh": 0.05,
+                  "eta_charge": 0.95,
+                  "eta_discharge": 0.95
+                },
+                "status": "passed",
+                "p_mw": [
+                  -0.27253823510164177,
+                  -0.00011959053925359585,
+                  -0.00018603064818876878,
+                  1.1791773930755999e-05
+                ],
+                "energy_mwh": [
+                  0.4,
+                  0.46472783330040707,
+                  0.4647562385172472,
+                  0.4648004232599596,
+                  0.4647973155630133
+                ],
+                "first_command_mw": [
+                  -0.6926543117758452,
+                  0.4198121380263631,
+                  -0.00028844768295543813,
+                  0.0003167338670211001
+                ],
+                "maximum_power_violation_mw": 6.871131268126884e-18,
+                "maximum_energy_violation_mwh": 7.39130212590311e-09
+              },
+              "storage_reachability_windows": [],
+              "resource_p_mw": {
+                "YA_B:wind:YA_B_WIND": [
+                  1.978742819586918,
+                  2.096859520768123,
+                  2.2914187227134653,
+                  2.432795924174816
+                ],
+                "YA_B:pv:YA_B_PV": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "YA_B:storage:YA_B_FLEX": [
+                  -0.27253823510164177,
+                  -0.00011959053925359585,
+                  -0.00018603064818876878,
+                  1.1791773930755999e-05
+                ],
+                "YA_B:svg:YA_B_FLEX": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "resource_q_mvar": {
+                "YA_B:wind:YA_B_WIND": [
+                  0.15433884577917417,
+                  0.6284286768960078,
+                  0.6867380528866974,
+                  0.7291087524864185
+                ],
+                "YA_B:pv:YA_B_PV": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "YA_B:storage:YA_B_FLEX": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "YA_B:svg:YA_B_FLEX": [
+                  1.4002060220136576,
+                  1.0347043785506176,
+                  1.0482442005529102,
+                  1.0382926171077258
+                ]
+              },
+              "dynamic_tracking": {}
+            },
+            {
+              "region": "YA_C",
+              "status": "passed",
+              "reason": "",
+              "solver_stop_reason": "misocp_cone_and_ac_tolerances_met",
+              "optimization_quality": [],
+              "ac_recovery": null,
+              "adoption_basis": "standard",
+              "checks": [
+                {
+                  "code": "DEVICE_PLAN",
+                  "label": "设备与运行约束",
+                  "status": "passed",
+                  "actual": null,
+                  "limit": null,
+                  "unit": "",
+                  "reason": ""
+                },
+                {
+                  "code": "AC_NETWORK",
+                  "label": "独立 AC 潮流与一致性",
+                  "status": "passed",
+                  "actual": null,
+                  "limit": null,
+                  "unit": "",
+                  "reason": ""
+                },
+                {
+                  "code": "P_TRACKING",
+                  "label": "有功目标最大偏差",
+                  "status": "passed",
+                  "actual": 3.626607458784292e-08,
+                  "limit": 0.05,
+                  "unit": "MW",
+                  "reason": ""
+                },
+                {
+                  "code": "Q_TRACKING",
+                  "label": "无功目标最大偏差",
+                  "status": "passed",
+                  "actual": 1.670747984405807e-10,
+                  "limit": 0.05,
+                  "unit": "Mvar",
+                  "reason": ""
+                },
+                {
+                  "code": "OPTIMIZATION_QUALITY",
+                  "label": "优化最优性精度",
+                  "status": "passed",
+                  "actual": 1.5259188219338218e-05,
+                  "limit": 0.0001,
+                  "unit": "",
+                  "reason": "单次求解达到声明精度"
+                },
+                {
+                  "code": "STORAGE_RESERVE_CAPACITY",
+                  "label": "备用部署后的储能变流器容量",
+                  "status": "passed",
+                  "actual": 0.0,
+                  "limit": 1e-06,
+                  "unit": "MVA",
+                  "reason": ""
+                },
+                {
+                  "code": "STORAGE_RESERVE_ENERGY",
+                  "label": "计划储能备用电量",
+                  "status": "passed",
+                  "actual": 9.905854581049311e-09,
+                  "limit": 1e-06,
+                  "unit": "MWh",
+                  "reason": ""
+                },
+                {
+                  "code": "STORAGE_RESERVE_POWER",
+                  "label": "计划储能双向功率备用",
+                  "status": "passed",
+                  "actual": 0.0,
+                  "limit": 1e-06,
+                  "unit": "MW",
+                  "reason": ""
+                },
+                {
+                  "code": "STORAGE_REACHABILITY",
+                  "label": "储能名义动态可达性与电量递推",
+                  "status": "passed",
+                  "actual": null,
+                  "limit": null,
+                  "unit": "",
+                  "reason": ""
+                },
+                {
+                  "code": "REACTIVE_PLAN_ENVELOPE",
+                  "label": "无功备用与计划过渡约束",
+                  "status": "passed",
+                  "actual": 0.0,
+                  "limit": 1e-06,
+                  "unit": "Mvar",
+                  "reason": ""
+                }
+              ],
+              "economic_cost_cny": 1281.2652033407196,
+              "time_minutes": [
+                0.0,
+                15.0,
+                30.0,
+                45.0
+              ],
+              "p_mw": [
+                4.7029185474193955,
+                4.314054386740201,
+                4.237096903551521,
+                3.9410986938010213
+              ],
+              "q_mvar": [
+                1.2495090242731846,
+                1.174982365719795,
+                1.1474283936004737,
+                1.085982363737535
+              ],
+              "p_target_mw": [
+                4.70291858368547,
+                4.314054362891809,
+                4.2370969324323875,
+                3.9410986653420323
+              ],
+              "q_target_mvar": [
+                1.2495090244402594,
+                1.1749823658045173,
+                1.1474283936564895,
+                1.085982363755127
+              ],
+              "storage_power_mw": [
+                -0.25519209529081627,
+                0.0,
+                0.0,
+                3.66278155124798e-05
+              ],
+              "storage_energy_mwh": [
+                0.36000000000000004,
+                0.42060812508623335,
+                0.42060812509826534,
+                0.4206081254188245,
+                0.4205984843046718
+              ],
+              "storage_reachability": {
+                "version": "storage-reachability-v1",
+                "inputs": {
+                  "policy": {
+                    "version": "storage-reachability-v1",
+                    "power_tolerance_mw": 1e-06,
+                    "energy_tolerance_mwh": 1e-06
+                  },
+                  "resource_id": "YA_C:storage:YA_C_FLEX",
+                  "start_minute": 0.0,
+                  "steps": 4,
+                  "planning_minutes": 15.0,
+                  "execution_minutes": 1.0,
+                  "time_constant_minutes": 2.0,
+                  "ramp_mw_per_minute": 0.65,
+                  "maximum_power_mw": 1.8,
+                  "initial_power_mw": 0.0,
+                  "initial_energy_mwh": 0.36000000000000004,
+                  "minimum_energy_mwh": 0.36000000000000004,
+                  "maximum_energy_mwh": 3.6,
+                  "terminal_energy_mwh": 0.42059849421052636,
+                  "terminal_tolerance_mwh": 0.05,
+                  "eta_charge": 0.95,
+                  "eta_discharge": 0.95
+                },
+                "status": "passed",
+                "p_mw": [
+                  -0.25519209529081627,
+                  0.0,
+                  0.0,
+                  3.66278155124798e-05
+                ],
+                "energy_mwh": [
+                  0.36000000000000004,
+                  0.42060812508623335,
+                  0.42060812509826534,
+                  0.4206081254188245,
+                  0.4205984843046718
+                ],
+                "first_command_mw": [
+                  -0.6485692000917763,
+                  0.39337710480096005,
+                  0.0,
+                  9.308937638121695e-05
+                ],
+                "maximum_power_violation_mw": 0.0,
+                "maximum_energy_violation_mwh": 2.787255592995308e-09
+              },
+              "storage_reachability_windows": [],
+              "resource_p_mw": {
+                "YA_C:wind:YA_C_WIND": [
+                  1.9843455196862934,
+                  2.106981120933031,
+                  2.276698222624002,
+                  2.4604417244768184
+                ],
+                "YA_C:pv:YA_C_PV": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "YA_C:storage:YA_C_FLEX": [
+                  -0.25519209529081627,
+                  0.0,
+                  0.0,
+                  3.66278155124798e-05
+                ],
+                "YA_C:svg:YA_C_FLEX": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "resource_q_mvar": {
+                "YA_C:wind:YA_C_WIND": [
+                  0.3209054365190796,
+                  0.6130455726328196,
+                  0.6659139007503663,
+                  0.6335095376025449
+                ],
+                "YA_C:pv:YA_C_PV": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "YA_C:storage:YA_C_FLEX": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "YA_C:svg:YA_C_FLEX": [
+                  1.400206135003903,
+                  1.1561733801450107,
+                  1.1721431759586045,
+                  1.204006082390922
+                ]
+              },
+              "dynamic_tracking": {}
+            }
+          ],
+          "cluster_import": {
+            "stage": "intraday",
+            "status": "passed",
+            "limit_mw": 26.0,
+            "tolerance_mw": 1e-06,
+            "peak_import_mw": 16.209744246396742,
+            "violation_steps": 0,
+            "sample_count": 4,
+            "reason": "within_limit"
+          },
+          "cluster_power_factor": {
+            "stage": "intraday",
+            "policy": {
+              "target": 0.95,
+              "numerical_tolerance": 1e-09,
+              "version": "cluster-plan-power-factor-v1"
+            },
+            "status": "passed",
+            "points": [
+              {
+                "time_minutes": 0.0,
+                "p_mw": 16.209744246396742,
+                "q_mvar": 5.32788482538825,
+                "power_factor": 0.9500000079521679,
+                "status": "passed",
+                "reason": "within_target"
+              },
+              {
+                "time_minutes": 15.0,
+                "p_mw": 14.828284343803556,
+                "q_mvar": 4.873821328388866,
+                "power_factor": 0.9500000008075422,
+                "status": "passed",
+                "reason": "within_target"
+              },
+              {
+                "time_minutes": 30.0,
+                "p_mw": 14.618425155820411,
+                "q_mvar": 4.804843967521,
+                "power_factor": 0.9500000004615788,
+                "status": "passed",
+                "reason": "within_target"
+              },
+              {
+                "time_minutes": 45.0,
+                "p_mw": 13.688358103120743,
+                "q_mvar": 4.4991046296007315,
+                "power_factor": 0.950000846233592,
+                "status": "passed",
+                "reason": "within_target"
+              }
+            ],
+            "reason": "passed"
+          },
+          "power_factor_margin_mvar": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "import_tracking_margin_mw": 0.15000300000000003,
+          "calibration_used": {
+            "SC": {
+              "p_loss_mw": [
+                0.017735371334658287,
+                0.018757409445350502,
+                0.018446366291780047,
+                0.01849505146159189
+              ],
+              "q_loss_mvar": [
+                0.03664204283104215,
+                0.03845430464377982,
+                0.03773170267987547,
+                0.037546055627419306
+              ],
+              "fixed_shunts": [],
+              "version": "coordination-network-calibration-v1"
+            },
+            "YA_B": {
+              "p_loss_mw": [
+                0.06772493721535838,
+                0.06757696480174932,
+                0.06721899853852725,
+                0.06546518341966215
+              ],
+              "q_loss_mvar": [
+                0.21420747580990399,
+                0.21690684570737104,
+                0.22134375494623587,
+                0.21879427520970932
+              ],
+              "fixed_shunts": [],
+              "version": "coordination-network-calibration-v1"
+            },
+            "YA_C": {
+              "p_loss_mw": [
+                0.1007131703204668,
+                0.0969043618469672,
+                0.09530027597363258,
+                0.08521024070147984
+              ],
+              "q_loss_mvar": [
+                0.23523200390792318,
+                0.23161835138068632,
+                0.23314533184275243,
+                0.21747119616878968
+              ],
+              "fixed_shunts": [],
+              "version": "coordination-network-calibration-v1"
+            }
+          },
+          "feedback": [],
+          "network_candidates_used": [],
+          "candidate_selection": null,
+          "reference_method": "network-socp-admm",
+          "joint_network": null
+        }
+      ]
+    },
+    "coordination_quality": [],
+    "optimization_quality": {
+      "SC": [],
+      "YA_B": [],
+      "YA_C": []
+    },
+    "ac_recovery": {},
+    "initial_energy_mwh": {
+      "SC": 0.5,
+      "YA_B": 0.4,
+      "YA_C": 0.36000000000000004
+    },
+    "initial_storage_power_mw": {
+      "SC": 0.0,
+      "YA_B": 0.0,
+      "YA_C": 0.0
+    },
+    "initial_reactive_mvar": {
+      "SC": {
+        "SC:wind:SC_WT1": 0.0,
+        "SC:wind:SC_WT2": 0.0,
+        "SC:pv:SC_PV1": 0.0,
+        "SC:pv:SC_PV2": 0.0,
+        "SC:storage:SC_FLEX": 0.0,
+        "SC:svg:SC_FLEX": 1.8
+      },
+      "YA_B": {
+        "YA_B:wind:YA_B_WIND": 0.0,
+        "YA_B:pv:YA_B_PV": 0.0,
+        "YA_B:storage:YA_B_FLEX": 0.0,
+        "YA_B:svg:YA_B_FLEX": 2.45
+      },
+      "YA_C": {
+        "YA_C:wind:YA_C_WIND": 0.0,
+        "YA_C:pv:YA_C_PV": 0.0,
+        "YA_C:storage:YA_C_FLEX": 0.0,
+        "YA_C:svg:YA_C_FLEX": 2.45
+      }
+    },
+    "terminal_target_mwh": {
+      "SC": 0.5960642089473684,
+      "YA_B": 0.4647078847368421,
+      "YA_C": 0.42059849421052636
+    },
+    "unreserved_terminal_target_mwh": {
+      "SC": 0.5000124842976429,
+      "YA_B": 0.4,
+      "YA_C": 0.36000000000000004
+    },
+    "reserve_up_mw": {
+      "SC": [
+        0.365043994,
+        0.365043994,
+        0.365043994,
+        0.365043994
+      ],
+      "YA_B": [
+        0.24588996200000002,
+        0.24588996200000002,
+        0.24588996200000002,
+        0.24588996200000002
+      ],
+      "YA_C": [
+        0.230274278,
+        0.230274278,
+        0.230274278,
+        0.230274278
+      ]
+    },
+    "reserve_down_mw": {
+      "SC": [
+        0.365043994,
+        0.365043994,
+        0.365043994,
+        0.365043994
+      ],
+      "YA_B": [
+        0.24588996200000002,
+        0.24588996200000002,
+        0.24588996200000002,
+        0.24588996200000002
+      ],
+      "YA_C": [
+        0.230274278,
+        0.230274278,
+        0.230274278,
+        0.230274278
+      ]
+    },
+    "reserve_energy_floor_mwh": {
+      "SC": [
+        0.5,
+        0.5960642089473684,
+        0.5960642089473684,
+        0.5960642089473684,
+        0.5960642089473684
+      ],
+      "YA_B": [
+        0.4,
+        0.4647078847368421,
+        0.4647078847368421,
+        0.4647078847368421,
+        0.4647078847368421
+      ],
+      "YA_C": [
+        0.36000000000000004,
+        0.42059849421052636,
+        0.42059849421052636,
+        0.42059849421052636,
+        0.42059849421052636
+      ]
+    },
+    "reserve_energy_ceiling_mwh": {
+      "SC": [
+        0.5,
+        4.913302051425,
+        4.913302051425,
+        4.913302051425,
+        4.913302051425
+      ],
+      "YA_B": [
+        0.4,
+        3.941601134025,
+        3.941601134025,
+        3.941601134025,
+        3.941601134025
+      ],
+      "YA_C": [
+        0.36000000000000004,
+        3.545309858975,
+        3.545309858975,
+        3.545309858975,
+        3.545309858975
+      ]
+    },
+    "actual_end_energy_mwh": {},
+    "previous_p_target_mw": {
+      "SC": 5.257161778829626,
+      "YA_B": 4.808862349108109,
+      "YA_C": 4.17401793917895
+    },
+    "previous_q_target_mvar": {
+      "SC": 2.026705133045664,
+      "YA_B": 1.561033188570173,
+      "YA_C": 1.0927371312672405
+    },
+    "previous_target_source": "day_ahead_admm",
+    "p_target_mw": {
+      "SC": [
+        6.1633181745097865,
+        5.516352805446294,
+        5.487252270281011,
+        4.995703410608085
+      ],
+      "YA_B": [
+        5.343507619320407,
+        4.997877236514932,
+        4.894076065556714,
+        4.751555995786055
+      ],
+      "YA_C": [
+        4.70291858368547,
+        4.314054362891809,
+        4.2370969324323875,
+        3.9410986653420323
+      ]
+    },
+    "q_target_mvar": {
+      "SC": [
+        2.4122713293009843,
+        2.136540820677173,
+        2.123912740273365,
+        1.9152027073634685
+      ],
+      "YA_B": [
+        1.6661044865933645,
+        1.5622981477923497,
+        1.5335028395461074,
+        1.4979606058863102
+      ],
+      "YA_C": [
+        1.2495090244402594,
+        1.1749823658045173,
+        1.1474283936564895,
+        1.085982363755127
+      ]
+    },
+    "adopted_p_mw": {},
+    "adopted_q_mvar": {},
+    "admm_iterations": 18,
+    "regional_checks": {
+      "SC": [
+        {
+          "code": "DEVICE_PLAN",
+          "label": "设备与运行约束",
+          "status": "passed",
+          "actual": null,
+          "limit": null,
+          "unit": "",
+          "reason": ""
+        },
+        {
+          "code": "AC_NETWORK",
+          "label": "独立 AC 潮流与一致性",
+          "status": "passed",
+          "actual": null,
+          "limit": null,
+          "unit": "",
+          "reason": ""
+        },
+        {
+          "code": "P_TRACKING",
+          "label": "有功目标最大偏差",
+          "status": "passed",
+          "actual": 5.162829097571375e-08,
+          "limit": 0.05,
+          "unit": "MW",
+          "reason": ""
+        },
+        {
+          "code": "Q_TRACKING",
+          "label": "无功目标最大偏差",
+          "status": "passed",
+          "actual": 4.104714580899227e-05,
+          "limit": 0.05,
+          "unit": "Mvar",
+          "reason": ""
+        },
+        {
+          "code": "OPTIMIZATION_QUALITY",
+          "label": "优化最优性精度",
+          "status": "passed",
+          "actual": 5.092988090596804e-05,
+          "limit": 0.0001,
+          "unit": "",
+          "reason": "单次求解达到声明精度"
+        },
+        {
+          "code": "STORAGE_RESERVE_CAPACITY",
+          "label": "备用部署后的储能变流器容量",
+          "status": "passed",
+          "actual": 0.0,
+          "limit": 1e-06,
+          "unit": "MVA",
+          "reason": ""
+        },
+        {
+          "code": "STORAGE_RESERVE_ENERGY",
+          "label": "计划储能备用电量",
+          "status": "passed",
+          "actual": 0.0,
+          "limit": 1e-06,
+          "unit": "MWh",
+          "reason": ""
+        },
+        {
+          "code": "STORAGE_RESERVE_POWER",
+          "label": "计划储能双向功率备用",
+          "status": "passed",
+          "actual": 0.0,
+          "limit": 1e-06,
+          "unit": "MW",
+          "reason": ""
+        },
+        {
+          "code": "STORAGE_REACHABILITY",
+          "label": "储能名义动态可达性与电量递推",
+          "status": "passed",
+          "actual": null,
+          "limit": null,
+          "unit": "",
+          "reason": ""
+        },
+        {
+          "code": "REACTIVE_PLAN_ENVELOPE",
+          "label": "无功备用与计划过渡约束",
+          "status": "passed",
+          "actual": 3.12368064747659e-09,
+          "limit": 1e-06,
+          "unit": "Mvar",
+          "reason": ""
+        }
+      ],
+      "YA_B": [
+        {
+          "code": "DEVICE_PLAN",
+          "label": "设备与运行约束",
+          "status": "passed",
+          "actual": null,
+          "limit": null,
+          "unit": "",
+          "reason": ""
+        },
+        {
+          "code": "AC_NETWORK",
+          "label": "独立 AC 潮流与一致性",
+          "status": "passed",
+          "actual": null,
+          "limit": null,
+          "unit": "",
+          "reason": ""
+        },
+        {
+          "code": "P_TRACKING",
+          "label": "有功目标最大偏差",
+          "status": "passed",
+          "actual": 4.322455726679664e-08,
+          "limit": 0.05,
+          "unit": "MW",
+          "reason": ""
+        },
+        {
+          "code": "Q_TRACKING",
+          "label": "无功目标最大偏差",
+          "status": "passed",
+          "actual": 7.446174787872906e-10,
+          "limit": 0.05,
+          "unit": "Mvar",
+          "reason": ""
+        },
+        {
+          "code": "OPTIMIZATION_QUALITY",
+          "label": "优化最优性精度",
+          "status": "passed",
+          "actual": 7.078611561936688e-06,
+          "limit": 0.0001,
+          "unit": "",
+          "reason": "单次求解达到声明精度"
+        },
+        {
+          "code": "STORAGE_RESERVE_CAPACITY",
+          "label": "备用部署后的储能变流器容量",
+          "status": "passed",
+          "actual": 0.0,
+          "limit": 1e-06,
+          "unit": "MVA",
+          "reason": ""
+        },
+        {
+          "code": "STORAGE_RESERVE_ENERGY",
+          "label": "计划储能备用电量",
+          "status": "passed",
+          "actual": 0.0,
+          "limit": 1e-06,
+          "unit": "MWh",
+          "reason": ""
+        },
+        {
+          "code": "STORAGE_RESERVE_POWER",
+          "label": "计划储能双向功率备用",
+          "status": "passed",
+          "actual": 0.0,
+          "limit": 1e-06,
+          "unit": "MW",
+          "reason": ""
+        },
+        {
+          "code": "STORAGE_REACHABILITY",
+          "label": "储能名义动态可达性与电量递推",
+          "status": "passed",
+          "actual": null,
+          "limit": null,
+          "unit": "",
+          "reason": ""
+        },
+        {
+          "code": "REACTIVE_PLAN_ENVELOPE",
+          "label": "无功备用与计划过渡约束",
+          "status": "passed",
+          "actual": 0.0,
+          "limit": 1e-06,
+          "unit": "Mvar",
+          "reason": ""
+        }
+      ],
+      "YA_C": [
+        {
+          "code": "DEVICE_PLAN",
+          "label": "设备与运行约束",
+          "status": "passed",
+          "actual": null,
+          "limit": null,
+          "unit": "",
+          "reason": ""
+        },
+        {
+          "code": "AC_NETWORK",
+          "label": "独立 AC 潮流与一致性",
+          "status": "passed",
+          "actual": null,
+          "limit": null,
+          "unit": "",
+          "reason": ""
+        },
+        {
+          "code": "P_TRACKING",
+          "label": "有功目标最大偏差",
+          "status": "passed",
+          "actual": 3.626607458784292e-08,
+          "limit": 0.05,
+          "unit": "MW",
+          "reason": ""
+        },
+        {
+          "code": "Q_TRACKING",
+          "label": "无功目标最大偏差",
+          "status": "passed",
+          "actual": 1.670747984405807e-10,
+          "limit": 0.05,
+          "unit": "Mvar",
+          "reason": ""
+        },
+        {
+          "code": "OPTIMIZATION_QUALITY",
+          "label": "优化最优性精度",
+          "status": "passed",
+          "actual": 1.5259188219338218e-05,
+          "limit": 0.0001,
+          "unit": "",
+          "reason": "单次求解达到声明精度"
+        },
+        {
+          "code": "STORAGE_RESERVE_CAPACITY",
+          "label": "备用部署后的储能变流器容量",
+          "status": "passed",
+          "actual": 0.0,
+          "limit": 1e-06,
+          "unit": "MVA",
+          "reason": ""
+        },
+        {
+          "code": "STORAGE_RESERVE_ENERGY",
+          "label": "计划储能备用电量",
+          "status": "passed",
+          "actual": 9.905854581049311e-09,
+          "limit": 1e-06,
+          "unit": "MWh",
+          "reason": ""
+        },
+        {
+          "code": "STORAGE_RESERVE_POWER",
+          "label": "计划储能双向功率备用",
+          "status": "passed",
+          "actual": 0.0,
+          "limit": 1e-06,
+          "unit": "MW",
+          "reason": ""
+        },
+        {
+          "code": "STORAGE_REACHABILITY",
+          "label": "储能名义动态可达性与电量递推",
+          "status": "passed",
+          "actual": null,
+          "limit": null,
+          "unit": "",
+          "reason": ""
+        },
+        {
+          "code": "REACTIVE_PLAN_ENVELOPE",
+          "label": "无功备用与计划过渡约束",
+          "status": "passed",
+          "actual": 0.0,
+          "limit": 1e-06,
+          "unit": "Mvar",
+          "reason": ""
+        }
+      ]
+    },
+    "forecast_basis": "捕获算例原预测按窗口读取；仅反馈已执行状态，无独立日内预测版本"
+  },
+  "observations": [
+    {
+      "start_minute": 0,
+      "status": "unknown",
+      "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure",
+      "regions": [
+        {
+          "model": "reserve-delivery-box-v1",
+          "inputs": {
+            "region": "SC",
+            "start_minute": 0,
+            "support_minutes": 15,
+            "policy": {
+              "version": "reserve-delivery-box-v1",
+              "response_minutes": 1,
+              "activation_slew_fraction_per_minute": 1.0,
+              "pcc_tolerance_mw": 1e-05,
+              "response_roundoff_mw": 1e-09,
+              "correction_rounds": 2,
+              "source": "研究要求：一分钟内响应；并非现场核定值"
+            },
+            "network": {
+              "slack_voltage_bounds_pu": null,
+              "network_id": "SC:normal",
+              "buses": [
+                "SC_PCC",
+                "SC_MAIN",
+                "SC_WT1",
+                "SC_WT2",
+                "SC_PV1",
+                "SC_PV2",
+                "SC_FLEX",
+                "SC_WIND_COLLECTOR",
+                "SC_SVG",
+                "SC_PV_BUS"
+              ],
+              "branches": [
+                {
+                  "parent": 0,
+                  "child": 1,
+                  "r_pu": 0.004,
+                  "x_pu": 0.006,
+                  "tap": 1.0,
+                  "rating_mva": 20.0
+                },
+                {
+                  "parent": 1,
+                  "child": 7,
+                  "r_pu": 0.003,
+                  "x_pu": 0.004,
+                  "tap": 1.0,
+                  "rating_mva": 12.0
+                },
+                {
+                  "parent": 1,
+                  "child": 6,
+                  "r_pu": 0.009,
+                  "x_pu": 0.013,
+                  "tap": 1.0,
+                  "rating_mva": 7.0
+                },
+                {
+                  "parent": 1,
+                  "child": 8,
+                  "r_pu": 0.003,
+                  "x_pu": 0.004,
+                  "tap": 1.0,
+                  "rating_mva": 3.0
+                },
+                {
+                  "parent": 1,
+                  "child": 9,
+                  "r_pu": 0.004,
+                  "x_pu": 0.03,
+                  "tap": 1.0,
+                  "rating_mva": 20.0
+                },
+                {
+                  "parent": 7,
+                  "child": 2,
+                  "r_pu": 0.01,
+                  "x_pu": 0.014,
+                  "tap": 1.0,
+                  "rating_mva": 6.0
+                },
+                {
+                  "parent": 7,
+                  "child": 3,
+                  "r_pu": 0.011,
+                  "x_pu": 0.015,
+                  "tap": 1.0,
+                  "rating_mva": 6.0
+                },
+                {
+                  "parent": 9,
+                  "child": 4,
+                  "r_pu": 0.012,
+                  "x_pu": 0.015,
+                  "tap": 1.0,
+                  "rating_mva": 4.0
+                },
+                {
+                  "parent": 9,
+                  "child": 5,
+                  "r_pu": 0.015,
+                  "x_pu": 0.017,
+                  "tap": 1.0,
+                  "rating_mva": 4.0
+                }
+              ],
+              "slack": 0,
+              "base_mva": 20.0,
+              "slack_voltage_pu": 1.0,
+              "shunt_q_mvar": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "voltage_min_pu": 0.95,
+              "voltage_max_pu": 1.05,
+              "pcc_min_mw": 0.5,
+              "pcc_max_mw": 18.0,
+              "pf_min": 0.9
+            },
+            "demand_p_mw": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 4.3831562774999995,
+                "high": 4.63003119
+              },
+              {
+                "low": -0.36739183250000007,
+                "high": -0.3211862500000001
+              },
+              {
+                "low": -0.43968844750000013,
+                "high": -0.40119842500000014
+              },
+              {
+                "low": 1.4011289175,
+                "high": 1.5091340475
+              },
+              {
+                "low": 1.4463796425,
+                "high": 1.5464610625000001
+              },
+              {
+                "low": 1.269147555,
+                "high": 1.386678425
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "demand_q_mvar": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 1.8672167474999999,
+                "high": 1.9723850525
+              },
+              {
+                "low": 0.276910725,
+                "high": 0.29517232499999996
+              },
+              {
+                "low": 0.32432283,
+                "high": 0.34185943500000004
+              },
+              {
+                "low": 0.508541865,
+                "high": 0.5477424725
+              },
+              {
+                "low": 0.61615515,
+                "high": 0.65878964
+              },
+              {
+                "low": 0.5015991825,
+                "high": 0.5480503824999999
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": -1.8,
+                "high": -1.8
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "storage_bus": 6,
+            "baseline_power_mw": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "initial_power_mw": 0.0,
+            "initial_energy_mwh": 0.5,
+            "initial_energy_bounds_mwh": {
+              "low": 0.5,
+              "high": 0.5
+            },
+            "minimum_energy_mwh": 0.5,
+            "maximum_energy_mwh": 5.0,
+            "maximum_power_mw": 2.5,
+            "storage_s_mva": 2.7,
+            "storage_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "eta_charge": 0.95,
+            "eta_discharge": 0.95,
+            "response_alpha": 0.3934693402873666,
+            "ramp_mw_per_minute": 0.65,
+            "required_mw": 0.365043994,
+            "activation_headroom_mw": 1.460175976,
+            "context_id": "64a7eb41b8384319ccb0a9560cbcc27473cd74c9b4972946ba4cd8d74236cdb7",
+            "other_resources": []
+          },
+          "status": "unknown",
+          "reason": "full response/support energy; standby energy not restored",
+          "storage_power_mw": {
+            "low": -1.460175977,
+            "high": 1.460175977
+          },
+          "energy_mwh": {
+            "low": 0.09012604154385964,
+            "high": 0.8699112475066667
+          },
+          "command_mw": {
+            "low": -5.961881230474282,
+            "high": 5.961881230474282
+          },
+          "maximum_change_mw": 2.920351953,
+          "network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "nominal_network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "up_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "down_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          }
+        },
+        {
+          "model": "reserve-delivery-box-v1",
+          "inputs": {
+            "region": "YA_B",
+            "start_minute": 0,
+            "support_minutes": 15,
+            "policy": {
+              "version": "reserve-delivery-box-v1",
+              "response_minutes": 1,
+              "activation_slew_fraction_per_minute": 1.0,
+              "pcc_tolerance_mw": 1e-05,
+              "response_roundoff_mw": 1e-09,
+              "correction_rounds": 2,
+              "source": "研究要求：一分钟内响应；并非现场核定值"
+            },
+            "network": {
+              "slack_voltage_bounds_pu": null,
+              "network_id": "YA_B:normal",
+              "buses": [
+                "YA_B_PCC",
+                "YA_B_MAIN",
+                "YA_B_WIND",
+                "YA_B_PV",
+                "YA_B_FLEX",
+                "YA_B_LV",
+                "YA_B_REMOTE"
+              ],
+              "branches": [
+                {
+                  "parent": 0,
+                  "child": 1,
+                  "r_pu": 0.036728163265306125,
+                  "x_pu": 0.045910204081632655,
+                  "tap": 1.0,
+                  "rating_mva": 16.36788013152589
+                },
+                {
+                  "parent": 1,
+                  "child": 2,
+                  "r_pu": 0.03845224489795918,
+                  "x_pu": 0.048065306122448984,
+                  "tap": 1.0,
+                  "rating_mva": 4.728498704663035
+                },
+                {
+                  "parent": 1,
+                  "child": 5,
+                  "r_pu": 0.010821576868506714,
+                  "x_pu": 0.10276499834902005,
+                  "tap": 0.9523809523809523,
+                  "rating_mva": 13.974210801360046
+                },
+                {
+                  "parent": 2,
+                  "child": 6,
+                  "r_pu": 0.03845224489795918,
+                  "x_pu": 0.048065306122448984,
+                  "tap": 1.0,
+                  "rating_mva": 4.728498704663035
+                },
+                {
+                  "parent": 5,
+                  "child": 3,
+                  "r_pu": 0.012,
+                  "x_pu": 0.015,
+                  "tap": 1.0,
+                  "rating_mva": 8.0
+                },
+                {
+                  "parent": 5,
+                  "child": 4,
+                  "r_pu": 0.009,
+                  "x_pu": 0.013,
+                  "tap": 1.0,
+                  "rating_mva": 7.0
+                }
+              ],
+              "slack": 0,
+              "base_mva": 20.0,
+              "slack_voltage_pu": 1.0,
+              "shunt_q_mvar": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "voltage_min_pu": 0.95,
+              "voltage_max_pu": 1.05,
+              "pcc_min_mw": 0.5,
+              "pcc_max_mw": 18.0,
+              "pf_min": 0.9
+            },
+            "demand_p_mw": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": -0.9893714,
+                "high": -0.9893714
+              },
+              {
+                "low": 1.6064994074999999,
+                "high": 1.7347554075
+              },
+              {
+                "low": 1.2190847175,
+                "high": 1.2922412799999998
+              },
+              {
+                "low": 2.58170328,
+                "high": 2.7217313925
+              },
+              {
+                "low": 1.37386041,
+                "high": 1.456271415
+              }
+            ],
+            "demand_q_mvar": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.6843658575,
+                "high": 0.7390027575
+              },
+              {
+                "low": -1.9306721000000002,
+                "high": -1.899507555
+              },
+              {
+                "low": 1.099800975,
+                "high": 1.159452735
+              },
+              {
+                "low": 0.58526208,
+                "high": 0.6203690525
+              }
+            ],
+            "storage_bus": 4,
+            "baseline_power_mw": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "initial_power_mw": 0.0,
+            "initial_energy_mwh": 0.4,
+            "initial_energy_bounds_mwh": {
+              "low": 0.4,
+              "high": 0.4
+            },
+            "minimum_energy_mwh": 0.4,
+            "maximum_energy_mwh": 4.0,
+            "maximum_power_mw": 2.0,
+            "storage_s_mva": 2.16,
+            "storage_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "eta_charge": 0.95,
+            "eta_discharge": 0.95,
+            "response_alpha": 0.3934693402873666,
+            "ramp_mw_per_minute": 0.65,
+            "required_mw": 0.24588996200000002,
+            "activation_headroom_mw": 0.9835598480000001,
+            "context_id": "34bf6d1955daa55848d58035a175e254c198484fce8b7318b8dedbf90de6fe4a",
+            "other_resources": []
+          },
+          "status": "unknown",
+          "reason": "full response/support energy; standby energy not restored",
+          "storage_power_mw": {
+            "low": -0.9835598490000002,
+            "high": 0.9835598490000002
+          },
+          "energy_mwh": {
+            "low": 0.12391302484210524,
+            "high": 0.6491684950800001
+          },
+          "command_mw": {
+            "low": -4.015863220567081,
+            "high": 4.015863220567081
+          },
+          "maximum_change_mw": 1.9671196970000002,
+          "network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "nominal_network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "up_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "down_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          }
+        },
+        {
+          "model": "reserve-delivery-box-v1",
+          "inputs": {
+            "region": "YA_C",
+            "start_minute": 0,
+            "support_minutes": 15,
+            "policy": {
+              "version": "reserve-delivery-box-v1",
+              "response_minutes": 1,
+              "activation_slew_fraction_per_minute": 1.0,
+              "pcc_tolerance_mw": 1e-05,
+              "response_roundoff_mw": 1e-09,
+              "correction_rounds": 2,
+              "source": "研究要求：一分钟内响应；并非现场核定值"
+            },
+            "network": {
+              "slack_voltage_bounds_pu": null,
+              "network_id": "YA_C:normal",
+              "buses": [
+                "YA_C_PCC",
+                "YA_C_MAIN",
+                "YA_C_WIND",
+                "YA_C_PV",
+                "YA_C_FLEX",
+                "YA_C_LV",
+                "YA_C_LOAD"
+              ],
+              "branches": [
+                {
+                  "parent": 0,
+                  "child": 1,
+                  "r_pu": 0.08818938775510204,
+                  "x_pu": 0.11023673469387754,
+                  "tap": 1.0,
+                  "rating_mva": 16.489123688055713
+                },
+                {
+                  "parent": 1,
+                  "child": 2,
+                  "r_pu": 0.01,
+                  "x_pu": 0.014,
+                  "tap": 1.0,
+                  "rating_mva": 6.0
+                },
+                {
+                  "parent": 1,
+                  "child": 5,
+                  "r_pu": 0.00888888888888889,
+                  "x_pu": 0.06768548908073846,
+                  "tap": 0.9523809523809523,
+                  "rating_mva": 22.5
+                },
+                {
+                  "parent": 5,
+                  "child": 6,
+                  "r_pu": 0.01,
+                  "x_pu": 0.014,
+                  "tap": 1.0,
+                  "rating_mva": 7.0
+                },
+                {
+                  "parent": 5,
+                  "child": 3,
+                  "r_pu": 0.012,
+                  "x_pu": 0.015,
+                  "tap": 1.0,
+                  "rating_mva": 8.0
+                },
+                {
+                  "parent": 5,
+                  "child": 4,
+                  "r_pu": 0.009,
+                  "x_pu": 0.013,
+                  "tap": 1.0,
+                  "rating_mva": 7.0
+                }
+              ],
+              "slack": 0,
+              "base_mva": 20.0,
+              "slack_voltage_pu": 1.0,
+              "shunt_q_mvar": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "voltage_min_pu": 0.95,
+              "voltage_max_pu": 1.05,
+              "pcc_min_mw": 0.5,
+              "pcc_max_mw": 18.0,
+              "pf_min": 0.9
+            },
+            "demand_p_mw": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": -0.9921727499999999,
+                "high": -0.9921727499999999
+              },
+              {
+                "low": 1.4743067625,
+                "high": 1.58917558
+              },
+              {
+                "low": 1.1128840125000001,
+                "high": 1.1988578349999999
+              },
+              {
+                "low": 2.318251065,
+                "high": 2.4462027825
+              },
+              {
+                "low": 1.2020871524999999,
+                "high": 1.271665635
+              }
+            ],
+            "demand_q_mvar": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.6280520025,
+                "high": 0.6769859524999999
+              },
+              {
+                "low": -1.9759133675000002,
+                "high": -1.9392887275000001
+              },
+              {
+                "low": 0.9875707725000001,
+                "high": 1.0420780375
+              },
+              {
+                "low": 0.512086965,
+                "high": 0.54172726
+              }
+            ],
+            "storage_bus": 4,
+            "baseline_power_mw": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "initial_power_mw": 0.0,
+            "initial_energy_mwh": 0.36000000000000004,
+            "initial_energy_bounds_mwh": {
+              "low": 0.36000000000000004,
+              "high": 0.36000000000000004
+            },
+            "minimum_energy_mwh": 0.36000000000000004,
+            "maximum_energy_mwh": 3.6,
+            "maximum_power_mw": 1.8,
+            "storage_s_mva": 1.9440000000000002,
+            "storage_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "eta_charge": 0.95,
+            "eta_discharge": 0.95,
+            "response_alpha": 0.3934693402873666,
+            "ramp_mw_per_minute": 0.65,
+            "required_mw": 0.230274278,
+            "activation_headroom_mw": 0.921097112,
+            "context_id": "81ed396d60ed5d9372ff179b71fa067a0228ab35baeb68015695d9b94f20dd45",
+            "other_resources": []
+          },
+          "status": "unknown",
+          "reason": "full response/support energy; standby energy not restored",
+          "storage_power_mw": {
+            "low": -0.9210971130000001,
+            "high": 0.9210971130000001
+          },
+          "energy_mwh": {
+            "low": 0.10144642442105266,
+            "high": 0.59334460196
+          },
+          "command_mw": {
+            "low": -3.7608286087209635,
+            "high": 3.7608286087209635
+          },
+          "maximum_change_mw": 1.842194225,
+          "network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "nominal_network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "up_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "down_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          }
+        }
+      ],
+      "import_upper_mw": null,
+      "import_limit_mw": 26.0,
+      "pf_target": 0.95
+    },
+    {
+      "start_minute": 0,
+      "status": "unknown",
+      "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure",
+      "regions": [
+        {
+          "model": "reserve-delivery-box-v1",
+          "inputs": {
+            "region": "SC",
+            "start_minute": 0,
+            "support_minutes": 15,
+            "policy": {
+              "version": "reserve-delivery-box-v1",
+              "response_minutes": 1,
+              "activation_slew_fraction_per_minute": 1.0,
+              "pcc_tolerance_mw": 1e-05,
+              "response_roundoff_mw": 1e-09,
+              "correction_rounds": 2,
+              "source": "研究要求：一分钟内响应；并非现场核定值"
+            },
+            "network": {
+              "slack_voltage_bounds_pu": null,
+              "network_id": "SC:normal",
+              "buses": [
+                "SC_PCC",
+                "SC_MAIN",
+                "SC_WT1",
+                "SC_WT2",
+                "SC_PV1",
+                "SC_PV2",
+                "SC_FLEX",
+                "SC_WIND_COLLECTOR",
+                "SC_SVG",
+                "SC_PV_BUS"
+              ],
+              "branches": [
+                {
+                  "parent": 0,
+                  "child": 1,
+                  "r_pu": 0.004,
+                  "x_pu": 0.006,
+                  "tap": 1.0,
+                  "rating_mva": 20.0
+                },
+                {
+                  "parent": 1,
+                  "child": 7,
+                  "r_pu": 0.003,
+                  "x_pu": 0.004,
+                  "tap": 1.0,
+                  "rating_mva": 12.0
+                },
+                {
+                  "parent": 1,
+                  "child": 6,
+                  "r_pu": 0.009,
+                  "x_pu": 0.013,
+                  "tap": 1.0,
+                  "rating_mva": 7.0
+                },
+                {
+                  "parent": 1,
+                  "child": 8,
+                  "r_pu": 0.003,
+                  "x_pu": 0.004,
+                  "tap": 1.0,
+                  "rating_mva": 3.0
+                },
+                {
+                  "parent": 1,
+                  "child": 9,
+                  "r_pu": 0.004,
+                  "x_pu": 0.03,
+                  "tap": 1.0,
+                  "rating_mva": 20.0
+                },
+                {
+                  "parent": 7,
+                  "child": 2,
+                  "r_pu": 0.01,
+                  "x_pu": 0.014,
+                  "tap": 1.0,
+                  "rating_mva": 6.0
+                },
+                {
+                  "parent": 7,
+                  "child": 3,
+                  "r_pu": 0.011,
+                  "x_pu": 0.015,
+                  "tap": 1.0,
+                  "rating_mva": 6.0
+                },
+                {
+                  "parent": 9,
+                  "child": 4,
+                  "r_pu": 0.012,
+                  "x_pu": 0.015,
+                  "tap": 1.0,
+                  "rating_mva": 4.0
+                },
+                {
+                  "parent": 9,
+                  "child": 5,
+                  "r_pu": 0.015,
+                  "x_pu": 0.017,
+                  "tap": 1.0,
+                  "rating_mva": 4.0
+                }
+              ],
+              "slack": 0,
+              "base_mva": 20.0,
+              "slack_voltage_pu": 1.0,
+              "shunt_q_mvar": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "voltage_min_pu": 0.95,
+              "voltage_max_pu": 1.05,
+              "pcc_min_mw": 0.5,
+              "pcc_max_mw": 18.0,
+              "pf_min": 0.9
+            },
+            "demand_p_mw": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 4.3831562774999995,
+                "high": 4.63003119
+              },
+              {
+                "low": -0.36739183250000007,
+                "high": -0.3211862500000001
+              },
+              {
+                "low": -0.43968844750000013,
+                "high": -0.40119842500000014
+              },
+              {
+                "low": 1.4011289175,
+                "high": 1.5091340475
+              },
+              {
+                "low": 1.4463796425,
+                "high": 1.5464610625000001
+              },
+              {
+                "low": 1.269147555,
+                "high": 1.386678425
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "demand_q_mvar": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 1.8672167474999999,
+                "high": 1.9723850525
+              },
+              {
+                "low": 0.276910725,
+                "high": 0.29517232499999996
+              },
+              {
+                "low": 0.32432283,
+                "high": 0.34185943500000004
+              },
+              {
+                "low": 0.508541865,
+                "high": 0.5477424725
+              },
+              {
+                "low": 0.61615515,
+                "high": 0.65878964
+              },
+              {
+                "low": 0.5015991825,
+                "high": 0.5480503824999999
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": -1.8,
+                "high": -1.8
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "storage_bus": 6,
+            "baseline_power_mw": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "initial_power_mw": 0.0,
+            "initial_energy_mwh": 0.5,
+            "initial_energy_bounds_mwh": {
+              "low": 0.5,
+              "high": 0.5
+            },
+            "minimum_energy_mwh": 0.5,
+            "maximum_energy_mwh": 5.0,
+            "maximum_power_mw": 2.5,
+            "storage_s_mva": 2.7,
+            "storage_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "eta_charge": 0.95,
+            "eta_discharge": 0.95,
+            "response_alpha": 0.3934693402873666,
+            "ramp_mw_per_minute": 0.65,
+            "required_mw": 0.365043994,
+            "activation_headroom_mw": 1.460175976,
+            "context_id": "64a7eb41b8384319ccb0a9560cbcc27473cd74c9b4972946ba4cd8d74236cdb7",
+            "other_resources": []
+          },
+          "status": "unknown",
+          "reason": "full response/support energy; standby energy not restored",
+          "storage_power_mw": {
+            "low": -1.460175977,
+            "high": 1.460175977
+          },
+          "energy_mwh": {
+            "low": 0.09012604154385964,
+            "high": 0.8699112475066667
+          },
+          "command_mw": {
+            "low": -5.961881230474282,
+            "high": 5.961881230474282
+          },
+          "maximum_change_mw": 2.920351953,
+          "network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "nominal_network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "up_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "down_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          }
+        },
+        {
+          "model": "reserve-delivery-box-v1",
+          "inputs": {
+            "region": "YA_B",
+            "start_minute": 0,
+            "support_minutes": 15,
+            "policy": {
+              "version": "reserve-delivery-box-v1",
+              "response_minutes": 1,
+              "activation_slew_fraction_per_minute": 1.0,
+              "pcc_tolerance_mw": 1e-05,
+              "response_roundoff_mw": 1e-09,
+              "correction_rounds": 2,
+              "source": "研究要求：一分钟内响应；并非现场核定值"
+            },
+            "network": {
+              "slack_voltage_bounds_pu": null,
+              "network_id": "YA_B:normal",
+              "buses": [
+                "YA_B_PCC",
+                "YA_B_MAIN",
+                "YA_B_WIND",
+                "YA_B_PV",
+                "YA_B_FLEX",
+                "YA_B_LV",
+                "YA_B_REMOTE"
+              ],
+              "branches": [
+                {
+                  "parent": 0,
+                  "child": 1,
+                  "r_pu": 0.036728163265306125,
+                  "x_pu": 0.045910204081632655,
+                  "tap": 1.0,
+                  "rating_mva": 16.36788013152589
+                },
+                {
+                  "parent": 1,
+                  "child": 2,
+                  "r_pu": 0.03845224489795918,
+                  "x_pu": 0.048065306122448984,
+                  "tap": 1.0,
+                  "rating_mva": 4.728498704663035
+                },
+                {
+                  "parent": 1,
+                  "child": 5,
+                  "r_pu": 0.010821576868506714,
+                  "x_pu": 0.10276499834902005,
+                  "tap": 0.9523809523809523,
+                  "rating_mva": 13.974210801360046
+                },
+                {
+                  "parent": 2,
+                  "child": 6,
+                  "r_pu": 0.03845224489795918,
+                  "x_pu": 0.048065306122448984,
+                  "tap": 1.0,
+                  "rating_mva": 4.728498704663035
+                },
+                {
+                  "parent": 5,
+                  "child": 3,
+                  "r_pu": 0.012,
+                  "x_pu": 0.015,
+                  "tap": 1.0,
+                  "rating_mva": 8.0
+                },
+                {
+                  "parent": 5,
+                  "child": 4,
+                  "r_pu": 0.009,
+                  "x_pu": 0.013,
+                  "tap": 1.0,
+                  "rating_mva": 7.0
+                }
+              ],
+              "slack": 0,
+              "base_mva": 20.0,
+              "slack_voltage_pu": 1.0,
+              "shunt_q_mvar": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "voltage_min_pu": 0.95,
+              "voltage_max_pu": 1.05,
+              "pcc_min_mw": 0.5,
+              "pcc_max_mw": 18.0,
+              "pf_min": 0.9
+            },
+            "demand_p_mw": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": -0.9893714,
+                "high": -0.9893714
+              },
+              {
+                "low": 1.6064994074999999,
+                "high": 1.7347554075
+              },
+              {
+                "low": 1.2190847175,
+                "high": 1.2922412799999998
+              },
+              {
+                "low": 2.58170328,
+                "high": 2.7217313925
+              },
+              {
+                "low": 1.37386041,
+                "high": 1.456271415
+              }
+            ],
+            "demand_q_mvar": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.6843658575,
+                "high": 0.7390027575
+              },
+              {
+                "low": -1.9306721000000002,
+                "high": -1.899507555
+              },
+              {
+                "low": 1.099800975,
+                "high": 1.159452735
+              },
+              {
+                "low": 0.58526208,
+                "high": 0.6203690525
+              }
+            ],
+            "storage_bus": 4,
+            "baseline_power_mw": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "initial_power_mw": 0.0,
+            "initial_energy_mwh": 0.4,
+            "initial_energy_bounds_mwh": {
+              "low": 0.4,
+              "high": 0.4
+            },
+            "minimum_energy_mwh": 0.4,
+            "maximum_energy_mwh": 4.0,
+            "maximum_power_mw": 2.0,
+            "storage_s_mva": 2.16,
+            "storage_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "eta_charge": 0.95,
+            "eta_discharge": 0.95,
+            "response_alpha": 0.3934693402873666,
+            "ramp_mw_per_minute": 0.65,
+            "required_mw": 0.24588996200000002,
+            "activation_headroom_mw": 0.9835598480000001,
+            "context_id": "34bf6d1955daa55848d58035a175e254c198484fce8b7318b8dedbf90de6fe4a",
+            "other_resources": []
+          },
+          "status": "unknown",
+          "reason": "full response/support energy; standby energy not restored",
+          "storage_power_mw": {
+            "low": -0.9835598490000002,
+            "high": 0.9835598490000002
+          },
+          "energy_mwh": {
+            "low": 0.12391302484210524,
+            "high": 0.6491684950800001
+          },
+          "command_mw": {
+            "low": -4.015863220567081,
+            "high": 4.015863220567081
+          },
+          "maximum_change_mw": 1.9671196970000002,
+          "network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "nominal_network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "up_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "down_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          }
+        },
+        {
+          "model": "reserve-delivery-box-v1",
+          "inputs": {
+            "region": "YA_C",
+            "start_minute": 0,
+            "support_minutes": 15,
+            "policy": {
+              "version": "reserve-delivery-box-v1",
+              "response_minutes": 1,
+              "activation_slew_fraction_per_minute": 1.0,
+              "pcc_tolerance_mw": 1e-05,
+              "response_roundoff_mw": 1e-09,
+              "correction_rounds": 2,
+              "source": "研究要求：一分钟内响应；并非现场核定值"
+            },
+            "network": {
+              "slack_voltage_bounds_pu": null,
+              "network_id": "YA_C:normal",
+              "buses": [
+                "YA_C_PCC",
+                "YA_C_MAIN",
+                "YA_C_WIND",
+                "YA_C_PV",
+                "YA_C_FLEX",
+                "YA_C_LV",
+                "YA_C_LOAD"
+              ],
+              "branches": [
+                {
+                  "parent": 0,
+                  "child": 1,
+                  "r_pu": 0.08818938775510204,
+                  "x_pu": 0.11023673469387754,
+                  "tap": 1.0,
+                  "rating_mva": 16.489123688055713
+                },
+                {
+                  "parent": 1,
+                  "child": 2,
+                  "r_pu": 0.01,
+                  "x_pu": 0.014,
+                  "tap": 1.0,
+                  "rating_mva": 6.0
+                },
+                {
+                  "parent": 1,
+                  "child": 5,
+                  "r_pu": 0.00888888888888889,
+                  "x_pu": 0.06768548908073846,
+                  "tap": 0.9523809523809523,
+                  "rating_mva": 22.5
+                },
+                {
+                  "parent": 5,
+                  "child": 6,
+                  "r_pu": 0.01,
+                  "x_pu": 0.014,
+                  "tap": 1.0,
+                  "rating_mva": 7.0
+                },
+                {
+                  "parent": 5,
+                  "child": 3,
+                  "r_pu": 0.012,
+                  "x_pu": 0.015,
+                  "tap": 1.0,
+                  "rating_mva": 8.0
+                },
+                {
+                  "parent": 5,
+                  "child": 4,
+                  "r_pu": 0.009,
+                  "x_pu": 0.013,
+                  "tap": 1.0,
+                  "rating_mva": 7.0
+                }
+              ],
+              "slack": 0,
+              "base_mva": 20.0,
+              "slack_voltage_pu": 1.0,
+              "shunt_q_mvar": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "voltage_min_pu": 0.95,
+              "voltage_max_pu": 1.05,
+              "pcc_min_mw": 0.5,
+              "pcc_max_mw": 18.0,
+              "pf_min": 0.9
+            },
+            "demand_p_mw": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": -0.9921727499999999,
+                "high": -0.9921727499999999
+              },
+              {
+                "low": 1.4743067625,
+                "high": 1.58917558
+              },
+              {
+                "low": 1.1128840125000001,
+                "high": 1.1988578349999999
+              },
+              {
+                "low": 2.318251065,
+                "high": 2.4462027825
+              },
+              {
+                "low": 1.2020871524999999,
+                "high": 1.271665635
+              }
+            ],
+            "demand_q_mvar": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.6280520025,
+                "high": 0.6769859524999999
+              },
+              {
+                "low": -1.9759133675000002,
+                "high": -1.9392887275000001
+              },
+              {
+                "low": 0.9875707725000001,
+                "high": 1.0420780375
+              },
+              {
+                "low": 0.512086965,
+                "high": 0.54172726
+              }
+            ],
+            "storage_bus": 4,
+            "baseline_power_mw": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "initial_power_mw": 0.0,
+            "initial_energy_mwh": 0.36000000000000004,
+            "initial_energy_bounds_mwh": {
+              "low": 0.36000000000000004,
+              "high": 0.36000000000000004
+            },
+            "minimum_energy_mwh": 0.36000000000000004,
+            "maximum_energy_mwh": 3.6,
+            "maximum_power_mw": 1.8,
+            "storage_s_mva": 1.9440000000000002,
+            "storage_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "eta_charge": 0.95,
+            "eta_discharge": 0.95,
+            "response_alpha": 0.3934693402873666,
+            "ramp_mw_per_minute": 0.65,
+            "required_mw": 0.230274278,
+            "activation_headroom_mw": 0.921097112,
+            "context_id": "81ed396d60ed5d9372ff179b71fa067a0228ab35baeb68015695d9b94f20dd45",
+            "other_resources": []
+          },
+          "status": "unknown",
+          "reason": "full response/support energy; standby energy not restored",
+          "storage_power_mw": {
+            "low": -0.9210971130000001,
+            "high": 0.9210971130000001
+          },
+          "energy_mwh": {
+            "low": 0.10144642442105266,
+            "high": 0.59334460196
+          },
+          "command_mw": {
+            "low": -3.7608286087209635,
+            "high": 3.7608286087209635
+          },
+          "maximum_change_mw": 1.842194225,
+          "network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "nominal_network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "up_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "down_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          }
+        }
+      ],
+      "import_upper_mw": null,
+      "import_limit_mw": 26.0,
+      "pf_target": 0.95
+    }
+  ],
+  "tasks": [
+    {
+      "region": "SC",
+      "direction": "up",
+      "first_minute": 0,
+      "deadline_minute": 15,
+      "last_observed_minute": 0,
+      "required_mw": 0.365043994,
+      "status": "unknown",
+      "completed_minute": null,
+      "breached": false,
+      "deadline_status": "pending",
+      "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure"
+    },
+    {
+      "region": "SC",
+      "direction": "down",
+      "first_minute": 0,
+      "deadline_minute": 15,
+      "last_observed_minute": 0,
+      "required_mw": 0.365043994,
+      "status": "unknown",
+      "completed_minute": null,
+      "breached": false,
+      "deadline_status": "pending",
+      "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure"
+    },
+    {
+      "region": "YA_B",
+      "direction": "up",
+      "first_minute": 0,
+      "deadline_minute": 15,
+      "last_observed_minute": 0,
+      "required_mw": 0.24588996200000002,
+      "status": "unknown",
+      "completed_minute": null,
+      "breached": false,
+      "deadline_status": "pending",
+      "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure"
+    },
+    {
+      "region": "YA_B",
+      "direction": "down",
+      "first_minute": 0,
+      "deadline_minute": 15,
+      "last_observed_minute": 0,
+      "required_mw": 0.24588996200000002,
+      "status": "unknown",
+      "completed_minute": null,
+      "breached": false,
+      "deadline_status": "pending",
+      "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure"
+    },
+    {
+      "region": "YA_C",
+      "direction": "up",
+      "first_minute": 0,
+      "deadline_minute": 15,
+      "last_observed_minute": 0,
+      "required_mw": 0.230274278,
+      "status": "unknown",
+      "completed_minute": null,
+      "breached": false,
+      "deadline_status": "pending",
+      "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure"
+    },
+    {
+      "region": "YA_C",
+      "direction": "down",
+      "first_minute": 0,
+      "deadline_minute": 15,
+      "last_observed_minute": 0,
+      "required_mw": 0.230274278,
+      "status": "unknown",
+      "completed_minute": null,
+      "breached": false,
+      "deadline_status": "pending",
+      "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure"
+    }
+  ],
+  "sequence": 2
+}

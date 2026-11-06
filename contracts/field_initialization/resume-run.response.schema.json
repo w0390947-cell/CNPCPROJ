@@ -1,0 +1,834 @@
+{
+  "$defs": {
+    "CommandResult": {
+      "additionalProperties": false,
+      "properties": {
+        "timestamp_uncertainty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimestampUncertainty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "command_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "resource_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "transport_status": {
+          "enum": [
+            "accepted",
+            "rejected",
+            "unknown"
+          ],
+          "title": "Transport Status",
+          "type": "string"
+        },
+        "device_status": {
+          "enum": [
+            "applied",
+            "rejected",
+            "unknown"
+          ],
+          "title": "Device Status",
+          "type": "string"
+        },
+        "acknowledged_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Acknowledged At"
+        },
+        "applied_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Applied At"
+        },
+        "echoed_p_setpoint_mw": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Echoed P Setpoint Mw"
+        },
+        "echoed_q_setpoint_mvar": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Echoed Q Setpoint Mvar"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command_id",
+        "resource_id",
+        "transport_status",
+        "device_status",
+        "acknowledged_at",
+        "applied_at",
+        "echoed_p_setpoint_mw",
+        "echoed_q_setpoint_mvar",
+        "reason"
+      ],
+      "title": "CommandResult",
+      "type": "object"
+    },
+    "ExecutionPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {
+          "enum": [
+            "accepted",
+            "pending",
+            "rejected"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "errors": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/InterfaceError"
+          },
+          "title": "Errors",
+          "type": "array"
+        },
+        "data": {
+          "$ref": "#/$defs/ExecutionStatus"
+        }
+      },
+      "required": [
+        "outcome",
+        "data"
+      ],
+      "title": "ExecutionPayload",
+      "type": "object"
+    },
+    "ExecutionStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "representative_state": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TubeState"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "state_evidence_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "State Evidence Ref"
+        },
+        "confirmed_state_box": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TubeBox"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "state_semantics": {
+          "default": "exact",
+          "enum": [
+            "exact",
+            "bounded_set"
+          ],
+          "title": "State Semantics",
+          "type": "string"
+        },
+        "timing_revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timing Revision"
+        },
+        "apply_not_before_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Apply Not Before At"
+        },
+        "apply_not_after_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Apply Not After At"
+        },
+        "dispatch_deadline_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dispatch Deadline At"
+        },
+        "feedback_due_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Feedback Due At"
+        },
+        "validation_scope": {
+          "default": "software_synchronous_only",
+          "enum": [
+            "software_synchronous_only",
+            "bounded_monotone_v1",
+            "bounded_uncertain_v1"
+          ],
+          "title": "Validation Scope",
+          "type": "string"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "enum": [
+                "shadow",
+                "closed_loop"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mode"
+        },
+        "context_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Context Id"
+        },
+        "run_state": {
+          "anyOf": [
+            {
+              "enum": [
+                "ready",
+                "awaiting_feedback",
+                "resync_required",
+                "stopped"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run State"
+        },
+        "command_batch_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Command Batch Id"
+        },
+        "batch_status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Batch Status"
+        },
+        "cycle_status": {
+          "anyOf": [
+            {
+              "enum": [
+                "pending",
+                "confirmed",
+                "unconfirmed"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cycle Status"
+        },
+        "command_results": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CommandResult"
+          },
+          "title": "Command Results",
+          "type": "array"
+        },
+        "pending_batch_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pending Batch Id"
+        },
+        "confirmed_snapshot_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmed Snapshot Id"
+        },
+        "last_confirmed_cycle_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Confirmed Cycle Id"
+        },
+        "confirmed_state": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TubeState"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "stopped_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stopped At"
+        },
+        "target_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Id"
+        },
+        "target_response_deadline_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Response Deadline At"
+        },
+        "target_guaranteed_until": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Guaranteed Until"
+        },
+        "energy_task_deadline_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Energy Task Deadline At"
+        },
+        "energy_task_guarantee": {
+          "default": "not_required",
+          "enum": [
+            "maintained",
+            "unproven",
+            "not_required"
+          ],
+          "title": "Energy Task Guarantee",
+          "type": "string"
+        },
+        "energy_task_outcome": {
+          "default": "not_required",
+          "enum": [
+            "pending",
+            "met",
+            "missed",
+            "indeterminate",
+            "not_required"
+          ],
+          "title": "Energy Task Outcome",
+          "type": "string"
+        },
+        "tracking_status": {
+          "default": "not_assessed",
+          "enum": [
+            "passed",
+            "violated",
+            "unproven",
+            "not_assessed"
+          ],
+          "title": "Tracking Status",
+          "type": "string"
+        },
+        "tracking_scope": {
+          "const": "last_confirmed_boundary",
+          "default": "last_confirmed_boundary",
+          "title": "Tracking Scope",
+          "type": "string"
+        },
+        "energy_outcome_scope": {
+          "const": "confirmed_boundary_history",
+          "default": "confirmed_boundary_history",
+          "title": "Energy Outcome Scope",
+          "type": "string"
+        },
+        "evidence_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence Ref"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "resynchronization_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resynchronization Id"
+        },
+        "proposed_context_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Proposed Context Id"
+        },
+        "recovery_status": {
+          "anyOf": [
+            {
+              "enum": [
+                "prepared",
+                "resumed",
+                "rejected"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recovery Status"
+        },
+        "recovery_expires_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recovery Expires At"
+        },
+        "recovery_expired_target_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recovery Expired Target Id"
+        }
+      },
+      "title": "ExecutionStatus",
+      "type": "object"
+    },
+    "InterfaceError": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "field_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Field Path"
+        },
+        "resource_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resource Id"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        },
+        "required_action": {
+          "default": "Correct the input or resolve the stated prerequisite.",
+          "title": "Required Action",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "InterfaceError",
+      "type": "object"
+    },
+    "Interval": {
+      "additionalProperties": false,
+      "properties": {
+        "low": {
+          "title": "Low",
+          "type": "number"
+        },
+        "high": {
+          "title": "High",
+          "type": "number"
+        }
+      },
+      "required": [
+        "low",
+        "high"
+      ],
+      "title": "Interval",
+      "type": "object"
+    },
+    "TimestampUncertainty": {
+      "additionalProperties": false,
+      "properties": {
+        "error_seconds": {
+          "minimum": 0,
+          "title": "Error Seconds",
+          "type": "number"
+        },
+        "clock_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Clock Revision",
+          "type": "string"
+        },
+        "provenance_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Provenance Ref",
+          "type": "string"
+        },
+        "valid_from": {
+          "format": "date-time",
+          "title": "Valid From",
+          "type": "string"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        }
+      },
+      "required": [
+        "error_seconds",
+        "clock_revision",
+        "provenance_ref",
+        "valid_from",
+        "valid_until"
+      ],
+      "title": "TimestampUncertainty",
+      "type": "object"
+    },
+    "TubeBox": {
+      "additionalProperties": false,
+      "properties": {
+        "p_mw": {
+          "items": {
+            "$ref": "#/$defs/Interval"
+          },
+          "title": "P Mw",
+          "type": "array"
+        },
+        "q_mvar": {
+          "items": {
+            "$ref": "#/$defs/Interval"
+          },
+          "title": "Q Mvar",
+          "type": "array"
+        },
+        "energy_mwh": {
+          "$ref": "#/$defs/Interval"
+        }
+      },
+      "required": [
+        "p_mw",
+        "q_mvar",
+        "energy_mwh"
+      ],
+      "title": "TubeBox",
+      "type": "object"
+    },
+    "TubeState": {
+      "additionalProperties": false,
+      "properties": {
+        "p_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "P Mw",
+          "type": "array"
+        },
+        "q_mvar": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Q Mvar",
+          "type": "array"
+        },
+        "energy_mwh": {
+          "title": "Energy Mwh",
+          "type": "number"
+        }
+      },
+      "required": [
+        "p_mw",
+        "q_mvar",
+        "energy_mwh"
+      ],
+      "title": "TubeState",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "interface_version": {
+      "const": "single-microgrid-field-v0.1-draft",
+      "default": "single-microgrid-field-v0.1-draft",
+      "title": "Interface Version",
+      "type": "string"
+    },
+    "operation": {
+      "enum": [
+        "ReportExecution",
+        "QueryRunStatus",
+        "StopRun",
+        "DispatchControlCycle",
+        "PrepareResynchronization",
+        "ResumeRun"
+      ],
+      "title": "Operation",
+      "type": "string"
+    },
+    "message_id": {
+      "title": "Message Id",
+      "type": "string"
+    },
+    "correlation_id": {
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "microgrid_id": {
+      "title": "Microgrid Id",
+      "type": "string"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/ExecutionPayload"
+    }
+  },
+  "required": [
+    "operation",
+    "message_id",
+    "correlation_id",
+    "microgrid_id",
+    "run_id",
+    "created_at",
+    "payload"
+  ],
+  "title": "ExecutionResponse",
+  "type": "object"
+}

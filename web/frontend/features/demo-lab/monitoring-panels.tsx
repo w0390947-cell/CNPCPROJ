@@ -141,12 +141,12 @@ export function DeviceTelemetryPanel({ frame }: { frame: Frame | null }) {
       {frame && !frame.quality_valid && (
         <p className="demo-inline-alert" role="alert">
           <TriangleAlert aria-hidden="true" />
-          质量无效：下表仅显示模拟设备内部状态，不能作为有效现场量测。
+          质量无效：下表仅显示设备内部状态。
         </p>
       )}
       <Table>
         <TableCaption className="sr-only">
-          当前模拟设备的有功、无功、可用功率与储能电量
+          当前设备的有功、无功、可用功率与储能电量
         </TableCaption>
         <TableHeader>
           <TableRow>

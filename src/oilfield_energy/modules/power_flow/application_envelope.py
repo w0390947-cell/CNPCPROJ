@@ -179,6 +179,15 @@ def certify_ac_box(
         return ACBoxCertificate(certified=False, reason="voltage centre unavailable")
     v = [_Complex(F(z.real), F(z.imag)) for z in proposed]
     norms = [z.norm() for z in v]
+    source = network.slack_voltage_bounds_pu
+    source_radius = (
+        max(
+            F(network.slack_voltage_pu) - F(source.low),
+            F(source.high) - F(network.slack_voltage_pu),
+        )
+        if source
+        else F(0)
+    )
     shunts = [F(q) / base for q in network.shunt_q_mvar]
     currents = [
         s.divide(z).conjugate() + _Complex(F(0), b) * z
@@ -222,7 +231,7 @@ def certify_ac_box(
     for exponent in range(-12, 0):
         for factor in (1, 2, 5):
             radius = F(factor, 10 ** (-exponent))
-            radii = [F(0) if i == network.slack else radius for i in range(n)]
+            radii = [source_radius if i == network.slack else radius for i in range(n)]
             floors = [norms[i][0] - radii[i] for i in range(n)]
             if min(floors) <= 0:
                 continue
@@ -243,6 +252,9 @@ def certify_ac_box(
                 di[line.parent] += di[line.child] / F(line.tap)
                 lipschitz[line.parent] += lipschitz[line.child] / F(line.tap)
             dv, gain = [F(0)] * n, [F(0)] * n
+            # The slack is an uncertain parameter, not an iterated unknown.
+            # Its radius propagates through each tap; uniqueness is per source value.
+            dv[network.slack] = source_radius
             for line in network.branches:
                 zabs = magnitude(F(line.r_pu), F(line.x_pu))[1]
                 dv[line.child] = dv[line.parent] / F(line.tap) + zabs * di[line.child]
@@ -277,7 +289,12 @@ def certify_ac_box(
                 .conjugate()
                 .scale(F(network.slack_voltage_pu) * base)
             )
-            spread = F(network.slack_voltage_pu) * base * di[network.slack]
+            # Product enclosure for (V0+dV0)*(I0+dI0), including the cross term.
+            spread = base * (
+                F(network.slack_voltage_pu) * di[network.slack]
+                + source_radius
+                * (currents[network.slack].norm()[1] + di[network.slack])
+            )
             plow, phigh = pcc.real - spread, pcc.real + spread
             qlow, qhigh = pcc.imag - spread, pcc.imag + spread
             pf = F(network.pf_min)
@@ -300,10 +317,12 @@ def certify_ac_box(
             ):
                 reasons.append("power factor envelope")
             return ACBoxCertificate(
+                model="radial-ac-disc-v2" if source else "radial-ac-disc-v1",
+                slack_voltage_input_pu=source,
                 certified=not reasons,
                 reason=", ".join(reasons),
                 voltage_center=tuple((z.real, z.imag) for z in proposed),
-                voltage_radius_pu=upper(radius),
+                voltage_radius_pu=upper(max(radius, source_radius)),
                 contraction_upper=upper(max(gain)),
                 high_voltage_uniqueness_upper=upper(max(unique_gain)),
                 voltage_bounds=voltage_bounds,

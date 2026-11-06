@@ -7,7 +7,7 @@ from oilfield_energy.modules.control.api import (
     execute_cluster_device_command,
     approach_device_command,
 )
-from oilfield_energy.modules.control.contracts import TubeCommand
+from oilfield_energy.modules.control.contracts import TubeCommand, TubeState
 from oilfield_energy.modules.dispatch.api import observe_reserve_recovery
 from oilfield_energy.modules.dispatch.contracts import ReserveRecoveryTask
 from .contracts_reserve import ReserveClusterCertificate, ReserveActivationCommand
@@ -22,7 +22,7 @@ from .contracts_safety import (
 from .safety_activation import certify_event, activation_commands
 from .safety_network import forecast_at, model_at, bind_cluster_domain
 from .safety_certificates import (
-    construct_terminal,
+    construct_initial_continuation,
     certify_continuation,
     certify_step,
     settled,
@@ -42,13 +42,8 @@ class ClusterSafetyController:
         self.domain = domain
         self.minute = 0
         self.states = tuple(r.initial for r in domain.regions)
-        self.terminal, self.terminal_digest = construct_terminal(domain)
-        self.plan = certify_continuation(
-            domain,
-            tuple(point_box(s) for s in self.states),
-            0,
-            self.terminal,
-            self.terminal_digest,
+        self.terminal, self.terminal_digest, self.plan = construct_initial_continuation(
+            domain
         )
         self.plans = [self.plan]
         self.steps: list[ClusterSafetyStep] = []
@@ -59,6 +54,10 @@ class ClusterSafetyController:
         self.events: list[ClusterReserveEvent] = []
         self.active_event: ClusterReserveEvent | None = None
         self.previous_activation: tuple[ReserveActivationCommand, ...] = ()
+        self._candidate_key: (
+            tuple[int, tuple[TubeState, ...], tuple[TubeCommand, ...]] | None
+        ) = None
+        self._candidate_plan: ClusterContinuation | None = None
         self.observe_reserve()
 
     def certify_candidate(
@@ -66,7 +65,10 @@ class ClusterSafetyController:
     ) -> ClusterContinuation:
         if self.active_event is not None:
             raise ValueError("accepted reserve event owns the current control interval")
-        return certify_continuation(
+        key = (self.minute, self.states, proposal)
+        if key == self._candidate_key and self._candidate_plan is not None:
+            return self._candidate_plan
+        plan = certify_continuation(
             self.domain,
             tuple(point_box(s) for s in self.states),
             self.minute,
@@ -74,6 +76,11 @@ class ClusterSafetyController:
             self.terminal_digest,
             proposal,
         )
+        # Planning admission and actual adoption often ask for the identical
+        # proof at the same completed state. Never reuse across a clock/state/
+        # command change. The immutable domain and terminal belong to this owner.
+        self._candidate_key, self._candidate_plan = key, plan
+        return plan
 
     def commands_for_endpoints(
         self, targets: tuple[TubeCommand, ...]

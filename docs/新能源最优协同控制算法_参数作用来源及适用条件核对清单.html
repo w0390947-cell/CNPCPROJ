@@ -1,0 +1,2111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>新能源最优协同控制算法_参数作用来源及适用条件核对清单.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> or <div class="page"></div> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="新能源最优协同控制算法参数作用来源及适用条件核对清单">新能源最优协同控制算法：参数、作用、来源及适用条件核对清单</h1>
+<h2 id="1-核对范围与阅读方法">1. 核对范围与阅读方法</h2>
+<p>核对日期：2026 年 10 月 22 日。</p>
+<p>本清单以当前已保存的《<a href="../docs3/%E4%B8%93%E5%88%A9%E4%BA%A4%E5%BA%95%E4%B9%A6/%E4%B8%93%E5%88%A9%E4%B8%80/%E4%B8%93%E5%88%A9%E7%94%B3%E8%AF%B7/4%E3%80%81%E4%B8%93%E5%88%A9%E7%94%B3%E8%AF%B7%E6%8A%80%E6%9C%AF%E4%BA%A4%E5%BA%95%E4%B9%A61020%E7%96%91%E9%97%AE.docx">4、专利申请技术交底书1020疑问.docx</a>》全文为主。读取版本的文件修改时间为 <strong>2026-10-22 12:06:24</strong>。同时核对正式单微电网协同控制算法的参数契约、默认山城模拟配置、规划与认证代码及直接相关的现场接口。</p>
+<p>本次仅整理清单，没有修改交底书或算法代码，没有重新运行仿真。表中的“代码支持”是依据源码及已有测试定义判断的，不表示本次完成了现场验证或重新复现了交底书的仿真结果。已有测试中的参数能够说明测试如何构造，不能单凭测试文件存在就认定测试当前通过。</p>
+<p>清单覆盖全文中的技术参数、固定数值、范围限制及关键模型条件；重复出现的同一参数合并列出。文献编号、专利公开号、参考文献日期、章节号、步骤编号等不作为算法参数。第六、七章重复描述的方法联系和流程条件归入相应技术条目，没有独立新增数值参数。</p>
+<p>“来源”分清两层：<strong>当前数值在哪里定义</strong>，以及<strong>实际应用时应由什么资料确定</strong>。代码中的默认值只能证明当前实现采用了这个值，不能证明它来自现场测量。涉及山城资料的来源说明，以下优先引用配置中保存的来源记录；本次没有重新核验这些原始现场资料。</p>
+<h3 id="11-性质分类">1.1 性质分类</h3>
+<table>
+<thead>
+<tr>
+<th>标记</th>
+<th>含义</th>
+<th>判断原则</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>物理／运行条件</td>
+<td>设备能力、电网关系、授权范围或运行要求</td>
+<td>如容量、能量上下限、支路限额、功率平衡。关系需要保留，具体数值随现场变化。</td>
+</tr>
+<tr>
+<td>配置参数</td>
+<td>由任务、模型、策略或计算预算输入的参数</td>
+<td>可输入不等于任意值都可行，更不等于修改后可以沿用旧证书。</td>
+</tr>
+<tr>
+<td>算例取值</td>
+<td>某一验证场景使用的具体值</td>
+<td>用于复现该算例，通常不应成为所有应用的统一数值要求。</td>
+</tr>
+<tr>
+<td>模型／证明条件</td>
+<td>当前数学模型或充分性论证成立的前提</td>
+<td>如径向准静态、共同无功响应系数、末预测包络持续。不能只删除文字就认为限制消失。</td>
+</tr>
+<tr>
+<td>实现边界</td>
+<td>当前程序强制接受的结构、范围或有限构造</td>
+<td>如一分钟网格、PCS 有功系数必须为 1、有限搜索次数。不是普遍物理规律。</td>
+</tr>
+<tr>
+<td>结果量／派生量</td>
+<td>根据输入计算得到的量，或一次验证输出</td>
+<td>不宜写成必须预先设置的参数。</td>
+</tr>
+</tbody>
+</table>
+<p>一个条目可以同时属于多类。例如，跟踪容差是任务配置参数，<code>0.05</code> 是算例值；整定阈值是模型参数，<code>≤0.001</code> 同时是当前代码的实现边界。</p>
+<h3 id="12-代码支持口径">1.2 “代码支持”口径</h3>
+<p>区分“底层契约可输入”“默认装配固定”“现场接口可输入”“代码强制”“计算派生”和“尚未提供通用实现”。不能因为某个底层函数有一个参数，就认为所有入口都支持修改它。下文用 C01～C25 标注代码依据，具体文件链接见第 11 节。</p>
+<h2 id="2-网络设备及基本计量口径">2. 网络、设备及基本计量口径</h2>
+<table>
+<thead>
+<tr>
+<th>编号／参数或条件</th>
+<th>作用</th>
+<th>来源／实际应由什么确定</th>
+<th>必要条件</th>
+<th>代码支持情况</th>
+<th>性质判断</th>
+<th>交底书位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>N01 单微电网、一个 PCC</td>
+<td>界定统一优化和交换功率对象</td>
+<td>当前算法对象；现场由并网边界确定</td>
+<td>同一网络、同一资源轴、同一状态所有者</td>
+<td>正式链按单区域装配；不等于多微网协同算法〔C03、C07〕</td>
+<td>模型／实现边界</td>
+<td>5.1、8.2、8.4</td>
+</tr>
+<tr>
+<td>N02 平衡正序、径向、固定拓扑</td>
+<td>建立支路潮流与 AC 包络认证</td>
+<td>当前网络模型选择；现场应核验接线和适用工况</td>
+<td>连通径向树、支路顺序及资源映射合法；证书期间条件有效</td>
+<td>径向契约检查；没有通用三相不平衡、环网或暂态认证〔C08〕</td>
+<td>模型／证明条件</td>
+<td>5.1、5.3、5.8、5.10、8.4</td>
+</tr>
+<tr>
+<td>N03 固定实数正变比 <code>aᵢⱼ</code></td>
+<td>计算电压和支路映射</td>
+<td>变压器参数、运行分接位置；当前为等值配置</td>
+<td><code>a&gt;0</code>，认证期间固定；相移模型不能直接套用</td>
+<td>网络契约支持正变比；正式装配拒绝相移〔C03、C08〕</td>
+<td>物理参数＋模型条件</td>
+<td>5.1、5.3、5.10</td>
+</tr>
+<tr>
+<td>N04 根节点电压 <code>1.0 pu</code></td>
+<td>给定上级等值电源边界</td>
+<td>当前模型固定值；现场需确定电压参考及波动处理</td>
+<td>规划、认证、快照口径一致</td>
+<td>底层 AC 契约可表示其他正值，但当前优化固定 1.0，现场快照也检查 1.0；不能说全链任意可配〔C08、C11、C17〕</td>
+<td>模型／实现边界</td>
+<td>5.1、5.3、8.1</td>
+</tr>
+<tr>
+<td>N05 基准容量 <code>S_b</code></td>
+<td>统一 MW、Mvar、标幺阻抗与电流变量</td>
+<td>网络建模基准；山城配置 20 MVA，两节点算例 10 MVA</td>
+<td><code>S_b&gt;0</code>；全部阻抗、功率及变比换算一致</td>
+<td>网络契约可输入；不是固定只能 20 MVA〔C01、C08、C18〕</td>
+<td>配置；具体值为算例值</td>
+<td>5.1、5.3、8.1；8.2 未列 20 MVA</td>
+</tr>
+<tr>
+<td>N06 <code>rᵢⱼ、xᵢⱼ</code></td>
+<td>计算压降、损耗和电流</td>
+<td>现场线路／变压器等值参数；山城配置注明模拟值</td>
+<td>当前网络契约接受非负 R/X，单位为统一基准下的 pu</td>
+<td>逐支路输入；“可输入”不表示当前数值已实测〔C01、C08〕</td>
+<td>物理参数＋算例值</td>
+<td>5.3、8.1</td>
+</tr>
+<tr>
+<td>N07 电流缩放量 <code>lᵢⱼ=S_b²·|I_pu|²≥0</code></td>
+<td>连接功率、电压及损耗关系</td>
+<td>变量定义；不是人为选定的电流限值</td>
+<td>缩放与量纲一致；优化锥松弛须独立 AC 校核</td>
+<td>模型有非负电流平方变量；网损按 <code>r·l/S_b</code> 计算〔C11〕</td>
+<td>物理关系／模型变量</td>
+<td>5.1、5.3，式（1）～（4）</td>
+</tr>
+<tr>
+<td>N08 <code>v=|V|²</code>、<code>V_min、V_max</code></td>
+<td>电压质量与安全边界</td>
+<td>并网／运行要求；算例 0.95～1.05 pu</td>
+<td>电压幅值限值与平方变量不能混用；上下界有序</td>
+<td>可输入电压界；优化和 AC 认证分别校验〔C08、C11、C17〕</td>
+<td>运行配置；范围为算例值</td>
+<td>5.3、8.1、8.2</td>
+</tr>
+<tr>
+<td>N09 支路两端 <code>Sᵢⱼ,max</code></td>
+<td>限制发送端与接收端视在功率</td>
+<td>设备热容量、运行限额</td>
+<td>正容量；两端均检查，不能只看发送端</td>
+<td>逐支路限额；接收端扣除 R/X 损耗〔C08、C11〕</td>
+<td>物理／运行参数</td>
+<td>5.3、8.1</td>
+</tr>
+<tr>
+<td>N10 固定并联补偿 <code>Q_nom</code>／电纳 <code>bᵢ</code></td>
+<td>计算随电压平方变化的无功注入</td>
+<td>补偿设备及投切状态</td>
+<td>认证期间固定；与 SVG 可调无功区分</td>
+<td>网络模型支持固定并联项；不是恒定 Q 注入的任意替代〔C08、C11〕</td>
+<td>物理参数＋模型条件</td>
+<td>5.1、5.3、5.8</td>
+</tr>
+<tr>
+<td>N11 <code>P_floor、P_max</code>，<code>0≤P_floor≤P_PCC≤P_max</code></td>
+<td>不倒送及受电容量限制</td>
+<td>并网要求、运行裕度、动态安全阈值</td>
+<td>下界非负、上下界相容，最终仍需 AC 认证</td>
+<td>正式网络下界取运行下界、防逆流裕度与 0 的最大值；规划还计算安全阈值〔C03、C16〕</td>
+<td>运行配置＋策略派生量</td>
+<td>5.3，式（5）、（6）</td>
+</tr>
+<tr>
+<td>N12 物理功率因数下限 <code>f_min</code></td>
+<td>约束执行时 PCC P/Q</td>
+<td>现场考核口径；算例 0.9</td>
+<td>当前契约 <code>0&lt;f_min≤1</code>；需结合正受电条件</td>
+<td>AC 外包以物理下限认证〔C08、C17〕</td>
+<td>运行配置；0.9 为算例值</td>
+<td>5.3、5.8、8.1、8.2</td>
+</tr>
+<tr>
+<td>N13 规划功率因数 <code>f_plan</code></td>
+<td>给规划留出无功余量</td>
+<td>模型默认目标和候选构造策略</td>
+<td>不得据规划重试放宽执行物理下限</td>
+<td>默认基础目标 0.92；正式候选可按正切比例进一步收紧，失败可按原目标重试〔C02、C03、C12〕</td>
+<td>配置／构造参数</td>
+<td>5.3；具体默认值未列</td>
+</tr>
+<tr>
+<td>N14 负荷 <code>P_load、Q_load</code></td>
+<td>决定节点净需求</td>
+<td>预测、实时观察或声明区间</td>
+<td>作为外生需求，不能随意减载来取得可行解</td>
+<td>正式模型没有通用可中断负荷决策变量；现场预测有功非负，无功可带符号〔C11、C17〕</td>
+<td>输入数据＋模型边界</td>
+<td>5.1、5.4、5.8</td>
+</tr>
+<tr>
+<td>N15 风光 <code>P_rated、P_av</code></td>
+<td>限制实际采用功率</td>
+<td>铭牌、可用量预测及其下界</td>
+<td><code>0≤p≤min(P_av,P_rated)</code>；可用量不是调度可随意增加的变量</td>
+<td>逐资源限额；执行认证使用当分钟可用下界〔C04、C07〕</td>
+<td>物理／运行参数</td>
+<td>5.4、5.5.3，式（7）</td>
+</tr>
+<tr>
+<td>N16 资源 <code>S_r、Q_min、Q_max</code></td>
+<td>描述 P/Q 联合能力</td>
+<td>设备能力曲线、授权范围；配置中的部分容量为模拟假设</td>
+<td><code>p²+q²≤S²</code>；有序 Q 界，与授权一致</td>
+<td>支持逐资源容量及 Q 区间；SVG 可以不对称〔C04、C17〕</td>
+<td>物理／授权参数</td>
+<td>5.4、5.6、8.1、8.2</td>
+</tr>
+<tr>
+<td>N17 风机 <code>k_r</code>／<code>|q|≤k_r p</code></td>
+<td>限定随有功缩小的无功能力</td>
+<td>适用设备能力／控制策略；山城配置采用 0.30</td>
+<td>非负比例；不能把一个风机比例当全部设备的普遍规律</td>
+<td>逐资源可选比例；与容量圆、绝对 Q 界同时约束〔C01、C04、C17〕</td>
+<td>运行／模型参数；0.30 为具体配置</td>
+<td>5.4、5.5、5.6、8.1</td>
+</tr>
+<tr>
+<td>N18 PV／PCS 无功权限；SVG <code>P=0</code></td>
+<td>决定哪些变量可以调节</td>
+<td>控制授权及设备类型</td>
+<td>无权限时 Q 固定为 0；权限改变须更新模型并重认证</td>
+<td>契约支持权限与零界校验；山城默认 PV、PCS 不调 Q〔C01、C03、C17〕</td>
+<td>运行配置／模型约定</td>
+<td>5.4、5.6、8.2</td>
+</tr>
+<tr>
+<td>N19 单台 PCS／单个能量状态</td>
+<td>表示储能功率和能量</td>
+<td>当前状态结构</td>
+<td>多台独立储能不能未经证明聚成一个标量能量</td>
+<td>正式设备契约要求一个 storage 资源；停用时用零功率边界表示，不代表任意多储能已支持〔C04、C17〕</td>
+<td>模型／实现边界</td>
+<td>5.1、5.4、8.4</td>
+</tr>
+<tr>
+<td>N20 <code>P_B,max、P_c、P_d</code></td>
+<td>限制储能双向功率及剩余可达能量</td>
+<td>PCS 额定／有效充放电能力</td>
+<td>不能超过当前授权能力；功率方向口径一致</td>
+<td>核心可表示带符号功率区间；默认案例装配充放电对称〔C02、C04、C03〕</td>
+<td>物理／运行配置</td>
+<td>5.1、5.4、5.7</td>
+</tr>
+<tr>
+<td>N21 <code>E_min、E_max、E_0</code></td>
+<td>物理能量边界与起点</td>
+<td>电池可用能量、SOC 管理、实测状态</td>
+<td>初态合法，全过程不越界；不能用候选改写初态</td>
+<td>能量区间输入、状态传播逐步检查〔C04、C05、C17〕</td>
+<td>物理／运行参数＋状态量</td>
+<td>5.1、5.4、5.6</td>
+</tr>
+<tr>
+<td>N22 <code>η_ch、η_dis</code></td>
+<td>充放电功率到能量的换算</td>
+<td>设备效率资料／辨识；算例均为 0.95</td>
+<td>当前契约 <code>0&lt;η≤1</code>；充电乘效率、放电除效率</td>
+<td>可输入；当前使用固定效率，不是随功率、温度变化的通用效率曲线〔C04、C05、C17〕</td>
+<td>模型配置；0.95 为算例值</td>
+<td>5.4、5.6、5.9.1、8.1</td>
+</tr>
+<tr>
+<td>N23 互斥变量 <code>y∈{0,1}</code></td>
+<td>防止同时充电与放电</td>
+<td>充放电模型</td>
+<td>松弛解也须检查互斥，必要时采用整数模型</td>
+<td>经济模型用模式约束；执行层使用单个带符号功率命令〔C11、C05〕</td>
+<td>模型条件／决策变量</td>
+<td>5.4，式（8）、（9）</td>
+</tr>
+<tr>
+<td>N24 P/Q 正负号、功率／能量单位、初态上标 0</td>
+<td>防止输入、控制与核算方向不一致</td>
+<td>统一接口和数学定义</td>
+<td>PCC 正为受入、设备正为注入、储能正为放电、正 Q 为容性；MW/Mvar/MWh 一致</td>
+<td>全链按该口径；<code>p⁰、q⁰</code> 不是“数值为零”〔C05、C17〕</td>
+<td>计量约定</td>
+<td>5.1、5.6</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-时间尺度响应模型与动态规划">3. 时间尺度、响应模型与动态规划</h2>
+<table>
+<thead>
+<tr>
+<th>编号／参数或条件</th>
+<th>作用</th>
+<th>来源／实际应由什么确定</th>
+<th>必要条件</th>
+<th>代码支持情况</th>
+<th>性质判断</th>
+<th>交底书位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>D01 <code>Δt、δ、δ_h</code>，<code>δ_h=δ/60</code></td>
+<td>对齐计划、执行和能量积分</td>
+<td>任务时间尺度与采样／控制周期；默认 15 min、1 min</td>
+<td><code>60Δt/δ</code> 为正整数；h 与 min 正确换算</td>
+<td>底层响应有步长字段，但正式联合规划、默认装配和现场接口采用 1 min；并非任意 δ 全链可用〔C03、C04、C10、C17〕</td>
+<td>配置＋实现边界</td>
+<td>5.1、5.5、5.6、8.2</td>
+</tr>
+<tr>
+<td>D02 规划更新 15 min、经济窗口至多 240 min</td>
+<td>定义滚动重规划频率与前视长度</td>
+<td>当前执行策略；实际由任务、预测、计算时限确定</td>
+<td>规划网格、有效预测、原任务截止时间相容</td>
+<td>策略中可配置；现场有秒单位对齐约束〔C06、C17〕</td>
+<td>配置；15、240 为默认值</td>
+<td>5.7、5.11、8.2</td>
+</tr>
+<tr>
+<td>D03 <code>τ_P、τ_Q&gt;0</code></td>
+<td>在一阶模型内描述响应快慢</td>
+<td>应来自设备试验／辨识；当前默认 τ_Q=2 min、PV τ_P=0.25 min</td>
+<td>先确认一阶等值适用；单位与 δ 相同</td>
+<td>默认装配由时间常数计算系数；当前数值不属于已核实山城辨识结果〔C03、C06〕</td>
+<td>模型配置＋算例值</td>
+<td>5.1、5.6、8.2</td>
+</tr>
+<tr>
+<td>D04 <code>α=1−exp(−δ/τ)</code>、<code>0&lt;α≤1</code></td>
+<td>将保持命令下的一阶响应离散化</td>
+<td>所选响应模型的数学关系</td>
+<td>公式用于正 τ 的一阶模型；有限正 δ、τ 下理论上 α&lt;1</td>
+<td>每资源 α_P 可输入；默认风机 α_P 与公共 α_Q 同源，PV 单独计算〔C03、C04〕</td>
+<td>模型关系＋配置</td>
+<td>5.6、8.2</td>
+</tr>
+<tr>
+<td>D05 公共无功系数 <code>α_Q</code></td>
+<td>统一 Q 状态传播和聚合反馈</td>
+<td>当前模型简化</td>
+<td>所有参与资源必须符合所声明的共同模型；不同 τ_Q 不能直接沿用原证明</td>
+<td>只有一个公共 α_Q 字段，未实现逐资源独立 α_Q 的正式证明链〔C04、C05、C17〕</td>
+<td>模型／实现边界</td>
+<td>5.5.1、5.6、5.7.2</td>
+</tr>
+<tr>
+<td>D06 PCS 有功 <code>α_P=1</code>、周期内零阶保持</td>
+<td>使本周期功率与能量积分一致</td>
+<td>单独的 PCS 模型约定</td>
+<td>采用即保持的模型与被控对象一致；不能用正有限 τ 的公式精确推出 α=1</td>
+<td><code>unified-device-v1</code> 强制 PCS α_P 为 1，现场契约也检查；修改数值需同步改造能量和认证〔C04、C05、C17〕</td>
+<td>模型／实现边界</td>
+<td>5.5.3、5.6、8.2</td>
+</tr>
+<tr>
+<td>D07 响应映射 <code>T(x,u;θ)</code></td>
+<td>以一般符号表达周期末状态</td>
+<td>设备响应模型及其参数</td>
+<td>替换映射须重建状态外包、过程和可达性认证</td>
+<td>当前执行仍是固定的仿射响应加整定；没有“传入任意 T 即完成认证”的插件接口〔C05〕</td>
+<td>通用记号；实现仍有限</td>
+<td>5.6，式（24）</td>
+</tr>
+<tr>
+<td>D08 周期末整定阈值 <code>ε</code>；默认 0.0001 MW／Mvar</td>
+<td>名义状态足够接近命令时置为命令，支持有限步到达</td>
+<td>当前有限分辨率整定模型假设</td>
+<td>必须有适用设备行为支持；测量分辨率有限不等于真实输出自动整定</td>
+<td>契约要求 <code>0&lt;ε≤0.001</code>；同一个数值用于 P/Q，对应不同单位〔C04、C05、C07〕</td>
+<td>模型配置＋算例值＋实现边界</td>
+<td>5.5.3、5.6 引用；8.2 明列</td>
+</tr>
+<tr>
+<td>D09 资源有功周期额度 <code>R_r^P</code></td>
+<td>限制一次完成状态变化</td>
+<td>设备允许爬坡、控制规程及 δ；默认组额度 0.65 MW/周期</td>
+<td>初态、未整定响应及整定后变化均不超额度</td>
+<td>风机组按台数分配，PV 组按额定有功比例分配，PCS 单独 0.65；现场可逐资源输入〔C03、C05、C17〕</td>
+<td>运行参数；0.65 和分配方式为当前构造</td>
+<td>5.1、5.6</td>
+</tr>
+<tr>
+<td>D10 聚合无功额度 <code>r_Q·δ</code></td>
+<td>限制全体资源绝对 Q 变化之和</td>
+<td>控制策略／设备协调要求；默认率 0.90 Mvar/min</td>
+<td>绝对动作求和，不得正负抵消</td>
+<td>默认一分钟额度 0.90 Mvar；现场直接输入每周期额度〔C03、C06、C17〕</td>
+<td>运行配置＋默认值</td>
+<td>5.1、5.5、5.6；0.90 未明列</td>
+</tr>
+<tr>
+<td>D11 周期端点爬坡口径</td>
+<td>界定上述额度保证的范围</td>
+<td>当前离散模型定义</td>
+<td>不能据端点额度推断连续瞬时 <code>dp/dt、dq/dt</code> 都已受证</td>
+<td>执行检查端点变化与过程能力，不提供电磁暂态认证〔C05〕</td>
+<td>模型／证明条件</td>
+<td>5.6</td>
+</tr>
+<tr>
+<td>D12 无功预留 <code>ρ_Q=0.10</code>、<code>κ_Q=1−ρ_Q</code></td>
+<td>压缩候选规划的 Q 使用范围</td>
+<td>策略预留比例，应结合调节需求确定</td>
+<td><code>0≤ρ_Q&lt;1</code>；固定 P 的能力截面需含零 Q</td>
+<td>参数可配；只压缩规划范围，不修改物理能力〔C09、C10〕</td>
+<td>配置；0.10 为算例值</td>
+<td>5.1、5.5，式（15）</td>
+</tr>
+<tr>
+<td>D13 规划过渡 <code>T_Q=5 min</code>，<code>h=min(60Δt,T_Q)</code></td>
+<td>限定名义过渡长度</td>
+<td>当前候选构造策略</td>
+<td><code>K=h/δ</code> 为正整数；过渡不超计划区间</td>
+<td>固定 P 工具与联合规划均有相关参数；不等于 PCC 目标响应期限〔C09、C10〕</td>
+<td>构造配置；5 为默认值</td>
+<td>5.5、5.5.3</td>
+</tr>
+<tr>
+<td>D14 <code>d=exp(−h/τ_Q)</code>、<code>α_h=1−d</code></td>
+<td>反算固定 P 模型的等效恒定 Q 命令</td>
+<td>一阶模型推导</td>
+<td>固定 P、能力、权限、共同 τ_Q 与 δ；保持同一反算命令</td>
+<td>代码用 <code>expm1</code> 稳定计算；这组公式不是所有响应模型的通用关系〔C09〕</td>
+<td>派生量＋证明条件</td>
+<td>5.5～5.5.1，式（16）～（22）</td>
+</tr>
+<tr>
+<td>D15 <code>N_Q</code>、每资源 <code>r_Qδ/N_Q</code></td>
+<td>构造首子步无功预算</td>
+<td>获准资源数及等分策略</td>
+<td><code>N_Q&gt;0</code> 才生成行；零爬坡要求 Q 不变</td>
+<td>资源数派生；等分属于保守充分条件，不搜索全部非等分轨迹〔C09〕</td>
+<td>派生量＋构造条件</td>
+<td>5.5～5.5.1</td>
+</tr>
+<tr>
+<td>D16 固定 P 首段 Q 初态全部已知或全部未知</td>
+<td>避免遗漏真实初态到新范围的移动</td>
+<td>固定 P 参考工具的输入协议</td>
+<td>部分缺失拒绝；全部未知时不能取得首过渡可达证据</td>
+<td>已有校验；正式联合规划要求完整 P/Q/E 初态〔C09、C10〕</td>
+<td>实现／证明条件</td>
+<td>5.5、5.5.2</td>
+</tr>
+<tr>
+<td>D17 子步整数误差 <code>10⁻⁹</code></td>
+<td>处理浮点网格对齐</td>
+<td>数值实现选择</td>
+<td>只是无量纲舍入容差，不能增加实际动作时间</td>
+<td>固定 P 工具中的整数检查使用此量级〔C09〕</td>
+<td>数值实现值</td>
+<td>5.5.1</td>
+</tr>
+<tr>
+<td>D18 每 15 min 区间优选 5 个 1 min 独立子步，随后保持</td>
+<td>构造可执行的联合 P/Q 轨迹</td>
+<td>当前动态内近似</td>
+<td>子步数为正整数、不超区间；端点匹配计划，逐分钟能力合法</td>
+<td>联合规划支持受限轨迹构造；不是所有物理轨迹的搜索〔C10〕</td>
+<td>配置＋构造限制</td>
+<td>5.5.3</td>
+</tr>
+<tr>
+<td>D19 爬坡利用率、整定构造利用率均为 0.98</td>
+<td>为浮点候选留内侧余量</td>
+<td>程序构造选择</td>
+<td>分别在 <code>(0,1]</code>；不得借此放宽真实额度或 ε</td>
+<td>契约为两个独立字段；数值相同不代表同一个参数〔C10〕</td>
+<td>配置／数值构造值</td>
+<td>5.5.3</td>
+</tr>
+<tr>
+<td>D20 下一分钟零上限、<code>残余≤ε×利用率</code></td>
+<td>构造风光归零端点</td>
+<td>未来可用量边界及整定假设</td>
+<td>命令、端点、残余、爬坡同时满足；有 Q/P 限制者同步处理 Q</td>
+<td>有专门零边界约束；独立 Q 能力的 PV 不必归零 Q〔C10〕</td>
+<td>时变物理边界＋模型构造</td>
+<td>5.5.3</td>
+</tr>
+<tr>
+<td>D21 相同 P/Q 系数用凸段，不同系数用混合角点／矩形盒</td>
+<td>覆盖响应过程中设备能力</td>
+<td>所选响应及保守外包方法</td>
+<td>不能只看最终 P/Q；网络还需覆盖整个过程盒</td>
+<td>已实现；矩形外包可能保守排除实际可行轨迹〔C05、C10〕</td>
+<td>证明／构造条件</td>
+<td>5.5.3、5.6</td>
+</tr>
+<tr>
+<td>D22 联合经济规划 PCS 整个经济区间保持计划 P</td>
+<td>对齐粗时间尺度能量积分</td>
+<td>当前联合规划的内构造</td>
+<td>释放区间内功率变化时须同步修改能量与经济模式</td>
+<td>约束已实现；不代表执行反馈在所有分钟都必须使用同一 PCS P〔C10、C05〕</td>
+<td>实现／构造限制</td>
+<td>5.5.3</td>
+</tr>
+</tbody>
+</table>
+<p>特别需要分开的是：<strong>5 min 是候选规划过渡长度；10 个周期是 PCC 目标响应期限的默认配置；15 min 是默认更新周期。</strong> 三者承担不同任务，不应统一改称“设备响应时间”。</p>
+<h2 id="4-预测扰动域与交流网络认证">4. 预测扰动域与交流网络认证</h2>
+<table>
+<thead>
+<tr>
+<th>编号／参数或条件</th>
+<th>作用</th>
+<th>来源／实际应由什么确定</th>
+<th>必要条件</th>
+<th>代码支持情况</th>
+<th>性质判断</th>
+<th>交底书位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>U01 逐母线 P/Q 负荷区间、逐资源风光下界 <code>D_n</code></td>
+<td>声明证书需要覆盖的外部变化</td>
+<td>预测误差分析，或输入方直接提供有依据的边界</td>
+<td>母线／资源完整对应；实际观察落在域内；边界及有效期明确</td>
+<td>支持自动构造研究域和显式输入边界；不能自动覆盖未声明误差〔C07、C17〕</td>
+<td>输入配置＋保证条件</td>
+<td>5.1、5.8、5.10</td>
+</tr>
+<tr>
+<td>U02 负荷相对误差 <code>±2.5%</code></td>
+<td>从预测值生成 P/Q 允许盒</td>
+<td>当前合成轨迹的研究边界；现场应按预测／测量误差重新确定</td>
+<td>契约比例 <code>[0,1)</code>；P 下界不小于零，Q 按幅值扩展</td>
+<td>默认 0.025，可配置；显式现场区间不要求机械沿用 2.5%〔C07、C17〕</td>
+<td>配置＋算例值</td>
+<td>5.8</td>
+</tr>
+<tr>
+<td>U03 风电 5%、PV 15% 装机扣减</td>
+<td>得到可信可用量下界</td>
+<td>当前模拟预测与实绩差异分析</td>
+<td><code>max(0,预测−比例×额定有功)</code>；比例 <code>[0,1)</code>；不是预测值的 5%／15%</td>
+<td>默认 0.05／0.15；显式接口直接提交下界且不得大于预测〔C07、C17〕</td>
+<td>配置＋算例值</td>
+<td>5.8</td>
+</tr>
+<tr>
+<td>U04 15 min 预测插值、末段保持</td>
+<td>转为逐分钟预测／边界</td>
+<td>预测时间网格及插值约定</td>
+<td>插值误差计入边界；预测期后用途需明确</td>
+<td>支持 <code>linear</code>／<code>hold</code>；默认合成研究为线性，捕获场景按其声明〔C07、C17〕</td>
+<td>配置／模型条件</td>
+<td>5.8</td>
+</tr>
+<tr>
+<td>U05 日内预测噪声 ±1.2%、模拟实绩噪声 ±0.4%</td>
+<td>生成两条不同的模拟曲线</td>
+<td>合成数据生成器的扰动幅度</td>
+<td>只适用于该曲线生成方式；不等于现场误差统计</td>
+<td>生成器按模式使用 0.012／0.004；日前另用 0.025〔C19〕</td>
+<td>算例生成参数</td>
+<td>5.8；日前值为代码补充</td>
+</tr>
+<tr>
+<td>U06 归一化负荷下界 0.70、二阶导界 <code>0.071 h⁻²</code></td>
+<td>论证负荷边界有余量</td>
+<td>无噪声基础负荷公式的保守解析估计</td>
+<td>随机扰动与舍入另计；不能把基础曲线下界直接当全部带噪数据下界</td>
+<td>生成公式可核对；这两个数不是现场输入校验器自动识别的普遍界〔C19〕</td>
+<td>解析界／派生量</td>
+<td>5.8</td>
+</tr>
+<tr>
+<td>U07 插值余项 <code>0.071×0.25²/8</code></td>
+<td>估计 15 min 线性插值误差</td>
+<td>二阶导上界与线性插值误差公式</td>
+<td>0.25 为小时；换网格或曲线应重算</td>
+<td>交底书中的推导量，不是独立设备参数〔C19〕</td>
+<td>派生量</td>
+<td>5.8</td>
+</tr>
+<tr>
+<td>U08 最后 14 min、导数界 <code>0.021 h⁻¹</code></td>
+<td>估计最后采样点后的保持误差</td>
+<td>该日曲线及 15 min／1 min 采样安排</td>
+<td>仅适用于对应末时段，不是全日统一导数界</td>
+<td>末段保持由采样实现；0.021 是文中的解析界，不是通用运行阈值〔C19、C07〕</td>
+<td>算例时间关系＋解析界</td>
+<td>5.8</td>
+</tr>
+<tr>
+<td>U09 风电／PV Lipschitz 界 <code>0.091／0.634 h⁻¹</code></td>
+<td>估计两采样时刻间可用量变化</td>
+<td>特定合成曲线公式的保守导数估计</td>
+<td>更换曲线族、事件模型或时间单位后重新分析</td>
+<td>可与生成器公式对应；不属于对任意现场风光预测的保证〔C19〕</td>
+<td>解析界／派生量</td>
+<td>5.8</td>
+</tr>
+<tr>
+<td>U10 七位小数舍入</td>
+<td>固定模拟数据精度</td>
+<td>生成器 <code>round(...,7)</code></td>
+<td>边界推导应包含舍入误差</td>
+<td>生成端已实施；不表示仪表精度为七位小数〔C19〕</td>
+<td>数值生成配置</td>
+<td>5.8</td>
+</tr>
+<tr>
+<td>U11 周期内扰动保持、末预测包络持续</td>
+<td>使离散外因域及安全终态可认证</td>
+<td>当前研究模型声明</td>
+<td>假设必须在声明时段成立；不能自动推广到任意未来</td>
+<td><code>within_step_disturbance=zero_order_hold</code>、<code>terminal_persistence=last_forecast_envelope</code> 为当前固定选项；现场还限定有效期〔C07、C17〕</td>
+<td>模型／实现边界</td>
+<td>5.1、5.8～5.10</td>
+</tr>
+<tr>
+<td>U12 AC 电压中心 <code>V_c</code>、半径 <code>ρ</code>、<code>m_i=|V_ci|−ρ&gt;0</code></td>
+<td>围住不确定需求下的电压解</td>
+<td>点潮流给中心，认证器构造半径</td>
+<td>圆盘避开零电压；中心只是提议值，残差必须计入</td>
+<td>自动构造和验证，不应把某个成功半径固定为全部现场值〔C08〕</td>
+<td>派生量＋证明条件</td>
+<td>5.8，式（30）、（31）</td>
+</tr>
+<tr>
+<td>U13 <code>δS_i、δI_i、δF</code>、压缩常数 <code>L&lt;1</code></td>
+<td>覆盖需求、电流、映射变化并证明局部唯一解</td>
+<td>网络、需求盒、并联电纳及中心半径推导</td>
+<td>自映射不等式成立且严格压缩；另检查高电压解支唯一性条件</td>
+<td>有理区间外包与独立认证；不能只以点潮流收敛代替〔C08、C20〕</td>
+<td>派生量／证明条件</td>
+<td>5.8，式（30）～（32）</td>
+</tr>
+<tr>
+<td>U14 缓存外扩网格 0.025 MW／Mvar</td>
+<td>复用 AC 需求盒证书</td>
+<td>计算效率与保守性折中</td>
+<td>必须向外扩；粗盒失败重算紧盒；上下文一致</td>
+<td>当前以每单位 40 格取整实现；不是允许设备越限的容差〔C07〕</td>
+<td>数值实现值</td>
+<td>5.8</td>
+</tr>
+<tr>
+<td>U15 准静态全过程盒、周期末跟踪</td>
+<td>明确不同结论的时间范围</td>
+<td>当前认证方法</td>
+<td>过程盒保证准静态网络边界；不能推出频率、谐波、暂态或连续时刻跟踪结论</td>
+<td>当前代码没有相应动态电磁模型〔C05、C08〕</td>
+<td>模型／证明边界</td>
+<td>5.6、5.8、5.11</td>
+</tr>
+</tbody>
+</table>
+<p><code>ρ_Q</code> 是无功预留比例，<code>ρ</code> 是 AC 电压圆盘半径；它们不是同一参数。第 5.8 节压缩常数 <code>L</code> 与储能任务下界 <code>L</code> 也应按上下文区分。</p>
+<h2 id="5-原始能量任务目标接纳反馈与备用">5. 原始能量任务、目标接纳、反馈与备用</h2>
+<table>
+<thead>
+<tr>
+<th>编号／参数或条件</th>
+<th>作用</th>
+<th>来源／实际应由什么确定</th>
+<th>必要条件</th>
+<th>代码支持情况</th>
+<th>性质判断</th>
+<th>交底书位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T01 原始任务 <code>[L,U]</code>、绝对期限 <code>T</code></td>
+<td>约束指定完成时刻的储能电量</td>
+<td>初始任务／调度要求；默认中心及原始容差与物理界相交</td>
+<td><code>[L,U]⊆[E_min,E_max]</code>；滚动、失败和切换不改原任务</td>
+<td>任务独立保存；现场可提交任务区间、截止时间及来源〔C03、C13、C17〕</td>
+<td>任务配置＋保证条件</td>
+<td>5.1、5.7、5.9.1、5.10</td>
+</tr>
+<tr>
+<td>T02 原始末能量中心与容差，默认容差 0.05 MWh</td>
+<td>生成原始算例任务区间</td>
+<td>案例配置；未指定中心用原始初能量</td>
+<td>不得改成每窗口当前能量±容差</td>
+<td>默认值在 <code>ModelAssumptions</code>；现场任务可直接给区间〔C02、C03、C17〕</td>
+<td>配置；0.05 为默认值</td>
+<td>5.7；8.1、8.2 给具体区间</td>
+</tr>
+<tr>
+<td>T03 剩余时间 <code>H=(T−m)δ/60</code> 与窗口末能量必要界</td>
+<td>避免粗规划明显耗尽完成任务的能力</td>
+<td>原期限、窗口末时刻、功率与效率推导</td>
+<td>对窗口末约束使用非负剩余时间；<code>H=0</code> 时采用原任务区间；只是必要条件</td>
+<td>已推导到规划输入；正式采用仍检查动态、网络和完整尾部〔C03、C13〕</td>
+<td>派生量／必要条件</td>
+<td>5.7，式（28）</td>
+</tr>
+<tr>
+<td>T04 软参考 <code>E_ref</code> 与任务中心 <code>E_g=(L+U)/2</code></td>
+<td>分别引导经济窗口和任务恢复</td>
+<td>前者取参考计划；后者由原任务计算</td>
+<td>不能混为新的硬目标；<code>E_ref</code> 不能改 <code>[L,U]</code></td>
+<td>两类用途分别处理〔C03、C13〕</td>
+<td>配置／派生量</td>
+<td>5.1、5.4.1、5.7、5.9.1</td>
+</tr>
+<tr>
+<td>T05 目标 <code>P_ref、Q_ref</code> 及来源</td>
+<td>表达 PCC 跟踪请求</td>
+<td>外部调度、内部经济计划或原目标续接</td>
+<td>外部／保留目标不改值；内部替代目标只能在原请求未获证后尝试</td>
+<td>接纳流程区分来源；请求不是下发或获证的同义词〔C14、C17〕</td>
+<td>任务输入</td>
+<td>5.7、5.11</td>
+</tr>
+<tr>
+<td>T06 <code>ε_P、ε_Q&gt;0</code>，算例各 0.05 MW／Mvar</td>
+<td>定义 PCC 目标允许偏差</td>
+<td>调度要求或考核标准</td>
+<td>初始化与具体请求相容；外部请求不得更宽；已接纳目标不自行放宽</td>
+<td>域与现场策略均可输入；目标接纳按相应误差带认证〔C07、C17〕</td>
+<td>任务配置；0.05 为算例值</td>
+<td>5.4、5.11、8.2</td>
+</tr>
+<tr>
+<td>T07 <code>N_resp=10</code>、<code>D=n+N_resp</code></td>
+<td>给新目标设绝对响应期限</td>
+<td>调度任务与控制策略</td>
+<td>正周期数；同目标续接、失败、备用不重置 D</td>
+<td>默认最大响应时间 10 min，经一分钟网格换算；域中 <code>response_steps≥1</code>〔C06、C07、C14〕</td>
+<td>配置；10 为默认值</td>
+<td>5.11</td>
+</tr>
+<tr>
+<td>T08 有限保证终点 <code>G</code>；默认下一 15 min 更新完成时刻</td>
+<td>界定目标带内承诺的截止范围</td>
+<td>获证策略长度与更新安排</td>
+<td>只在有证据的 <code>[D,G]</code> 内作承诺；延长需重认证</td>
+<td>证书记录 D/G；短窗口可能没有有效到期保证段〔C14〕</td>
+<td>派生量＋保证条件</td>
+<td>5.7.1、5.11</td>
+</tr>
+<tr>
+<td>T09 P/Q 参与分数、权重 <code>w_i≥0</code>、<code>Σw_i=1</code></td>
+<td>分配共同测量残差</td>
+<td>设备权限及合法调节余量构造</td>
+<td>参与者存在、系数正；非参与者权重 0；不擅自裁剪反馈命令</td>
+<td>权重归一化；逐资源反馈与认证使用同一公式〔C15〕</td>
+<td>配置／构造量＋代数条件</td>
+<td>5.7.1，式（29）</td>
+</tr>
+<tr>
+<td>T10 负荷 <code>l</code>、期望净需求 <code>ν</code>、参考 <code>v_i、b_i</code></td>
+<td>计算基准响应和残差补偿</td>
+<td>本周期观察、目标及名义分配</td>
+<td>单位及资源顺序一致；整定、浮点及非参与者漂移计入</td>
+<td>计算派生；<code>l</code> 在此不是支路电流缩放变量〔C15〕</td>
+<td>输入／派生量</td>
+<td>5.1、5.7.1</td>
+</tr>
+<tr>
+<td>T11 每目标尝试 6 种构造、收集 3 个成功候选</td>
+<td>限制目标接纳计算量</td>
+<td>研究策略预算</td>
+<td>搜索失败仅表示当前预算未获证</td>
+<td>配置允许尝试数 1～32、成功候选数 1～8；不保证一定收集到指定数量〔C07、C14〕</td>
+<td>配置＋有限搜索限制</td>
+<td>5.7</td>
+</tr>
+<tr>
+<td>T12 干预量平方、本机 MVA 归一化、周期平均、再比较成本</td>
+<td>对同目标的获证候选排序</td>
+<td>当前候选选择准则</td>
+<td>同目标、同评价前缀和费用口径</td>
+<td>已实现分层比较；不是全部设备轨迹上的全局经济优化〔C14、C15〕</td>
+<td>构造／排序规则</td>
+<td>5.7</td>
+</tr>
+<tr>
+<td>T13 联合投影最多 160 轮</td>
+<td>产生局部 P/Q 修正候选</td>
+<td>当前 Dykstra 类循环投影预算</td>
+<td>投影输出仍须全部认证；迭代截止不是不可行证明</td>
+<td>当前固定循环上限；没有通用全物理可达性证明器〔C15〕</td>
+<td>数值实现／搜索限制</td>
+<td>5.7.2</td>
+</tr>
+<tr>
+<td>T14 不变终态全体 <code>P=0</code>，风光／PCS <code>Q=0</code>，SVG 固定合法 Q</td>
+<td>为未来安全续接提供终态</td>
+<td>当前安全终态构造</td>
+<td>对全部声明外因及末包络持续情况取得 AC 证书</td>
+<td>SVG 候选由平均净无功投影；不能保证任何网络均能安全全弃风光〔C07、C13〕</td>
+<td>模型／构造条件</td>
+<td>5.9，式（33）</td>
+</tr>
+<tr>
+<td>T15 返回比例 <code>1、1/2、1/4、1/8、1/16</code></td>
+<td>尝试不同幅度的备用动作</td>
+<td>固定有限候选集合</td>
+<td>每步能力、能量、网络及后续任务均获证</td>
+<td>固定候选比例；不是对所有控制量连续寻优〔C13〕</td>
+<td>实现／构造取值</td>
+<td>5.9</td>
+</tr>
+<tr>
+<td>T16 安全返回上限 90 周期</td>
+<td>限制备用路径搜索长度</td>
+<td>当前研究策略预算</td>
+<td>正有限时域，须够构造获证尾部；不等于设备必能 90 min 恢复</td>
+<td>可配 10～240 周期；现场当前按 90 min 最低覆盖要求装配〔C07、C17〕</td>
+<td>配置＋实现边界</td>
+<td>5.9</td>
+</tr>
+<tr>
+<td>T17 PCS 独立恢复优先、最多两轮完整路径搜索</td>
+<td>避免其他设备缩放拖慢 PCS 停止</td>
+<td>当前备用策略设计</td>
+<td>独立停止仍需网络和原任务认可；不能无条件停充放电</td>
+<td>先独立 PCS 路径，必要时从同一初始盒重试原缩放路径〔C13〕</td>
+<td>实现／构造限制</td>
+<td>5.9</td>
+</tr>
+<tr>
+<td>T18 停止能量、非零功率且零爬坡无有限停止候选</td>
+<td>预筛选 PCS 能否安全减速到零</td>
+<td>物理功率、爬坡、效率、能量盒</td>
+<td>计入完整停止过程；只是忽略网络后的必要条件</td>
+<td>有必要条件筛查和完整尾部认证〔C13〕</td>
+<td>派生量／构造条件</td>
+<td>5.9</td>
+</tr>
+<tr>
+<td>T19 <code>P_c,pol、P_d,pol≤R_P/2</code></td>
+<td>保证恢复反馈相邻极端功率差不超周期额度</td>
+<td>当前储能能量恢复策略的充分条件</td>
+<td>与本机功率能力相交；不足时缩小并重新认证</td>
+<td>按半爬坡额度及能力构造；不是 PCS 物理功率只能用一半〔C13〕</td>
+<td>构造限制</td>
+<td>5.1、5.9.1，式（34）～（37）</td>
+</tr>
+<tr>
+<td>T20 状态准确同步、响应一致、及时执行、证书期间条件固定</td>
+<td>保证逐周期安全与任务续接推理有效</td>
+<td>条件命题及现场数据／执行要求</td>
+<td>初始联合证书成立；越界不能继续沿用旧保证</td>
+<td>软件检查观察、状态盒和上下文；尚不能据此宣称真实通信及所有误差已被认证〔C07、C17〕</td>
+<td>证明前提／现场条件</td>
+<td>5.10、8.4</td>
+</tr>
+<tr>
+<td>T21 每周期唯一提交、储能积分一次</td>
+<td>保持模型状态、能量、时钟一致</td>
+<td>执行事务约定</td>
+<td>试算、拒绝、重复候选不能推进真实状态</td>
+<td>正式模型和 PrepareControlCycle 区分准备预测与执行状态；现场准备接口不是实设备执行完成〔C05、C17〕</td>
+<td>实现不变量</td>
+<td>5.2、5.6、5.10、8.4</td>
+</tr>
+</tbody>
+</table>
+<p><strong>跟踪容差 <code>ε_P／ε_Q</code>、能量任务容差、周期末整定阈值 <code>ε</code> 是三类不同量。</strong> 前者由任务决定，能量容差限定原任务区间，整定阈值属于设备响应模型；不能因为三者都称“容差”就互相替换。</p>
+<h2 id="6-经济目标求解精度与数值参数">6. 经济目标、求解精度与数值参数</h2>
+<table>
+<thead>
+<tr>
+<th>编号／参数或条件</th>
+<th>作用</th>
+<th>来源／实际应由什么确定</th>
+<th>必要条件</th>
+<th>代码支持情况</th>
+<th>性质判断</th>
+<th>交底书位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>E01 电价 <code>π_t</code></td>
+<td>核算 PCC 购电成本</td>
+<td>电价合同／计费时段；当前有模拟分时电价</td>
+<td>与预测时轴及功率积分一致</td>
+<td>时序可输入，现场接口要求非负；默认模拟为 280／720／1180 元/MWh〔C19、C17〕</td>
+<td>经济输入；具体值为算例配置</td>
+<td>5.1、5.4.1</td>
+</tr>
+<tr>
+<td>E02 弃电成本 <code>c_curt</code>、吞吐成本 <code>c_deg</code></td>
+<td>对弃风光和充放电吞吐计价</td>
+<td>补偿、机会成本或寿命成本约定</td>
+<td>费用口径与比较基准一致；吞吐是充电量加放电量</td>
+<td>默认 520／70 元/MWh；现场费率可输入且非负〔C02、C12、C17〕</td>
+<td>经济配置；默认值未获现场核实</td>
+<td>5.4.1；默认值未明列</td>
+</tr>
+<tr>
+<td>E03 网损权重 <code>λ_L=650 元/MWh</code></td>
+<td>对网损电量赋额外价值</td>
+<td>项目评价口径／偏好；当前模型默认</td>
+<td>不能把已包含于购电量的网损再次解释为新电费</td>
+<td>可配置；综合计划成本包含该加权项〔C02、C11、C12〕</td>
+<td>配置；650 为当前取值</td>
+<td>5.4.1</td>
+</tr>
+<tr>
+<td>E04 电压权重 <code>λ_V=50 元/(pu²·h)</code></td>
+<td>权衡节点平方电压偏差积分</td>
+<td>优化偏好或评价标准</td>
+<td><code>J_V=Σ|v−1|Δt</code>，不是 <code>(V−1)²</code>；不能放松硬电压界</td>
+<td>默认可配；与实际电费区分〔C02、C11〕</td>
+<td>配置；50 为当前取值</td>
+<td>5.4.1</td>
+</tr>
+<tr>
+<td>E05 PCC 平滑权重 <code>λ_R=12 元/MW</code></td>
+<td>抑制相邻时段受电变化</td>
+<td>调度偏好／波动评价</td>
+<td>对变化绝对值加权；该项不再乘 Δt</td>
+<td>默认可配；不等于设备爬坡上限〔C02、C11〕</td>
+<td>配置；12 为当前取值</td>
+<td>5.4.1</td>
+</tr>
+<tr>
+<td>E06 跟踪权重 <code>λ_P、λ_Q</code></td>
+<td>软惩罚偏离参考功率</td>
+<td>任务与优化权衡；求解默认 20000／8000</td>
+<td>有参考才生效；不能代替硬误差带</td>
+<td>求解参数可传入；代码参数名含功率单位，公式实际还乘 Δt，文档应按公式统一量纲〔C11〕</td>
+<td>配置／默认值</td>
+<td>5.4.1；默认数值未明列</td>
+</tr>
+<tr>
+<td>E07 额外损耗权重 <code>λ_tight≥0</code>、电压安全收紧量</td>
+<td>改善候选 AC 一致性</td>
+<td>求解修正策略</td>
+<td>记录采用值与目标变化，不放松物理界</td>
+<td>求解器有参数，默认额外权重和电压收紧为 0；相关恢复阶段有自身约定〔C11、C22〕</td>
+<td>求解策略参数</td>
+<td>5.4.1、5.5.2</td>
+</tr>
+<tr>
+<td>E08 参考能量惩罚 <code>c_E</code>，默认 50 元/MWh</td>
+<td>引导窗口末能量接近 <code>E_ref</code></td>
+<td>策略偏好</td>
+<td>非负；无参考时无该项；不改变原任务</td>
+<td><code>energy_reference_cost_cny_per_mwh≥0</code>；不计入约定综合成本 C〔C07、C03〕</td>
+<td>配置／软偏好</td>
+<td>5.1、5.4.1、5.7；50 未明列</td>
+</tr>
+<tr>
+<td>E09 <code>J_E、J_L、J_V、F、C</code></td>
+<td>区分分项指标、优化目标、比较成本</td>
+<td>选定数学与计量口径</td>
+<td><code>C=J_E+λ_LJ_L</code>，不能把全部 F 当实际支付金额</td>
+<td>分项核算；前缀经济比较也不等于实绩费用〔C11、C12、C14〕</td>
+<td>计算结果／评价定义</td>
+<td>5.4.1、5.7</td>
+</tr>
+<tr>
+<td>E10 无储能优化基准、改善率及至少 10%</td>
+<td>评价约定计划经济提升</td>
+<td>交底书及当前核算函数的比较口径；真实项目验收资料与基准仍需确认</td>
+<td>同输入、同费用口径，基准成本有限且大于 0</td>
+<td>核算函数明确比较 <code>improvement&gt;=10.0</code>；不是优化器保证必达的硬约束〔C12〕</td>
+<td>评价标准＋结果量</td>
+<td>5.4.1、5.11</td>
+</tr>
+<tr>
+<td>E11 设备能力面 <code>A、B、C_facet</code>、内接多边形边数</td>
+<td>将圆形能力写入候选规划</td>
+<td>容量和近似精度选择</td>
+<td>内包络不能越出物理圆；SVG 一维 Q 界单独处理</td>
+<td>默认多边形 16 边，联合契约至少 4 边；面系数派生〔C02、C09、C10〕</td>
+<td>数值配置＋派生量</td>
+<td>5.3、5.5、5.5.3；16 未明列</td>
+</tr>
+<tr>
+<td>E12 求解相对间隙默认 <code>10⁻⁴</code>、时间预算</td>
+<td>控制计算开销、记录优化质量</td>
+<td>求解器策略及可用计算时间</td>
+<td>有可行解、AC 通过、动态见证成立与最优性要分别判断</td>
+<td>原生求解设置相对间隙；山城研究配置 <code>solver_seconds=120</code>，其他调用有其他预算〔C01、C11、C22〕</td>
+<td>数值配置／实现预算</td>
+<td>5.5.2 提及质量，数值未列</td>
+</tr>
+<tr>
+<td>E13 有理区间、向外舍入</td>
+<td>防止数值误差漏掉真实状态</td>
+<td>认证的数值实现</td>
+<td>覆盖中心残差、反馈及整定误差；不能用普通四舍五入替代</td>
+<td><code>Fraction</code>、定向浮点舍入等；平方根包络内部尺度 <code>10²⁴</code> 属数值算法选择〔C20〕</td>
+<td>数值证明机制／实现值</td>
+<td>5.6、5.8、5.10</td>
+</tr>
+<tr>
+<td>E14 名义见证功率／能量核对容差 <code>10⁻⁶</code></td>
+<td>比对求解结果与独立重算见证</td>
+<td>数值实现约定</td>
+<td>不得用该容差扩展设备物理界或任务带</td>
+<td>见证核对中分别用功率、能量单位；还有独立的精确区间认证〔C21〕</td>
+<td>数值实现值</td>
+<td>5.5.3 仅说明核对，未列具体值</td>
+</tr>
+</tbody>
+</table>
+<p>第 5.4.1 节仍把 <code>650、50、12</code> 放在通用方案段落中。它们有配置来源，却没有“所有应用必须取此值”的证据，适合保留权重含义、量纲和来源原则，将具体值归入实施例。与之不同，<code>L&lt;1</code>、能量守恒、能力边界等是相应推理的条件，不能为了扩大适用范围而删掉。</p>
+<h2 id="7-第八章实施例数值逐项归类">7. 第八章实施例数值逐项归类</h2>
+<p>本节将具体取值集中列出。设备容量作为变量类型属于物理参数，但某个实施例中的具体容量仍是场景取值；“物理参数”并不意味着“所有应用只能取这个数”。</p>
+<h3 id="71-两节点固定边界实施例">7.1 两节点固定边界实施例</h3>
+<table>
+<thead>
+<tr>
+<th>编号／参数或数值</th>
+<th>作用</th>
+<th>来源</th>
+<th>必要条件</th>
+<th>代码支持情况</th>
+<th>性质判断</th>
+<th>交底书位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A01 两节点、一条支路；10 MVA；根电压 1 pu</td>
+<td>构造可分析的小网络</td>
+<td>固定边界集成测试 <code>study()</code>〔C18〕</td>
+<td>基准、拓扑、根电压口径相容</td>
+<td>测试明确设置；根 1 pu 同时是当前主链限制</td>
+<td>算例结构／取值</td>
+<td>8.1</td>
+</tr>
+<tr>
+<td>A02 <code>r=0.01、x=0.02 pu</code>，两端容量 10 MVA</td>
+<td>给出算例网络能力</td>
+<td>同上〔C18〕</td>
+<td>与基准一致并通过 AC 检查</td>
+<td>测试参数可定位</td>
+<td>算例物理参数</td>
+<td>8.1</td>
+</tr>
+<tr>
+<td>A03 末端负荷 3 MW、0.3 Mvar，分别 ±0.001；根负荷 0</td>
+<td>定义固定负荷域</td>
+<td>同上〔C18〕</td>
+<td>P、Q 的 ±0.001 分别按 MW、Mvar 计；不能读成比例</td>
+<td>显式边界算例，不使用默认相对误差</td>
+<td>算例输入／边界</td>
+<td>8.1</td>
+</tr>
+<tr>
+<td>A04 风电额定 2 MW、2.2 MVA，可用下界 1.5 MW，Q/P 比例 0.3</td>
+<td>确定新能源可调能力</td>
+<td>同上〔C18〕</td>
+<td>有功、绝对能力、容量圆、比例限制共同成立</td>
+<td>与实际构造对应；通用模型按 <code>|Q|≤0.3P</code> 检查</td>
+<td>算例设备参数</td>
+<td>8.1</td>
+</tr>
+<tr>
+<td>A05 PCS 0.5 MW，能量 0.2～2 MWh，初始 1 MWh，双向效率 0.95</td>
+<td>定义储能能力与初态</td>
+<td>同上〔C18〕</td>
+<td>初始能量在界内；功率和效率口径正确</td>
+<td>测试显式设置</td>
+<td>算例设备参数／状态</td>
+<td>8.1</td>
+</tr>
+<tr>
+<td>A06 SVG −1～1 Mvar</td>
+<td>提供可调无功</td>
+<td>同上〔C18〕</td>
+<td>不超本机容量；P 为零</td>
+<td>测试显式设置；正式能力也允许不对称界</td>
+<td>算例能力边界</td>
+<td>8.1</td>
+</tr>
+<tr>
+<td>A07 电压 0.95～1.05；PCC 网络界 0.1～5 MW；PF 0.9</td>
+<td>定义算例安全界</td>
+<td>同上与模型默认裕度〔C18、C02〕</td>
+<td>与防逆流裕度取交集</td>
+<td>此算例未覆盖的统一默认裕度为 0.15 MW，故有效下界为 0.15，不应只写成最终下界 0.1</td>
+<td>算例值＋装配关系</td>
+<td>8.1</td>
+</tr>
+<tr>
+<td>A08 风电初始 P=0.8 MW，其余 P=0，全部 Q=0</td>
+<td>给出真实模型起点</td>
+<td>固定边界测试〔C18〕</td>
+<td>完整初态未经候选裁剪，符合能力和网络</td>
+<td>可显式传入初态</td>
+<td>算例初始状态</td>
+<td>8.1</td>
+</tr>
+<tr>
+<td>A09 外部目标 2.0040595683 MW、0.2081191366 Mvar</td>
+<td>测试原目标跟踪及续接</td>
+<td>固定边界测试〔C18〕</td>
+<td>依原值接纳，不自动改成方便达到的目标</td>
+<td>测试明确写出；不是通用“推荐设定值”</td>
+<td>算例任务值</td>
+<td>8.1</td>
+</tr>
+<tr>
+<td>A10 第 30 周期能量 0.95～1.05 MWh；2×15 min、30 周期</td>
+<td>验证固定期限任务与滚动衔接</td>
+<td>固定边界测试〔C18〕</td>
+<td>原期限、原区间保持；第二窗口从第 15 周期完成态出发</td>
+<td>测试覆盖对应安排；本次未执行测试</td>
+<td>算例任务／时域</td>
+<td>8.1</td>
+</tr>
+</tbody>
+</table>
+<h3 id="72-十节点山城模拟实施例">7.2 十节点山城模拟实施例</h3>
+<table>
+<thead>
+<tr>
+<th>编号／参数或数值</th>
+<th>作用</th>
+<th>来源</th>
+<th>必要条件</th>
+<th>代码支持情况</th>
+<th>性质判断</th>
+<th>交底书位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B01 SC 十节点、九支路、一个 PCC</td>
+<td>提供油田参考接线的模拟算例</td>
+<td>统一模拟数据配置〔C01〕</td>
+<td>仍是径向等值；不能当作完整复制现场全部站内设备</td>
+<td>配置有完整节点和支路；基准 20 MVA</td>
+<td>算例结构；并网径向另属模型条件</td>
+<td>8.2（1）</td>
+</tr>
+<tr>
+<td>B02 两台风机，各 5 MW</td>
+<td>风电容量与数量</td>
+<td>配置来源记录援引山城控制策略资料〔C01〕</td>
+<td>有功额定与 S、Q 边界分别核实</td>
+<td>当前配置为 2×5 MW；5.25 MVA、绝对 Q=1.64 Mvar 另注明未核实模拟假设</td>
+<td>有资料来源记录的场景值；部分能力值为模拟</td>
+<td>8.2（1）；S/Q 值为补充</td>
+</tr>
+<tr>
+<td>B03 两组 PV：2.4、1.8 MW</td>
+<td>光伏容量与分组</td>
+<td>配置明确注明数量、容量、接入位置属模拟假设〔C01〕</td>
+<td>现场接入前应重新确认</td>
+<td>S 分别为 2.52、1.89 MVA，Q 控制关闭；不是已确认现场铭牌</td>
+<td>算例取值／模拟能力</td>
+<td>8.2（1）</td>
+</tr>
+<tr>
+<td>B04 PCS 2.5 MW／5 MWh</td>
+<td>储能功率与标称电量</td>
+<td>配置援引 2.5 MW／2 h 资料；S=2.7 MVA 为模拟〔C01〕</td>
+<td>额定电量不等于全过程都可使用的电量</td>
+<td>Q 控制关闭；单 PCS 模型</td>
+<td>场景设备值＋部分模拟值</td>
+<td>8.2（1）</td>
+</tr>
+<tr>
+<td>B05 SVG 调节范围 ±1.8 Mvar；模型 S=2 MVA</td>
+<td>区分额定能力与允许调节区间</td>
+<td>配置分别记录 2 Mvar 容量、±1.8 Mvar 控制范围的资料来源〔C01〕</td>
+<td>控制上下限和额定视在容量同时满足</td>
+<td>本例对称；程序允许不对称</td>
+<td>场景运行值</td>
+<td>8.2（1）；额定 S 未明列</td>
+</tr>
+<tr>
+<td>B06 能量 0.5～5 MWh、初始 2.5 MWh、效率 0.95</td>
+<td>定义储能可用能量与效率模型</td>
+<td>配置明确注明模拟假设、SOC 限值待确认〔C01〕</td>
+<td>不能将其解释为已实测现场运行界</td>
+<td>参数可配置</td>
+<td>算例取值</td>
+<td>8.2（1）；效率见相关公式</td>
+</tr>
+<tr>
+<td>B07 初始全部 P=0；SVG Q=1.8 Mvar，其余 Q=0</td>
+<td>提供该运行案例起点</td>
+<td>交底书该次运行设置；默认初态构造与终态 Q 策略相关〔C03、C07〕</td>
+<td>不得把这一初态作为所有场景的固定启动命令</td>
+<td>可声明初态；SVG 默认候选受平均净 Q 和边界共同决定，不保证任意输入都得到 1.8</td>
+<td>算例初态</td>
+<td>8.2（1）</td>
+</tr>
+<tr>
+<td>B08 电压 0.95～1.05 pu、PCC 0.5～18 MW、PF 0.9</td>
+<td>场景安全边界</td>
+<td>当前模拟配置〔C01〕</td>
+<td>实际运行应依据适用要求确定，仍须认证</td>
+<td>可输入的运行参数</td>
+<td>算例运行值</td>
+<td>8.2（1）</td>
+</tr>
+<tr>
+<td>B09 24 h、1 min、1440 周期</td>
+<td>连续运行验证长度</td>
+<td>本次历史实施例的时间设置</td>
+<td>计数按完成周期解释</td>
+<td>当前单微网模拟支持相应运行；不代表通用方法只能运行一天</td>
+<td>算例时域；1 min 还涉及实现边界</td>
+<td>8.2（1）</td>
+</tr>
+<tr>
+<td>B10 15 min 预测、96 个采样点、参考规划 8 个时段</td>
+<td>描述输入与参考规划分辨率</td>
+<td>交底书历史运行设置；配置原生预测为 96×15 min〔C01、C19〕</td>
+<td>原生预测、粗参考计划、滚动窗口三个网格须区分</td>
+<td>案例投影可将全天重采样为指定点数；8 不是“所有滚动优化固定只看 8×15 min”</td>
+<td>算例网格／配置</td>
+<td>8.2（1）</td>
+</tr>
+<tr>
+<td>B11 风机有功和公共 Q 的 τ=2 min；PV τ=0.25 min；PCS α=1</td>
+<td>描述本例设备响应</td>
+<td>默认动态策略及专用 PCS 模型〔C03、C06〕</td>
+<td>一阶假设／保持假设成立；不声称来自实测辨识</td>
+<td>τ 可经默认策略装配；PCS α=1 当前强制</td>
+<td>算例值＋模型边界</td>
+<td>8.2（1）</td>
+</tr>
+<tr>
+<td>B12 整定 ε=0.0001，配置范围 <code>(0,0.001]</code></td>
+<td>实现有限分辨率周期末到达</td>
+<td>当前响应模型契约〔C04、C07〕</td>
+<td>模型适用性另行核验；非零终端带需任务允许</td>
+<td>范围由程序强制，不是现场普遍物理范围</td>
+<td>算例模型值＋实现边界</td>
+<td>8.2（1）</td>
+</tr>
+<tr>
+<td>B13 跟踪误差各 ±0.05；第 1440 周期能量 <code>[2.45,2.55]</code> MWh</td>
+<td>固定本例控制任务</td>
+<td>交底书任务设置；默认能量容差 0.05 MWh〔C02、C07〕</td>
+<td>容差、能量区间、截止周期不因切换放宽或重置</td>
+<td>可输入／按原任务派生保存</td>
+<td>算例任务值</td>
+<td>8.2（2）</td>
+</tr>
+<tr>
+<td>B14 每 15 min 重规划、每 1 min 反馈执行</td>
+<td>组织经济候选和已获证控制</td>
+<td>默认执行策略〔C06〕</td>
+<td>周期内使用同一获证反馈；更新以当前完成态起步</td>
+<td>已实现分钟控制及滚动规划衔接</td>
+<td>默认配置＋执行组织</td>
+<td>8.2（3）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关于“8 个参考时段”的口径：</strong> 当前案例投影工具按 <code>24/steps</code> 小时构造全天粗网格，因此按该路径生成 8 点参考时，每点为 3 h。原生 96 点预测为 15 min，默认 240 min 滚动窗口则可包含 16 个 15 min 时段。交底书的历史运行参数应和当次运行记录一起解释，不宜只凭“8”推断滚动窗口长度。相关代码见 C19、C03。</p>
+<h3 id="73-仿真结果和边界验证中的数字">7.3 仿真结果和边界验证中的数字</h3>
+<p>以下均应保留在验证章节。已在历史交底书修订脚本中找到第 8.2 节相同结果数字〔C23〕，但本次没有从原始运行包重新计算，也没有验证当前代码重跑仍得到相同小数。</p>
+<table>
+<thead>
+<tr>
+<th>编号／数值</th>
+<th>作用</th>
+<th>来源</th>
+<th>必要条件／解释边界</th>
+<th>代码支持情况</th>
+<th>性质判断</th>
+<th>交底书位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>R01 完成 1440 周期</td>
+<td>报告执行长度</td>
+<td>交底书历史运行结果〔C23〕</td>
+<td>与该运行输入和模型版本绑定</td>
+<td>有正式执行计数；本次未复现</td>
+<td>结果量</td>
+<td>8.2（4）</td>
+</tr>
+<tr>
+<td>R02 96 次规划、96 次目标接纳</td>
+<td>报告候选及接纳次数</td>
+<td>同上〔C23〕</td>
+<td>一次规划是否获解、一次目标是否获证分别记录</td>
+<td>不能据此断言所有输入都会全部接纳</td>
+<td>结果量</td>
+<td>8.2（4）</td>
+</tr>
+<tr>
+<td>R03 576 个到期评价周期</td>
+<td>说明有限跟踪评价样本</td>
+<td>同上〔C23〕</td>
+<td>由当次 D/G、更新时刻及有效证书覆盖共同决定</td>
+<td>不能当成每天固定必须得到的数量</td>
+<td>结果量／计数派生</td>
+<td>8.2（4）</td>
+</tr>
+<tr>
+<td>R04 最大误差外包 0.0139569171 MW、0.0253862627 Mvar</td>
+<td>与既定误差带比较</td>
+<td>同上〔C23〕</td>
+<td>这些是外包界，不是新的容差，也不是现场实测精度</td>
+<td>当前认证可输出包络；未重新核算该组数字</td>
+<td>结果量</td>
+<td>8.2（4）</td>
+</tr>
+<tr>
+<td>R05 97 份已采用联合证书</td>
+<td>报告初始及更新证书</td>
+<td>同上〔C23〕</td>
+<td>初始证书也计入；只对应该次运行</td>
+<td>不是证书数量的算法上限或最低要求</td>
+<td>结果量</td>
+<td>8.2（4）</td>
+</tr>
+<tr>
+<td>R06 末能量 2.4948899684 MWh</td>
+<td>检查原任务是否完成</td>
+<td>同上〔C23〕</td>
+<td>需与 <code>[2.45,2.55]</code> 比较，不能改成新的任务中心</td>
+<td>未重新复现该精确数字</td>
+<td>结果量</td>
+<td>8.2（4）</td>
+</tr>
+<tr>
+<td>R07 故障／安全单独案例 30 周期；第二经济窗口失败</td>
+<td>检查失败续接与如实报告</td>
+<td>交底书及既有测试场景〔C18、C24〕</td>
+<td>仅说明对应故障构造；不能把安全执行当任务已保证</td>
+<td>有相关测试定义，本次未运行</td>
+<td>测试设置／结果叙述</td>
+<td>8.3</td>
+</tr>
+<tr>
+<td>R08 三个区域各 30 min、含无储能配置</td>
+<td>检查不同区域配置适用性</td>
+<td>交底书既有验证叙述</td>
+<td>多个单区域案例不自动组成多区域联合控制证明</td>
+<td>本清单限定单微网算法，不引入集群专用参数</td>
+<td>验证范围／算例设置</td>
+<td>8.3</td>
+</tr>
+<tr>
+<td>R09 全幅、半幅失败，四分之一幅度通过</td>
+<td>展示 PCS 独立停止的备用构造</td>
+<td>交底书及备用恢复测试〔C24〕</td>
+<td>比例成功与否取决于案例，仍须完整尾部证据</td>
+<td>与有限比例集合相对应；非通用最优比例</td>
+<td>测试输入／结果</td>
+<td>8.3</td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-代码直接相关交底书未充分列出的限制与默认值">8. 代码直接相关、交底书未充分列出的限制与默认值</h2>
+<p>这里补充会影响前述方案适用范围、候选构造或输入协议的项目。独立集群算法参数、已移除光伏群控模块参数、与本文无关的界面参数不纳入。</p>
+<table>
+<thead>
+<tr>
+<th>编号／参数或限制</th>
+<th>作用</th>
+<th>来源／当前值</th>
+<th>必要条件</th>
+<th>代码支持情况</th>
+<th>性质判断</th>
+<th>交底书对应位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S01 正式模型版本 <code>unified-single-v7</code>、设备版本 <code>unified-device-v1</code></td>
+<td>固定契约语义，防止跨模型证据混用</td>
+<td>当前域及设备契约〔C04、C07〕</td>
+<td>输入、状态、证书模型相容</td>
+<td>指定版本；编号不是物理参数，也不是精度等级</td>
+<td>实现版本边界</td>
+<td>5.5.3、5.10 提到版本，未列字符串</td>
+</tr>
+<tr>
+<td>S02 规划 PF 正切比例默认 0.6，范围 <code>(0,1]</code></td>
+<td>为候选规划留更多无功余量</td>
+<td><code>planning_pf_tangent_fraction</code>〔C07、C12〕</td>
+<td>不改物理 PF 下限</td>
+<td>按 <code>1/sqrt(1+(比例×tan(acos(f_min)))²)</code> 派生候选目标</td>
+<td>配置／构造值</td>
+<td>5.3 仅定性描述</td>
+</tr>
+<tr>
+<td>S03 储能跟踪预留 0.002 MWh</td>
+<td>在候选构造中预留能量余地</td>
+<td><code>storage_tracking_reserve_mwh≥0</code>〔C07、C14〕</td>
+<td>不改原任务区间或物理界</td>
+<td>当前研究配置可改，不代表已按现场误差标定</td>
+<td>构造配置</td>
+<td>5.7 未列具体值</td>
+</tr>
+<tr>
+<td>S04 风光命令预留默认 0.02 MW，实际扣减不超过当时能力上限的 1/10</td>
+<td>给候选调节留余量</td>
+<td><code>renewable_command_reserve_mw≥0</code>，实际取其与 <code>ceiling/10</code> 的较小值〔C07、C14〕</td>
+<td>不得视为可越过实际能力的量</td>
+<td>预留量可配置，1/10 的截取规则当前写在构造代码内</td>
+<td>构造配置／实现取值</td>
+<td>5.7 未列具体值</td>
+</tr>
+<tr>
+<td>S05 Q 调节器参考比例 0.7，范围 <code>(0,1)</code></td>
+<td>构造无功参考及内部候选目标</td>
+<td><code>reactive_regulator_reference_fraction</code>〔C07、C14〕</td>
+<td>生成结果仍受设备和网络约束</td>
+<td>可配置；不是 SVG 的统一物理利用率</td>
+<td>构造配置</td>
+<td>5.7 未列具体值</td>
+</tr>
+<tr>
+<td>S06 内部 P 目标偏移 <code>0、±0.15、±0.3、±0.45、±0.6、±0.75、±1、±1.5、±2、±3 MW</code></td>
+<td>有限搜索内部替代目标</td>
+<td><code>admission.py</code> 固定列表〔C14〕</td>
+<td>只用于内部经济请求；外部／保留目标不改值</td>
+<td>当前写死候选集合；不是连续搜索所有 PCC 目标</td>
+<td>实现／构造限制</td>
+<td>5.7 “邻近目标”未列步幅</td>
+</tr>
+<tr>
+<td>S07 内部构造偏置 Q <code>+0.04 Mvar</code>，P <code>+0.07、−0.03、+0.025 MW</code>，PF 候选裕度 <code>+0.02 MW</code></td>
+<td>从负荷／能量／能力形成目标提示</td>
+<td>当前接纳代码常量〔C14〕</td>
+<td>只是候选，不替代获证条件</td>
+<td>尚非统一对外参数；不同规模系统不应默认同样合适</td>
+<td>实现／构造取值</td>
+<td>5.7 未列具体值</td>
+</tr>
+<tr>
+<td>S08 动态防逆流阈值归一化：负荷变化分母底限 0.01、PV 参考 1.0、负荷变化参考 0.1；权重 0.3／0.4／0.3</td>
+<td>形成规划风险指标</td>
+<td><code>PlanningSecurityConfig</code>，明确标为模拟默认〔C16〕</td>
+<td>分母／参考量正；权重非负且和为 1（数值容差 <code>10⁻¹²</code>）</td>
+<td>独立规划安全配置可改；不涉及已移除的群控状态机</td>
+<td>策略配置／默认值</td>
+<td>5.3 的 <code>P_floor</code> 未展开</td>
+</tr>
+<tr>
+<td>S09 阈值比例：基础裕度 0.015、最大增量 0.03；风险缓冲 0.003～0.01、恢复缓冲 0.01～0.03</td>
+<td>生成规划安全相关阈值</td>
+<td>同上〔C16〕</td>
+<td>范围有序；基础裕度大于最大风险缓冲；须结合规模换算</td>
+<td>配置校验明确；不能把这些比例当所有现场统一规范</td>
+<td>策略配置／实现条件</td>
+<td>5.3 未列</td>
+</tr>
+<tr>
+<td>S10 阈值风险采样 15 min、200 场景、负荷／PV 标准差 0.03／0.08，种子 20260906</td>
+<td>估计规划防逆流风险</td>
+<td>模拟场景生成；还含负荷 0.008 倍的网损估计〔C16〕</td>
+<td>统计估计与确定性外包证书分开</td>
+<td>配置可改，区域种子还结合标识；不是证明未来误差必在 U02/U03 域内</td>
+<td>模拟／策略配置</td>
+<td>5.3 未列；不得与 5.8 确定性域混同</td>
+</tr>
+<tr>
+<td>S11 默认算例种子 20260915、三种输入模式；基础负荷／风光曲线</td>
+<td>复现预测及模拟实绩</td>
+<td>数据配置与生成器〔C01、C19〕</td>
+<td>同一配方与模式；种子不是现场数据来源</td>
+<td>日前／日内／实绩种子有偏移，分辨率有别；无真实预测训练模型由此产生</td>
+<td>算例生成配置</td>
+<td>5.8、8.2 未列种子和配方</td>
+</tr>
+<tr>
+<td>S12 AC 中心提议最多 200 次、变化阈值 <code>10⁻¹³</code>、点残差门槛 <code>10⁻⁹</code> 等</td>
+<td>提议中心、控制计算开销</td>
+<td>网络外包实现〔C08〕</td>
+<td>提议成功后仍须区间自映射和安全证明</td>
+<td>当前内部数值选择；失败不能直接证明电网无物理解</td>
+<td>数值实现参数</td>
+<td>5.8 未列具体值</td>
+</tr>
+<tr>
+<td>S13 现场执行周期固定 60 s；规划更新、时域、响应期限按 60 s 对齐</td>
+<td>确保现场输入与当前分钟算法一致</td>
+<td><code>ControlPolicy</code>〔C17〕</td>
+<td>正时间；规划时域不超过 86400 s，并能整除为更新间隔</td>
+<td>现场契约限制；不能只修改 δ 就支持秒级控制</td>
+<td>实现／接口边界</td>
+<td>5.1、5.7、5.11 未列完整接口限制</td>
+</tr>
+<tr>
+<td>S14 现场预测覆盖最长 1440 min，且至少覆盖 <code>max(90 min,规划时域,响应期限)</code></td>
+<td>使规划和备用有明确输入覆盖</td>
+<td><code>map_planning_domain()</code>〔C17〕</td>
+<td>首尾时间精确覆盖、分钟对齐、点按时间唯一有序、电价无缝覆盖</td>
+<td>当前强制；90 min 是装配下限，不是通用物理必要时域</td>
+<td>实现／接口限制</td>
+<td>5.1、5.8 未列</td>
+</tr>
+<tr>
+<td>S15 现场模型资源 1～128、负荷作用域 1～512；预测点 2～1441、电价段 1～1440</td>
+<td>限制报文规模并校验完整性</td>
+<td>现场契约〔C17〕</td>
+<td>还需满足唯一资源、映射、单 PCS 等结构条件</td>
+<td>这是容器长度上限，不保证任意该规模都能算完并获证</td>
+<td>实现／接口限制</td>
+<td>5.1 未列</td>
+</tr>
+<tr>
+<td>S16 现场时效、时钟偏差、计算／下发／反馈预算</td>
+<td>明确数据能否用于本轮控制</td>
+<td>现场策略输入：遥测年龄、最大快照偏差、未来时钟偏差、计算预算、下发提前量、传输／反馈超时〔C17〕</td>
+<td>各自正值／非负约束及时间关系满足；需要真实系统测试</td>
+<td>字段及校验已存在；不等于现场通信和硬实时已经验证</td>
+<td>运行配置＋待验证现场条件</td>
+<td>5.10 只有定性前提</td>
+</tr>
+<tr>
+<td>S17 <code>exact-normalized-snapshot-v1</code>、PCC 模型比对容差</td>
+<td>对齐快照状态与模型点</td>
+<td>现场模型误差策略及非负比对容差〔C17〕</td>
+<td>输入满足归一化和一致性要求；容差不能当作通用状态不确定性传播</td>
+<td>当前策略名固定；没有因此实现任意测量误差盒、通信时延和设备模型误差的联合认证</td>
+<td>模型／接口限制</td>
+<td>5.6、5.10 未说明完整实现边界</td>
+</tr>
+<tr>
+<td>S18 合成输入生成器只接受 1／15 min；默认案例投影 <code>steps</code> 为整数 1～288</td>
+<td>控制模拟数据生成和粗参考网格</td>
+<td><code>generate_profiles()</code>、<code>build_synthetic_case()</code>〔C19〕</td>
+<td>前者按生成模式采样，后者按全天 <code>24/steps</code> 小时重采样，不能混作执行周期</td>
+<td>默认模拟装配还要求原生优化曲线为 15 min；显式现场预测走独立输入映射</td>
+<td>模拟适配器实现边界</td>
+<td>5.8、8.2 未完整列出</td>
+</tr>
+</tbody>
+</table>
+<p><code>S12</code> 的数值用于计算提议和筛查，<code>U13</code> 的严格条件用于证明，两者的性质不同。类似地，<code>S10</code> 的随机风险场景不是 <code>U01</code> 的所有允许扰动：前者可辅助选规划裕度，不能代替后者的逐盒认证。</p>
+<h2 id="9-逐类判断与交底书优化顺序">9. 逐类判断与交底书优化顺序</h2>
+<h3 id="91-可优先从通用方案段落移到实施例的具体值">9.1 可优先从通用方案段落移到实施例的具体值</h3>
+<table>
+<thead>
+<tr>
+<th>优先项</th>
+<th>涉及条目</th>
+<th>通用方案应保留的内容</th>
+<th>实施例／实现说明适合保留的内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>经济权重与数值尺度</td>
+<td>E03～E08</td>
+<td>各权重的作用、量纲、来源和不放松硬约束的关系</td>
+<td>650、50、12，以及代码默认跟踪权重、参考能量权重</td>
+</tr>
+<tr>
+<td>组爬坡与分配比例</td>
+<td>D09、D10、D15</td>
+<td>逐设备／聚合动作额度来源，绝对变化计量和分配条件</td>
+<td>0.65、0.90、按台数／装机分配这套具体构造</td>
+</tr>
+<tr>
+<td>时间与计算预算</td>
+<td>D02、D13、D18、T07、T11、T13、T16、T17</td>
+<td>时间对齐、绝对期限、有限搜索及失败处理</td>
+<td>15、240、5、10、6、3、160、90、两轮等当前取值</td>
+</tr>
+<tr>
+<td>构造余量与缓存</td>
+<td>D19、U14、S02～S07</td>
+<td>余量的目的、不得放宽物理边界、外扩缓存再认证</td>
+<td>0.98、0.025、0.6、0.002、0.02、0.7 和固定偏移列表</td>
+</tr>
+<tr>
+<td>合成数据及解析界</td>
+<td>U02～U10、S11</td>
+<td>必须提供有依据的预测边界并检查观察在域内</td>
+<td>2.5%、5%、15%、0.70、各导数界、噪声、种子、舍入位数</td>
+</tr>
+</tbody>
+</table>
+<p>这里的建议是调整表述层次，不是直接取消代码限制。例如，把 90 周期从通用段移到实施例后，代码仍然需要它自己的搜索预算；不同预算下仍需得到完整证书。</p>
+<h3 id="92-应保留原理关系或前提不能只删除限制">9.2 应保留原理关系或前提，不能只删除限制</h3>
+<ol>
+<li>功率平衡、容量、能量界、效率换算、单位与正负号必须明确；具体容量和上下限随项目输入。</li>
+<li>固定 P 首步充分性依赖恒定命令、共同时间常数和能力条件。更换假设，不能原样保留推导结论。</li>
+<li>现有有限到达和能量不漂移结论依赖当前整定／PCS 保持模型。移到实施例后，通用段也应明确“依选定模型重新校核”。</li>
+<li>不变终态、末预测包络持续、准确及时状态与命令执行，是当前条件安全论证的前提；不能仅以“适用于实际设备”一句代替。</li>
+<li>任务 <code>[L,U]、T</code> 及已接纳目标的误差带、期限不能因失败自动重置，这是方法逻辑，不是某个算例的任意数值。</li>
+<li>10% 是单独经济评价指标；算法获证安全、完成任务不推出经济指标必然达到，也不推出完整物理轨迹集合上的全局最优。</li>
+</ol>
+<h3 id="93-需要在后续文稿中明确的几个容易误读之处">9.3 需要在后续文稿中明确的几个容易误读之处</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>当前核对结论</th>
+<th>建议</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>“参数由设备特性决定”与“代码自动辨识参数”</td>
+<td>当前多数参数由输入提供或默认配置，未发现通用在线设备辨识闭环</td>
+<td>写明输入来源和适用性验证职责，不写成代码已自动测定</td>
+</tr>
+<tr>
+<td>第 5.6 节一般映射 <code>T(x,u;θ)</code></td>
+<td>是一般表达；代码仍采用具体仿射加整定映射，PCS α=1</td>
+<td>区分一般接口思想与当前支持模型，避免以符号概括代替实现依据</td>
+</tr>
+<tr>
+<td>符号复用</td>
+<td><code>T</code> 同时表示能量期限和响应映射；<code>L</code> 同时用于任务下界与压缩常数；<code>l</code> 有电流变量及总负荷两种语境</td>
+<td>后续可对映射、压缩常数或总负荷换符号／加下标；本次未修改 DOCX</td>
+</tr>
+<tr>
+<td>第 8.1 节风机 “Q≤0.3P”</td>
+<td>正式能力模型采用双向幅值限制 <code>|Q|≤0.3P</code></td>
+<td>若实施例亦为双向无功，应统一写绝对值，避免只限制正 Q 的误读</td>
+</tr>
+<tr>
+<td>基础电网参数的来源</td>
+<td>山城风机有功、储能标称容量等有配置来源记录，PV 容量、部分 S/Q、线路阻抗等仍为模拟</td>
+<td>按参数分别标注，不能整包称为“现场实测山城模型”</td>
+</tr>
+<tr>
+<td>第 8.2 节历史结果</td>
+<td>找到历史修订脚本中的相同数字，但未重跑当前代码</td>
+<td>随结果保存输入、代码版本和原始证据；不能当当前所有版本的固定保证</td>
+</tr>
+</tbody>
+</table>
+<h2 id="10-本次核对的覆盖与边界">10. 本次核对的覆盖与边界</h2>
+<p>全文中的技术数值已按网络设备、时间响应、扰动认证、任务反馈、经济求解、实施例输入及结果归入上述表格；重复条目通过章节位置串联。第五章中已经写成“优选”“默认”的值仍纳入清单，因为“默认值”“代码允许的配置范围”“证明必要条件”是三种不同依据。</p>
+<p>补充项重点记录直接影响这些技术结论的代码限制，没有将仓库每一个调试常量、所有历史模型参数或每条模拟线路的具体 R/X 都扩写成通用要求。需要逐支路原始数据时应以 C01 为准，不能由本清单中的概括重建现场网络。</p>
+<p>本次未修改 DOCX、源代码或 <code>docs/禁止做任何改动的文档</code> 中的文件；仅新增本清单。没有运行优化仿真，也没有把历史测试结果重新宣称为本次验证结果。</p>
+<h2 id="11-代码依据索引">11. 代码依据索引</h2>
+<p>以下链接均相对于本 Markdown 文件。索引给出定义和使用位置；核对某一参数时，应同时看契约、装配和实际使用路径。</p>
+<table>
+<thead>
+<tr>
+<th>编号</th>
+<th>文件与核对重点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C01</td>
+<td><a href="../src/oilfield_energy/bootstrap/assets/unified_dataset.json">unified_dataset.json</a>：当前 SC 算例、种子、时轴、网络、资源、负荷、参数来源注记。</td>
+</tr>
+<tr>
+<td>C02</td>
+<td><a href="../src/oilfield_energy/data.py">data.py</a>：<code>ModelAssumptions</code>、<code>Storage</code>、默认经济权重、PF、能量容差、多边形边数。</td>
+</tr>
+<tr>
+<td>C03</td>
+<td><a href="../src/oilfield_energy/bootstrap/adapters/single_model.py">single_model.py</a>、<a href="../src/oilfield_energy/bootstrap/adapters/single_unified.py">single_unified.py</a>、<a href="../src/oilfield_energy/bootstrap/adapters/single_planning.py">single_planning.py</a>：单微网设备／网络装配、分钟响应、爬坡分配、滚动窗口与原任务衔接。</td>
+</tr>
+<tr>
+<td>C04</td>
+<td><a href="../src/oilfield_energy/modules/control/contracts_tube.py">contracts_tube.py</a>：资源能力、α、整定范围、单 PCS、能量与效率契约。</td>
+</tr>
+<tr>
+<td>C05</td>
+<td><a href="../src/oilfield_energy/modules/control/application_tube.py">application_tube.py</a>：<code>device_response()</code>、状态外包、动作额度、过程能力、PCS 一次积分。</td>
+</tr>
+<tr>
+<td>C06</td>
+<td><a href="../src/oilfield_energy/modules/control/contracts.py">控制策略 contracts.py</a>、<a href="../src/oilfield_energy/workflows/cluster_execution/contracts.py">ExecutionPolicy 所在文件</a>：默认时间常数、变化额度、响应时间、执行和规划时间配置。后者为复用契约，其文件位置不代表本算法执行集群控制。</td>
+</tr>
+<tr>
+<td>C07</td>
+<td><a href="../src/oilfield_energy/workflows/single_execution/contracts_unified.py">contracts_unified.py</a>、<a href="../src/oilfield_energy/workflows/single_execution/forecast.py">forecast.py</a>、<a href="../src/oilfield_energy/workflows/single_execution/network.py">network.py</a>：研究参数、域版本、逐分钟扰动、终态候选、AC 缓存盒。</td>
+</tr>
+<tr>
+<td>C08</td>
+<td><a href="../src/oilfield_energy/modules/power_flow/contracts_envelope.py">contracts_envelope.py</a>、<a href="../src/oilfield_energy/modules/power_flow/application_envelope.py">application_envelope.py</a>：径向模型限制、点中心提议、AC 区间与自映射认证。</td>
+</tr>
+<tr>
+<td>C09</td>
+<td><a href="../src/oilfield_energy/modules/dispatch/contracts.py">dispatch/contracts.py</a>、<a href="../src/oilfield_energy/modules/dispatch/application_reactive.py">application_reactive.py</a>：无功预留、固定 P 过渡、整数子步与首步额度。</td>
+</tr>
+<tr>
+<td>C10</td>
+<td><a href="../src/oilfield_energy/modules/dispatch/contracts_pq.py">contracts_pq.py</a>、<a href="../src/oilfield_energy/modules/dispatch/application_pq.py">application_pq.py</a>：联合 P/Q 分钟过渡、构造利用率、能力内包络与 PCS 保持。</td>
+</tr>
+<tr>
+<td>C11</td>
+<td><a href="../src/oilfield_energy/misocp_model.py">misocp_model.py</a>：网络方程、根电压、经济项、跟踪权重及求解参数。</td>
+</tr>
+<tr>
+<td>C12</td>
+<td><a href="../src/oilfield_energy/modules/dispatch/application.py">dispatch/application.py</a>、<a href="../src/oilfield_energy/modules/dispatch/domain.py">dispatch/domain.py</a>：PF 候选目标、费用核算及 <code>assess_single_economic_requirement()</code> 的 10% 比较。</td>
+</tr>
+<tr>
+<td>C13</td>
+<td><a href="../src/oilfield_energy/workflows/single_execution/tasks.py">tasks.py</a>、<a href="../src/oilfield_energy/workflows/single_execution/certificates.py">certificates.py</a>、<a href="../src/oilfield_energy/modules/control/application_backup.py">application_backup.py</a>：任务、有限备用、PCS 停止与联合尾部。</td>
+</tr>
+<tr>
+<td>C14</td>
+<td><a href="../src/oilfield_energy/workflows/single_execution/admission.py">admission.py</a>、<a href="../src/oilfield_energy/workflows/single_execution/tracking.py">tracking.py</a>、<a href="../src/oilfield_energy/workflows/single_execution/economics.py">economics.py</a>：请求来源、目标候选、原期限、有限跟踪与前缀经济排序。</td>
+</tr>
+<tr>
+<td>C15</td>
+<td><a href="../src/oilfield_energy/workflows/single_execution/allocation.py">allocation.py</a>、<a href="../src/oilfield_energy/modules/control/contracts_policy.py">contracts_policy.py</a>、<a href="../src/oilfield_energy/modules/control/application_policy.py">application_policy.py</a>、<a href="../src/oilfield_energy/modules/control/application_safe_command.py">application_safe_command.py</a>：多资源权重、同一反馈、局部联合投影。</td>
+</tr>
+<tr>
+<td>C16</td>
+<td><a href="../src/oilfield_energy/modules/dispatch/contracts_security.py">contracts_security.py</a>、<a href="../src/oilfield_energy/modules/dispatch/domain_security.py">domain_security.py</a>、<a href="../src/oilfield_energy/planning_security.py">planning_security.py</a>：迁移保留的规划动态安全阈值配置、计算及模拟场景。</td>
+</tr>
+<tr>
+<td>C17</td>
+<td><a href="../src/oilfield_energy/workflows/field_initialization/contracts_model.py">contracts_model.py</a>、<a href="../src/oilfield_energy/workflows/field_initialization/contracts_planning.py">contracts_planning.py</a>、<a href="../src/oilfield_energy/workflows/field_initialization/domain.py">domain.py</a>、<a href="../src/oilfield_energy/workflows/field_initialization/validation.py">validation.py</a>、<a href="../src/oilfield_energy/workflows/field_initialization/application_targets.py">application_targets.py</a>、<a href="../src/oilfield_energy/workflows/field_initialization/cycle_preparation.py">cycle_preparation.py</a>：现场模型、规划输入、目标、快照及准备周期的边界。</td>
+</tr>
+<tr>
+<td>C18</td>
+<td><a href="../tests/integration/single_execution/test_declared_boundary.py">test_declared_boundary.py</a>：两节点固定边界案例 <code>study()</code>、初态、目标、能量任务及滚动时间设置。</td>
+</tr>
+<tr>
+<td>C19</td>
+<td><a href="../src/oilfield_energy/modules/studies/domain.py">studies/domain.py</a>、<a href="../src/oilfield_energy/modules/studies/application.py">studies/application.py</a>、<a href="../src/oilfield_energy/bootstrap/adapters/simulation_case.py">simulation_case.py</a>、<a href="../src/oilfield_energy/bootstrap/adapters/project_dataset.py">project_dataset.py</a>：三套合成数据、噪声、舍入、分时电价、全天参考网格投影。</td>
+</tr>
+<tr>
+<td>C20</td>
+<td><a href="../src/oilfield_energy/kernel/enclosures.py">enclosures.py</a>：有理数、向外舍入与平方根包络。</td>
+</tr>
+<tr>
+<td>C21</td>
+<td><a href="../src/oilfield_energy/workflows/single_execution/planning.py">planning.py</a>：名义见证重算、版本／资源轴／初态绑定及数值比对。</td>
+</tr>
+<tr>
+<td>C22</td>
+<td><a href="../src/oilfield_energy/modules/dispatch/contracts_ac_recovery.py">contracts_ac_recovery.py</a>：恢复求解预算、原目标参数及求解质量口径。</td>
+</tr>
+<tr>
+<td>C23</td>
+<td><a href="../artifacts/patent1-joint-continuation-20261007/revise_disclosure.py">历史 revise_disclosure.py</a>：可定位相同仿真结果数字的历史交底书修订记录；不是本次运行输出。</td>
+</tr>
+<tr>
+<td>C24</td>
+<td><a href="../tests/workflows/test_single_backup_recovery.py">test_single_backup_recovery.py</a>、<a href="../tests/workflows/test_single_task_continuation.py">test_single_task_continuation.py</a>：备用恢复、任务续接及相关边界场景定义。</td>
+</tr>
+<tr>
+<td>C25</td>
+<td><a href="../docs3/Code_Organization_Standard.md">Code_Organization_Standard.md</a>：项目代码与文档组织规范；本清单作为独立说明保存于 docs。</td>
+</tr>
+</tbody>
+</table>
+
+</body>
+</html>

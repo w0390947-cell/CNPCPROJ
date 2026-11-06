@@ -6,13 +6,13 @@ import {
   regionDisplayName,
 } from '../shared/lib/region-presentation.ts';
 
-test('region presentation names preserve internal codes and synthetic scope', () => {
+test('region presentation names preserve internal codes', () => {
   assert.deepEqual(
     REGION_DEFINITIONS.map(({ id, displayName }) => [id, displayName]),
     [
       ['SC', '山城参数化微网（SC）'],
-      ['YA_B', '延安合成微网 B（YA_B）'],
-      ['YA_C', '延安合成微网 C（YA_C）'],
+      ['YA_B', '延安微网 B（YA_B）'],
+      ['YA_C', '延安微网 C（YA_C）'],
     ],
   );
 });

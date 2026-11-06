@@ -1,0 +1,15 @@
+{
+  "simulation_id": "1c32a6889f6d432a906a36a15408b27d",
+  "name": "单微网快速仿真",
+  "state": "running",
+  "created_at": "2026-11-05T13:39:30.100888+00:00",
+  "updated_at": "2026-11-05T13:39:30.111471+00:00",
+  "stage": "worker_starting",
+  "stage_label": "正在启动独立仿真进程",
+  "stage_sequence": null,
+  "total_stages": 6,
+  "rolling": null,
+  "result_available": false,
+  "error_code": null,
+  "error_message": null
+}

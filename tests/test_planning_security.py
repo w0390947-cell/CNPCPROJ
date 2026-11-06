@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-import sys
 import unittest
-from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from tests.legacy_case_fixture import build_synthetic_case
-from oilfield_energy.hierarchy_types import GroupControlConfig
+from oilfield_energy.modules.dispatch.contracts import PlanningSecurityConfig
 from oilfield_energy.planning_security import (
     build_planning_security_trajectories,
     estimate_reverse_flow_probability,
@@ -37,7 +34,7 @@ class PlanningSecurityTests(unittest.TestCase):
             self.assertTrue(np.all(one.effective_floor_mw <= microgrid.p_grid_max_mw))
 
     def test_scenario_estimator_uses_forecasts_and_configured_horizon(self) -> None:
-        config = GroupControlConfig(
+        config = PlanningSecurityConfig(
             planning_scenario_count=20,
             planning_load_forecast_std_ratio=0.0,
             planning_pv_forecast_std_ratio=0.0,
@@ -80,7 +77,7 @@ class PlanningSecurityTests(unittest.TestCase):
         )
         for values in invalid:
             with self.subTest(values=values), self.assertRaises(ValueError):
-                GroupControlConfig(**values)
+                PlanningSecurityConfig(**values)
 
 
 if __name__ == "__main__":

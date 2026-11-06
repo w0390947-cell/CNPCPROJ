@@ -16,6 +16,7 @@ from oilfield_energy.workflows.cluster_execution.api import (
     reserve_activation_command,
 )
 from oilfield_energy.workflows.cluster_execution.contracts import ReserveServiceInput
+from oilfield_energy.modules.power_flow.api import radial_point_response
 
 
 def service(**changes):
@@ -174,3 +175,29 @@ def test_declared_slew_is_used_instead_of_requiring_instant_full_reversal():
     assert 2 * result.inputs.activation_headroom_mw > result.inputs.ramp_mw_per_minute
     assert result.status == "certified", result.reason
     assert result.maximum_change_mw < result.inputs.ramp_mw_per_minute
+
+
+def test_same_observed_load_cancels_in_delivery_increment_but_not_network_limits():
+    # The load box is much wider than reserve. Comparing independent absolute
+    # PCC boxes cannot prove the increment, although baseline and activation
+    # observe the same load. Independently execute both endpoints of that box.
+    row = certify_reserve_service(service(
+        demand_p_mw=(PowerInterval(low=0, high=0), PowerInterval(low=1.5, high=2.5))
+    ))
+    assert row.status == "certified", row.reason
+    assert row.nominal_network.pcc_p_mw.low - row.up_endpoint.pcc_p_mw.high < .25
+    for load in (1.5, 2.0, 2.5):
+        for requested in (-.25, .25):
+            command = reserve_activation_command(
+                row, demand_p_mw=(0, load), demand_q_mvar=(0, 0),
+                baseline_power_mw=0, previous_power_mw=0,
+                requested_pcc_up_mw=requested, previous_request_mw=0,
+                elapsed_minutes=0,
+            )
+            baseline, _ = radial_point_response(row.inputs.network, (0, load), (0, 0))
+            assert abs(baseline - command.pcc_response_mw - requested) <= row.inputs.policy.pcc_tolerance_mw
+    restricted = service(
+        network=row.inputs.network.model_copy(update={"pcc_max_mw": 2.6}),
+        demand_p_mw=row.inputs.demand_p_mw,
+    )
+    assert certify_reserve_service(restricted).status == "unknown"

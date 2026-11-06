@@ -162,7 +162,7 @@ class NetworkRecoveryInterlock:
     """Freeze achieved PV output, preserving all other owners' stricter caps.
 
 Only explicit rearm after distinct safe observations transfers frozen limits to
-group_control. Transfer is limit-preserving: it cannot itself increase output.
+recovery_hold. Transfer is limit-preserving: it cannot itself increase output.
 """
     owner = "network_safety"
 
@@ -220,11 +220,11 @@ group_control. Transfer is limit-preserving: it cannot itself increase output.
         arbiter.apply(available, freeze)
         if not (rearm_requested and safe and self.safe_cycles >= self.confirmation_cycles):
             return False
-        group_caps = arbiter.owner_caps("group_control")
+        retained_caps = arbiter.owner_caps("recovery_hold")
         # Install receiving ownership before releasing network ownership.
         arbiter.apply(available, tuple(StationCapIntent(
-            "group_control", station, CapIntentAction.SET_CAP,
-            absolute_cap_mw=min(cap, group_caps.get(station, cap)), decision_id="network-rearm-transfer",
+            "recovery_hold", station, CapIntentAction.SET_CAP,
+            absolute_cap_mw=min(cap, retained_caps.get(station, cap)), decision_id="network-rearm-transfer",
         ) for station, cap in arbiter.owner_caps(self.owner).items()))
         arbiter.apply(available, tuple(StationCapIntent(
             self.owner, station, CapIntentAction.RELEASE_CAP, decision_id="network-rearm-release",

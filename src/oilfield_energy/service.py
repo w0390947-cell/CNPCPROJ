@@ -21,13 +21,14 @@ from .admm import run_admm_coordination
 from .analysis import compare_results, validate_result
 from .bootstrap.adapters.cluster_execution import run_cluster_execution
 from .bootstrap.adapters.project_dataset import build_synthetic_case
+from .bootstrap.adapters.patent2_example import build_example, describe_example, finish_example
+from .modules.studies.contracts_patent2 import Patent2Scenario, Patent2Evidence
 from .bootstrap.adapters.single_execution import (
     prepare_single_case,
     run_single_execution,
     single_execution_policy,
 )
 from .data import MicrogridData, ProjectCase
-from .group_control_scenarios import run_group_control_scenarios, scenario_basis
 from .hierarchy_types import ADMMConfig, CommunicationConfig
 from .model import OptimizationResult, solve_case
 from .modules.dispatch.api import (
@@ -60,8 +61,8 @@ from .workflows.single_execution.contracts import (
     SingleResearchPolicy,
 )
 
-SCHEMA_VERSION = "1.26.0"
-# 1.23 adds cluster reserve evidence; the single-execution contract is unchanged.
+SCHEMA_VERSION = "2.0.0"
+# Standalone group-control removal is a breaking result-schema change.
 SINGLE_SCHEMA_VERSIONS = frozenset({SCHEMA_VERSION})
 SIMULATED_DATA_NOTICE = "全部网络与运行数据均为参数化模拟数据，不代表实际油田数据。"
 
@@ -70,7 +71,6 @@ class ScenarioType(str, Enum):
     SINGLE_MICROGRID = "single_microgrid"
     CLUSTER_COORDINATION = "cluster_coordination"
     COMMUNICATION_FAULT = "communication_fault"
-    GROUP_CONTROL = "group_control"
 
 
 class SolverFormulation(str, Enum):
@@ -101,6 +101,7 @@ class SimulationRequestRecord(ContractModel):
     """Recorded inputs, including historical combinations no longer executable."""
 
     name: str = Field(default="单微网快速仿真", min_length=1, max_length=80)
+    patent2_case: Patent2Scenario | None = None
     scenario_type: ScenarioType = ScenarioType.SINGLE_MICROGRID
     region: Literal["SC", "YA_B", "YA_C"] = "SC"
     steps: int = Field(default=8, ge=1, le=288)
@@ -124,6 +125,14 @@ class SimulationRequest(SimulationRequestRecord):
 
     @model_validator(mode="after")
     def validate_scenario_options(self) -> "SimulationRequest":
+        if self.patent2_case is not None and (
+            self.scenario_type is not ScenarioType.CLUSTER_COORDINATION
+            or self.steps != 4 or not self.storage_enabled or self.events
+            or self.admm_max_iterations != 1000 or self.solver.time_limit_seconds != 60
+            or self.solver.quality_policy is not None
+            or self.solver.formulation is not SolverFormulation.MISOCP
+        ):
+            raise ValueError("patent2 example requires the fixed 60-minute study and declared solver settings")
         if self.scenario_type is ScenarioType.SINGLE_MICROGRID and self.solver.formulation is not SolverFormulation.MISOCP:
             raise ValueError("single-microgrid execution requires the unified MISOCP algorithm")
         if self.single_research is not None and self.scenario_type is not ScenarioType.SINGLE_MICROGRID:
@@ -197,7 +206,7 @@ class TimeSeriesPoint(ContractModel):
     price_cny_per_mwh: float
     load_mw: float
     load_mvar: float
-    p_grid_baseline_mw: float
+    p_grid_baseline_mw: float | None = None
     p_grid_optimized_mw: float
     q_grid_optimized_mvar: float
     power_factor: float
@@ -260,41 +269,6 @@ class CommunicationSummary(ContractModel):
     event_executions: tuple[CommunicationEventExecution, ...] = ()
 
 
-class GroupControlRecord(ContractModel):
-    scenario: str
-    time_minute: float
-    pcc_power_mw: float
-    risk_limit_mw: float
-    safety_threshold_mw: float
-    restore_threshold_mw: float
-    risk_index: float
-    state: str
-    action: str
-    trigger_reason: str
-    requested_curtailment_mw: float
-    requested_restoration_mw: float
-    remaining_curtailment_mw: float
-
-
-class GroupControlEventRecord(ContractModel):
-    scenario: str
-    time_minute: float
-    event_type: str
-    reason: str
-    previous_state: str
-    new_state: str
-    requested_power_mw: float
-    achieved_power_mw: float
-
-
-class GroupControlSummary(ContractModel):
-    all_passed: bool
-    scenario_count: int
-    scenario_checks: dict[str, dict[str, bool]]
-    records: list[GroupControlRecord]
-    events: list[GroupControlEventRecord]
-
-
 class SimulationMetadata(ContractModel):
     schema_version: str = SCHEMA_VERSION
     generated_at: str
@@ -314,8 +288,8 @@ class SimulationMetadata(ContractModel):
 class ExecutiveSummary(ContractModel):
     overall_passed: bool
     headline: str
-    economic_improvement_percent: float
-    baseline_economic_cost_cny: float
+    economic_improvement_percent: float | None = None
+    baseline_economic_cost_cny: float | None = None
     optimized_economic_cost_cny: float
     optimized_peak_import_mw: float
     total_active_loss_mwh: float
@@ -325,6 +299,7 @@ class ExecutiveSummary(ContractModel):
 
 
 class SimulationResult(ContractModel):
+    patent2_evidence: Patent2Evidence | None = None
     metadata: SimulationMetadata
     request: SimulationRequestRecord
     executive_summary: ExecutiveSummary
@@ -337,7 +312,6 @@ class SimulationResult(ContractModel):
     cluster_timeseries: list[ClusterTimeSeriesPoint] = Field(default_factory=list)
     admm_history: list[ADMMHistoryPoint] = Field(default_factory=list)
     communication: CommunicationSummary | None = None
-    group_control: GroupControlSummary | None = None
     # Missing on historical v1.0 results: never relabel old accounting as v2.
     economic_accounting_version: str | None = None
     reference_economics: ReferenceEconomics | None = None
@@ -376,10 +350,11 @@ def _emit(
     sequence: int,
     *,
     rolling: RollingProgress | None = None,
+    total_stages: int = 6,
 ) -> None:
     if callback is not None:
         callback(
-            ProgressUpdate(stage=stage, label=label, sequence=sequence, rolling=rolling)
+            ProgressUpdate(stage=stage, label=label, sequence=sequence, rolling=rolling, total_stages=total_stages)
         )
 
 
@@ -437,22 +412,23 @@ def _solve(
 
 def _reference_quality(
     policy: ComputationQualityPolicy | None,
-    baseline_details: dict[str, Any],
+    baseline_details: dict[str, Any] | None,
     optimized_details: dict[str, Any],
     coordination: tuple[CoordinationBudgetEvidence, ...] = (),
 ) -> tuple[ComputationQualityReport | None, list[ValidationItem]]:
     """Project recorded solver evidence into the same quality gates for both views."""
     if policy is None:
         return None, []
+    sources = (("optimized", optimized_details),) if baseline_details is None else (("baseline", baseline_details), ("optimized", optimized_details))
     records = {
         name: tuple(OptimizationQuality.model_validate(q) for q in details["optimization_quality"])
-        for name, details in (("baseline", baseline_details), ("optimized", optimized_details))
+        for name, details in sources
     }
     report = ComputationQualityReport(
         policy=policy, reference_optimizations=records, reference_coordination=coordination,
         reference_ac_recovery={
             name: ACRecoveryEvidence.model_validate(details["ac_recovery"])
-            for name, details in (("baseline", baseline_details), ("optimized", optimized_details))
+            for name, details in sources
             if details.get("ac_recovery") is not None
         },
     )
@@ -568,10 +544,10 @@ def _validation_items(
 def _timeseries(
     case: ProjectCase,
     microgrid: MicrogridData,
-    baseline: OptimizationResult,
+    baseline: OptimizationResult | None,
     optimized: OptimizationResult,
 ) -> list[TimeSeriesPoint]:
-    base = baseline.microgrids[microgrid.name]
+    base = baseline.microgrids[microgrid.name] if baseline is not None else None
     opt = optimized.microgrids[microgrid.name]
     voltage = np.asarray(opt["voltage_pu"], dtype=float)
     loading = np.asarray(opt["line_loading_pu"], dtype=float)
@@ -588,7 +564,7 @@ def _timeseries(
             price_cny_per_mwh=float(case.price_cny_per_mwh[index]),
             load_mw=float(load_p[index]),
             load_mvar=float(load_q[index]),
-            p_grid_baseline_mw=float(base["p_grid_mw"][index]),
+            p_grid_baseline_mw=float(base["p_grid_mw"][index]) if base is not None else None,
             p_grid_optimized_mw=float(opt["p_grid_mw"][index]),
             q_grid_optimized_mvar=float(opt["q_grid_mvar"][index]),
             power_factor=float(opt["power_factor"][index]),
@@ -614,9 +590,9 @@ def _timeseries(
 def _run_single_microgrid(
     request: SimulationRequest,
     progress_callback: ProgressCallback | None = None,
-    *, input_case: ProjectCase | None = None,
+    *, input_case: ProjectCase | None = None, live_callback: Callable[[dict], None] | None = None,
 ) -> SimulationResult:
-    """运行真实单微网基准/优化求解并返回网页稳定契约。"""
+    """运行单微网基准与优化求解并返回网页稳定契约。"""
     quality_policy = ComputationQualityPolicy() if request.solver.quality_policy else None
     _emit(progress_callback, SimulationStage.PREPARING_CASE, "构造参数化模拟算例", 1)
     case = apply_physical_events(
@@ -635,13 +611,18 @@ def _run_single_microgrid(
         case, request.region, storage_enabled=request.storage_enabled, policy=execution_policy,
     )
 
-    _emit(progress_callback, SimulationStage.SOLVING_BASELINE, "求解单微网基准方案", 2)
+    from .bootstrap.adapters.single_provenance import capture_single_inputs
+    input_capture = capture_single_inputs(case, execution_policy, {
+        "request": request.model_dump(mode="json"),
+        "packaged_inputs": input_case is None,
+        "baseline_planning_case": baseline_case,
+        "optimized_planning_case": optimized_case,
+    })
+
+    _emit(progress_callback, SimulationStage.SOLVING_BASELINE, "求解单微网无储能基准方案", 2)
     baseline, baseline_details = _solve(
-        baseline_case,
-        names,
-        formulation=request.solver.formulation,
-        storage_enabled=False,
-        time_limit_seconds=request.solver.time_limit_seconds,
+        baseline_case, names, formulation=request.solver.formulation,
+        storage_enabled=False, time_limit_seconds=request.solver.time_limit_seconds,
         quality_policy=quality_policy,
     )
     _require_success("single baseline", baseline)
@@ -658,21 +639,34 @@ def _run_single_microgrid(
     _require_success("single optimized", optimized)
 
     _emit(progress_callback, SimulationStage.VALIDATING, "执行约束与独立 AC 校核", 4)
-    comparison = compare_results(baseline, optimized)
     validation = validate_result(case, optimized, names)
     ac_validation = validate_ac_dispatch(case, optimized, names)
     items = _validation_items(request.region, validation, ac_validation)
+    comparison = compare_results(baseline, optimized)
+    improvement, economic_passed = assess_single_economic_requirement(
+        float(comparison["baseline_economic_cost_cny"]),
+        float(comparison["optimized_economic_cost_cny"]),
+    )
+    items.append(ValidationItem(
+        code="SINGLE_ECONOMIC_REQUIREMENT", label="计划综合成本改善至少 10%",
+        passed=economic_passed, actual=improvement, limit=10.0, unit="%",
+        scope=request.region, explanation="比较无储能优化方案与选定方案的计划综合成本。",
+        validation_basis="centralized_reference",
+        assessment_status="passed" if economic_passed else "violated",
+    ))
     quality_report, quality_checks = _reference_quality(quality_policy, baseline_details, optimized_details)
     items.extend(quality_checks)
     if all(c.passed for c in quality_checks):
         execution = run_single_execution(
             case, optimized, request.region,
+            input_capture=input_capture,
             storage_enabled=request.storage_enabled,
             time_limit_seconds=request.solver.time_limit_seconds,
             packaged_inputs=input_case is None, events=request.events,
             policy=execution_policy,
             boundary=request.single_boundary,
             research=request.single_research,
+            **({"live": live_callback} if live_callback is not None else {}),
             progress=lambda observation: _emit(
                 progress_callback, SimulationStage.VALIDATING,
                 "独立单微电网：动态规划、连续执行与实际状态反馈", 4,
@@ -686,6 +680,7 @@ def _run_single_microgrid(
             reason="参考规划质量未通过，未采用为执行初始条件",
             storage_enabled=request.storage_enabled, policy=execution_policy,
             input_basis="未启动独立周期执行",
+            input_record=input_capture.record,
             total_minutes=round(len(case.time_hours) * case.assumptions.dt_hours * 60),
         )
     items.append(ValidationItem(
@@ -723,15 +718,6 @@ def _run_single_microgrid(
                 scope=request.region, validation_basis="minute",
                 explanation="按请求目标和保留的响应期限判定；安全备用动作不自动获得跟踪通过结论。"),
         ))
-    economic_improvement, economic_passed = assess_single_economic_requirement(
-        float(comparison["baseline_economic_cost_cny"]), float(comparison["optimized_economic_cost_cny"]),
-    )
-    items.append(ValidationItem(
-        code="SINGLE_ECONOMIC_REQUIREMENT", label="计划综合成本改善至少 10%",
-        passed=economic_passed, assessment_status="passed" if economic_passed else "violated",
-        scope=request.region, validation_basis="centralized_reference", actual=economic_improvement, limit=10.0, unit="%",
-        explanation="按已确认口径比较无储能优化方案与选定方案的计划综合成本。",
-    ))
     overall_passed = bool(validation["passed"] and ac_validation["passed"] and all(item.passed for item in items))
 
     _emit(progress_callback, SimulationStage.SERIALIZING, "整理网页结构化结果", 5)
@@ -760,10 +746,10 @@ def _run_single_microgrid(
             headline="单微电网动态规划与执行闭环校核通过"
             if overall_passed
             else "单微电网存在未通过的校核项",
-            economic_improvement_percent=float(comparison["economic_improvement_percent"]),
+            economic_improvement_percent=improvement,
             baseline_economic_cost_cny=float(comparison["baseline_economic_cost_cny"]),
-            optimized_economic_cost_cny=float(comparison["optimized_economic_cost_cny"]),
-            optimized_peak_import_mw=float(comparison["optimized_peak_import_mw"]),
+            optimized_economic_cost_cny=float(optimized.cluster["economic_cost_cny"]),
+            optimized_peak_import_mw=float(optimized.cluster["peak_import_mw"]),
             total_active_loss_mwh=float(optimized.cluster["total_active_loss_mwh"]),
             minimum_power_factor=float(local["minimum_power_factor"]),
             minimum_voltage_pu=float(local["minimum_voltage_pu"]),
@@ -772,7 +758,7 @@ def _run_single_microgrid(
         topology_nodes=nodes,
         topology_edges=edges,
         validation_items=items,
-        comparison={key: float(value) for key, value in comparison.items()},
+        comparison=comparison,
         solver={
             "success": optimized.success,
             "status": optimized.status,
@@ -879,6 +865,7 @@ def _run_cluster(
     *,
     communication_fault: bool,
     input_case: ProjectCase | None = None,
+    live_callback: Callable[[dict], None] | None = None,
 ) -> SimulationResult:
     quality_policy = ComputationQualityPolicy() if request.solver.quality_policy else None
     admm_config = ADMMConfig(
@@ -1029,6 +1016,7 @@ def _run_cluster(
         packaged_inputs=input_case is None,
         events=request.events,
         admm_config=admm_config,
+        live=live_callback,
         communication_config=communication_config,
         loss_calibration=loss_calibration,
         progress=lambda label: _emit(
@@ -1247,130 +1235,33 @@ def _run_cluster(
     return result
 
 
-def _run_group_control(
-    request: SimulationRequest,
-    progress_callback: ProgressCallback | None,
-    *, input_case: ProjectCase | None = None,
-) -> SimulationResult:
-    _emit(progress_callback, SimulationStage.PREPARING_CASE, "初始化光伏群控状态机", 1)
-    case = input_case if input_case is not None else build_synthetic_case(steps=request.steps)
-    lookup = {microgrid.name: microgrid for microgrid in case.microgrids}
-    _emit(progress_callback, SimulationStage.SOLVING_BASELINE, "装载八类确定性控制场景", 2)
-    _emit(progress_callback, SimulationStage.SOLVING_OPTIMIZED, "执行真实群控监督器状态转换", 3)
-    scenarios = run_group_control_scenarios(basis=scenario_basis(lookup["SC"]))
-
-    _emit(progress_callback, SimulationStage.VALIDATING, "核验触发、防抖、限发与恢复动作", 4)
-    all_passed = all(scenario.passed for scenario in scenarios.values())
-    validation_items = [
-        ValidationItem(
-            code=f"GROUP_{name.upper()}",
-            label=scenario.description,
-            passed=scenario.passed,
-            actual="passed" if scenario.passed else ", ".join(scenario.failed_checks),
-            limit="passed",
-            scope="group_control",
-            explanation=f"真实状态机回归：{len(scenario.records)} 个判断周期、{len(scenario.events)} 个审计事件",
-        )
-        for name, scenario in scenarios.items()
-    ]
-
-    _emit(progress_callback, SimulationStage.SERIALIZING, "整理群控阈值、状态和事件轨迹", 5)
-    records = [
-        GroupControlRecord(
-            scenario=name,
-            time_minute=float(record.control_input.time_minutes),
-            pcc_power_mw=float(record.control_input.pcc_power_mw),
-            risk_limit_mw=float(record.decision.thresholds.risk_limit_mw),
-            safety_threshold_mw=float(record.decision.thresholds.safety_threshold_mw),
-            restore_threshold_mw=float(record.decision.thresholds.restore_threshold_mw),
-            risk_index=float(record.decision.thresholds.risk_index),
-            state=record.decision.state.value,
-            action=record.decision.action.value,
-            trigger_reason=record.decision.trigger_reason,
-            requested_curtailment_mw=float(record.decision.requested_curtailment_mw),
-            requested_restoration_mw=float(record.decision.requested_restoration_mw),
-            remaining_curtailment_mw=float(record.decision.remaining_curtailment_mw),
-        )
-        for name, scenario in scenarios.items()
-        for record in scenario.records
-    ]
-    events = [
-        GroupControlEventRecord(
-            scenario=name,
-            time_minute=float(event.time_minutes),
-            event_type=event.event_type,
-            reason=event.reason,
-            previous_state=event.previous_state.value,
-            new_state=event.new_state.value,
-            requested_power_mw=float(event.requested_power_mw),
-            achieved_power_mw=float(event.achieved_power_mw),
-        )
-        for name, scenario in scenarios.items()
-        for event in scenario.events
-    ]
-    nodes, edges = _topology(lookup[request.region])
-    result = SimulationResult(
-        metadata=SimulationMetadata(
-            dataset_id=case.dataset_id,
-            dataset_revision=case.dataset_revision,
-            dataset_sha256=case.dataset_sha256,
-            profile_kind=case.profile_kind,
-            generated_at=datetime.now(timezone.utc).isoformat(),
-            scenario_type=request.scenario_type,
-            region=request.region,
-            steps=request.steps,
-            dt_hours=case.assumptions.dt_hours,
-            formulation=request.solver.formulation,
-        ),
-        request=request,
-        executive_summary=ExecutiveSummary(
-            overall_passed=all_passed,
-            headline="八类光伏群调群控场景全部通过" if all_passed else "光伏群控场景存在未通过项",
-            economic_improvement_percent=0.0,
-            baseline_economic_cost_cny=0.0,
-            optimized_economic_cost_cny=0.0,
-            optimized_peak_import_mw=float(max(record.pcc_power_mw for record in records)),
-            total_active_loss_mwh=0.0,
-            minimum_power_factor=1.0,
-            minimum_voltage_pu=1.0,
-            maximum_voltage_pu=1.0,
-        ),
-        topology_nodes=nodes,
-        topology_edges=edges,
-        validation_items=validation_items,
-        comparison={
-            "scenario_count": float(len(scenarios)),
-            "passed_scenario_count": float(sum(scenario.passed for scenario in scenarios.values())),
-            "event_count": float(len(events)),
-        },
-        solver={
-            "success": all_passed,
-            "status": "state_machine_completed",
-            "message": "deterministic group-control scenario suite",
-            "mip_gap": None,
-            "model_size": None,
-        },
-        timeseries=[],
-        group_control=GroupControlSummary(
-            all_passed=all_passed,
-            scenario_count=len(scenarios),
-            scenario_checks={name: scenario.checks for name, scenario in scenarios.items()},
-            records=records,
-            events=events,
-        ),
-    )
-    _emit(progress_callback, SimulationStage.SUCCEEDED, "群控状态机仿真完成", 6)
-    return result
-
-
 def run_simulation(
     request: SimulationRequest,
     progress_callback: ProgressCallback | None = None,
-    *, input_case: ProjectCase | None = None,
+    *, input_case: ProjectCase | None = None, live_callback: Callable[[dict], None] | None = None,
 ) -> SimulationResult:
-    """按场景运行现有真实求解器或群控状态机，并返回统一网页契约。"""
+    """按场景运行优化与协调流程，并返回统一网页契约。"""
     # Replaying a stored request or an unvalidated model_copy is a new execution.
     request = SimulationRequest.model_validate(request.model_dump())
+    if request.patent2_case is not None:
+        if input_case is not None:
+            raise ValueError("patent2 inputs are fixed by the recorded study scenario")
+        input_case = build_example(request.patent2_case)
+        inputs = describe_example(request.patent2_case, input_case)
+        if live_callback is not None:
+            live_callback({"kind": "cluster_study", "inputs": inputs.model_dump(mode="json")})
+        from .bootstrap.adapters.patent2_example import source_digest
+        digest = source_digest()
+        def example_progress(update: ProgressUpdate) -> None:
+            if progress_callback is not None:
+                progress_callback(update.model_copy(update={
+                    "stage": SimulationStage.VALIDATING,
+                    "label": "正在重放序列化执行证据（完整安全链复验，可能需要数分钟）",
+                }) if update.stage is SimulationStage.SUCCEEDED else update)
+        result = _run_cluster(request, example_progress, communication_fault=False, input_case=input_case, live_callback=live_callback)
+        evidence = finish_example(inputs, result.cluster_execution, code_sha256=digest)
+        _emit(progress_callback, SimulationStage.SUCCEEDED, "实施例计算与证据整理完成", 6)
+        return result.model_copy(update={"patent2_evidence": evidence})
     validate_scenario_events(
         request.scenario_type.value,
         request.region,
@@ -1383,20 +1274,18 @@ def run_simulation(
     if input_case is not None and len(input_case.time_hours) != request.steps:
         raise ValueError("explicit case length must match requested steps")
     if request.scenario_type is ScenarioType.SINGLE_MICROGRID:
-        return _run_single_microgrid(request, progress_callback, input_case=input_case)
+        return _run_single_microgrid(request, progress_callback, input_case=input_case, live_callback=live_callback)
     if request.scenario_type is ScenarioType.CLUSTER_COORDINATION:
         return _run_cluster(request, progress_callback, communication_fault=False, input_case=input_case)
     if request.scenario_type is ScenarioType.COMMUNICATION_FAULT:
         return _run_cluster(request, progress_callback, communication_fault=True, input_case=input_case)
-    if request.scenario_type is ScenarioType.GROUP_CONTROL:
-        return _run_group_control(request, progress_callback, input_case=input_case)
     raise ValueError(f"unsupported scenario type: {request.scenario_type}")
 
 
 __all__ = [
     "ADMMHistoryPoint", "ClusterTimeSeriesPoint", "CommunicationSummary",
-    "ExecutiveSummary", "GroupControlEventRecord", "GroupControlRecord",
-    "GroupControlSummary", "ProgressCallback", "ProgressUpdate", "ScenarioType",
+    "ExecutiveSummary",
+    "ProgressCallback", "ProgressUpdate", "ScenarioType",
     "SimulationMetadata", "SimulationRequest", "SimulationResult", "SimulationStage",
     "SolverFormulation", "SolverOptions", "TimeSeriesPoint", "TopologyEdge",
     "TopologyNode", "ValidationItem", "run_simulation",

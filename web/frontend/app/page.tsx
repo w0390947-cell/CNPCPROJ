@@ -1,11 +1,5 @@
-import SimulationDashboard from '@/components/simulation-dashboard';
+import SingleCasePage from '@/features/single-execution/case-page';
 
 export default function Home() {
-  // Legacy overview URLs keep their query string and restore the same cluster task.
-  return (
-    <SimulationDashboard
-      key="cluster_coordination"
-      initialView="cluster_coordination"
-    />
-  );
+  return <SingleCasePage />;
 }

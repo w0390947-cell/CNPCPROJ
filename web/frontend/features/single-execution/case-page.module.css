@@ -1,0 +1,77 @@
+.workspace {
+  min-width: 0;
+}
+.provenance {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+  gap: 10px 20px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.provenance dt {
+  color: var(--science-muted);
+}
+.provenance dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .provenance {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+  .provenance dd {
+    margin-bottom: 10px;
+  }
+}
+.status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+  color: var(--science-muted);
+  font-size: 14px;
+}
+.status progress {
+  width: min(260px, 100%);
+}
+.error {
+  color: var(--science-danger);
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 12px;
+}
+.cards > div {
+  padding: 16px;
+  border: 1px solid var(--science-border);
+  border-radius: 6px;
+  background: var(--science-subtle);
+}
+.cards span,
+.cards small {
+  display: block;
+  color: var(--science-muted);
+  font-size: 12px;
+}
+.cards strong {
+  display: block;
+  margin: 8px 0;
+  font-size: 20px;
+  color: var(--science-text);
+  font-weight: 600;
+}
+
+.cards strong[data-status='passed'],
+.cards strong[data-status='met'] {
+  color: var(--science-success);
+}
+.cards strong[data-status='unknown'],
+.cards strong[data-status='not_computed'] {
+  color: var(--science-warning);
+}
+.cards strong[data-status='violated'],
+.cards strong[data-status='missed'] {
+  color: var(--science-danger);
+}

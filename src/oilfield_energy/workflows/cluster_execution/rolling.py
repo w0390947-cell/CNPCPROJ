@@ -13,6 +13,7 @@ def run_feedback_loop(
     advance: Callable[[int, int], dict[str, float]],
     progress: Callable[[str], None],
     rolling_progress: Callable[[RollingProgress], None] | None = None,
+    on_update: Callable[[RollingUpdate], None] | None = None,
 ) -> tuple[RollingUpdate, ...]:
     """Advance only an adopted candidate or a retained certified continuation."""
     updates: list[RollingUpdate] = []
@@ -52,6 +53,8 @@ def run_feedback_loop(
             )
         ):
             raise ValueError("rolling evidence does not match the requested window")
+        if on_update is not None:
+            on_update(update)
         if not update.adopted and not update.continuation_available:
             updates.append(update)
             if rolling_progress is not None:
@@ -67,10 +70,14 @@ def run_feedback_loop(
                     update={"status": "unknown", "reason": f"分钟执行中止：{exc}"}
                 )
             )
+            if on_update is not None:
+                on_update(updates[-1])
             if rolling_progress is not None:
                 rolling_progress(observation.model_copy(update={"phase": "stopped"}))
             break
         updates.append(update.model_copy(update={"actual_end_energy_mwh": energy}))
+        if on_update is not None:
+            on_update(updates[-1])
         if rolling_progress is not None:
             rolling_progress(
                 observation.model_copy(

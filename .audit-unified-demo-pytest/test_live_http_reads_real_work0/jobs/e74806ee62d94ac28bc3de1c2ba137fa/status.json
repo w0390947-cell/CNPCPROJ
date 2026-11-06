@@ -1,0 +1,15 @@
+{
+  "simulation_id": "e74806ee62d94ac28bc3de1c2ba137fa",
+  "name": "单微网快速仿真",
+  "state": "cancelled",
+  "created_at": "2026-11-05T13:12:26.048871+00:00",
+  "updated_at": "2026-11-05T13:12:29.482359+00:00",
+  "stage": "cancelled",
+  "stage_label": "仿真已取消",
+  "stage_sequence": null,
+  "total_stages": 6,
+  "rolling": null,
+  "result_available": false,
+  "error_code": null,
+  "error_message": null
+}

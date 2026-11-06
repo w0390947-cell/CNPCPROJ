@@ -16,6 +16,7 @@ from .job_manager import (
 )
 from .runtime.worker_lifetime import watch_owner_pipe
 from .service import SimulationRequest, run_simulation
+from .live_journal import LiveJournal
 
 
 def run_session(session_dir: Path, *, managed: bool = False) -> None:
@@ -32,14 +33,15 @@ def run_session(session_dir: Path, *, managed: bool = False) -> None:
             status = progress_status(status, update)
             write_job_status(session_dir, status)
 
-        result = run_simulation(request, report)
+        journal = LiveJournal(session_dir)
+        result = run_simulation(request, report, live_callback=journal.publish)
         atomic_write_json(session_dir / "result.json", result.model_dump(mode="json"))
         status = status.model_copy(update={
             "state": JobState.SUCCEEDED,
             "updated_at": utc_now(),
             "stage": "succeeded",
             "stage_label": "仿真与校核完成",
-            "stage_sequence": 6,
+            "stage_sequence": status.total_stages,
             "result_available": True,
             "error_code": None,
             "error_message": None,

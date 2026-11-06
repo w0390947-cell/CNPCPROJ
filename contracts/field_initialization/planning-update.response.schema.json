@@ -1,0 +1,252 @@
+{
+  "$defs": {
+    "InterfaceError": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "field_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Field Path"
+        },
+        "resource_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resource Id"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        },
+        "required_action": {
+          "default": "Correct the input or resolve the stated prerequisite.",
+          "title": "Required Action",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "InterfaceError",
+      "type": "object"
+    },
+    "PlanningUpdatePayload": {
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {
+          "enum": [
+            "accepted",
+            "rejected"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "errors": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/InterfaceError"
+          },
+          "title": "Errors",
+          "type": "array"
+        },
+        "data": {
+          "$ref": "#/$defs/PlanningUpdateResult"
+        }
+      },
+      "required": [
+        "outcome",
+        "data"
+      ],
+      "title": "PlanningUpdatePayload",
+      "type": "object"
+    },
+    "PlanningUpdateResult": {
+      "additionalProperties": false,
+      "properties": {
+        "input_revision": {
+          "title": "Input Revision",
+          "type": "string"
+        },
+        "activation_status": {
+          "enum": [
+            "staged",
+            "activated",
+            "rejected"
+          ],
+          "title": "Activation Status",
+          "type": "string"
+        },
+        "new_context_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "New Context Id"
+        },
+        "effective_from": {
+          "format": "date-time",
+          "title": "Effective From",
+          "type": "string"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        },
+        "preserved_task_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Preserved Task Id"
+        },
+        "preserved_target_deadline_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Preserved Target Deadline At"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "evidence_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Evidence Ref"
+        },
+        "mode": {
+          "default": "shadow",
+          "enum": [
+            "shadow",
+            "closed_loop"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "dispatch_enabled": {
+          "const": false,
+          "default": false,
+          "title": "Dispatch Enabled",
+          "type": "boolean"
+        },
+        "energy_task_guarantee": {
+          "enum": [
+            "not_assessed",
+            "not_required",
+            "maintained",
+            "unproven"
+          ],
+          "title": "Energy Task Guarantee",
+          "type": "string"
+        }
+      },
+      "required": [
+        "input_revision",
+        "activation_status",
+        "new_context_id",
+        "effective_from",
+        "valid_until",
+        "preserved_task_id",
+        "reason",
+        "evidence_ref",
+        "energy_task_guarantee"
+      ],
+      "title": "PlanningUpdateResult",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "interface_version": {
+      "const": "single-microgrid-field-v0.1-draft",
+      "default": "single-microgrid-field-v0.1-draft",
+      "title": "Interface Version",
+      "type": "string"
+    },
+    "operation": {
+      "const": "UpdatePlanningInputs",
+      "default": "UpdatePlanningInputs",
+      "title": "Operation",
+      "type": "string"
+    },
+    "message_id": {
+      "title": "Message Id",
+      "type": "string"
+    },
+    "correlation_id": {
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "microgrid_id": {
+      "title": "Microgrid Id",
+      "type": "string"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/PlanningUpdatePayload"
+    }
+  },
+  "required": [
+    "message_id",
+    "correlation_id",
+    "microgrid_id",
+    "run_id",
+    "created_at",
+    "payload"
+  ],
+  "title": "UpdatePlanningResponse",
+  "type": "object"
+}

@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import ts from 'typescript';
+import { executionDisplayText } from '../../shared/lib/execution-display-text.ts';
 
 const require = createRequire(import.meta.url);
 const source = fs.readFileSync(
@@ -18,17 +19,19 @@ const source = fs.readFileSync(
 const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
-const module = { exports: {} };
+const loadedModule = { exports: {} };
 vm.runInNewContext(compiled, {
-  exports: module.exports,
+  exports: loadedModule.exports,
   require: (name) =>
     name.endsWith('.css')
       ? { default: {}, __esModule: true }
       : name === './presentation'
         ? { planTimeLabel: (hours) => `${hours * 60} min` }
-        : require(name),
+        : name === '../../shared/lib/execution-display-text'
+          ? { executionDisplayText }
+          : require(name),
 });
-const { ReserveDetails } = module.exports;
+const { ReserveDetails } = loadedModule.exports;
 const render = (execution) =>
   renderToStaticMarkup(React.createElement(ReserveDetails, { execution }));
 

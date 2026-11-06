@@ -4,6 +4,7 @@ import { ComputationQualityDetails } from '@/features/computation-quality';
 import { DynamicTrackingDetails } from './dynamic-tracking';
 import { planTimeLabel } from './presentation';
 import { ReserveDetails } from './reserve-details';
+import { executionDisplayText } from '../../shared/lib/execution-display-text';
 import styles from './style.module.css';
 
 export function ClusterExecutionPanel({
@@ -26,7 +27,7 @@ export function ClusterExecutionPanel({
             ? hasResult
               ? '计算中 · 当前显示上次结果'
               : '正在计算'
-            : '模拟执行证据'}
+            : '执行证据'}
         </em>
       </div>
       {quality && (
@@ -58,7 +59,7 @@ export function ExecutionEvidence({
   ];
   return (
     <div className={styles.execution} aria-label="自动执行校核">
-      <strong>自动执行校核 · 模拟运行</strong>
+      <strong>自动执行校核</strong>
       {!!restorations.length && (
         <details className={styles.details}>
           <summary>AC 可行性恢复（{restorations.length} 条）</summary>
@@ -75,7 +76,7 @@ export function ExecutionEvidence({
           <summary>连续安全与认证后备（{execution.safety.steps?.length ?? 0} 个已执行区间）</summary>
           <p>同时检查区域不倒送、电压、支路容量、设备与电量边界，以及集群受电上限和功率因数。每个获采用动作保留一条认证后续控制路径。</p>
           <p>经济动作 {execution.safety.steps?.filter((s) => s.source === 'economic').length ?? 0} 个；后备或终端动作 {execution.safety.steps?.filter((s) => s.source === 'backup' || s.source === 'terminal').length ?? 0} 个。后备可以偏离经济目标，安全结论与经济跟踪分开记录。</p>
-          <p>{execution.safety.domain.policy.source} 保证还要求输入始终位于记录的范围内，且末个声明包络持续有效。</p>
+          <p>{executionDisplayText(execution.safety.domain.policy.source)} 保证还要求输入始终位于记录的范围内，且末个声明包络持续有效。</p>
           {execution.safety.failure && <p>未获证明或停止原因：{execution.safety.failure}</p>}
         </details>
       )}
@@ -132,7 +133,7 @@ export function ExecutionEvidence({
             ))}
         </>
       )}
-      <p>{execution.policy.source}</p>
+      <p>{executionDisplayText(execution.policy.source)}</p>
       {execution.policy.reactive_planning && (
         <details className={styles.details}>
           <summary>无功计划余量与动态跟踪</summary>
@@ -142,10 +143,10 @@ export function ExecutionEvidence({
             的无功能力，并依据已执行设备状态约束计划过渡。分钟控制在设备权限和
             AC 安全条件内修正实际无功偏差；响应期限及跟踪限值仍独立校核。
           </p>
-          <p>{execution.policy.reactive_planning.source}</p>
+          <p>{executionDisplayText(execution.policy.reactive_planning.source)}</p>
         </details>
       )}
-      <p>{execution.input_basis}</p>
+      <p>{executionDisplayText(execution.input_basis)}</p>
       {execution.stages
         .filter((stage) => stage.reason)
         .map((stage) => (

@@ -91,7 +91,7 @@ def test_worker_stays_in_saving_state_until_result_is_readable(
         SimulationRequest().model_dump_json(), encoding="utf-8"
     )
 
-    def compute(_request, callback):
+    def compute(_request, callback, *, live_callback=None):
         callback(
             ProgressUpdate(
                 stage="validating", label="executing", sequence=4, rolling=observation()

@@ -23,11 +23,6 @@ from .bootstrap.adapters.single_execution import (
     single_execution_policy,
 )
 from .field_data import write_field_data_audit
-from .group_control_scenarios import (
-    run_group_control_scenarios,
-    scenario_basis,
-    write_group_control_scenario_outputs,
-)
 from .modules.dispatch.api import assess_single_economic_requirement
 from .network_model import NetworkContingency
 from .network_scenarios import (
@@ -211,17 +206,6 @@ def run_hierarchy(steps: int, output: Path, time_limit: float, include_fault_dem
         run_cluster(steps, output / "fault_demo", time_limit, communication_fault=True)
 
 
-def run_group_scenario_suite(output: Path) -> None:
-    """单独运行群调群控确定性场景集，不启动MISOCP或ADMM。"""
-    results = run_group_control_scenarios(basis=scenario_basis(build_synthetic_case().microgrids[0]))
-    write_group_control_scenario_outputs(output, results)
-    failed = [name for name, result in results.items() if not result.passed]
-    if failed:
-        raise RuntimeError("group-control scenarios failed: " + ", ".join(failed))
-    print(f"Group-control scenarios passed: {len(results)}/{len(results)}")
-    print(f"Results written to: {output.resolve()}")
-
-
 def run_field_audit(
     output: Path,
     short_circuit_workbook: Path,
@@ -295,7 +279,7 @@ def main() -> None:
         "command",
         nargs="?",
         default="run",
-        choices=["run", "cluster", "cluster-batch", "hierarchical", "group-scenarios", "field-audit", "network-scenarios", "compare-power-flow", "field-power-flow"],
+        choices=["run", "cluster", "cluster-batch", "hierarchical", "field-audit", "network-scenarios", "compare-power-flow", "field-power-flow"],
     )
     parser.add_argument("--steps", type=int, default=96, help="24-hour time steps (96 = 15 min)")
     parser.add_argument("--output", type=Path, default=Path("results"))
@@ -343,8 +327,6 @@ def main() -> None:
         run_hierarchy(args.steps, args.output, args.time_limit, not args.skip_fault_demo)
     elif args.command == "network-scenarios":
         run_network_scenario_suite(args.steps, args.output, args.time_limit)
-    elif args.command == "group-scenarios":
-        run_group_scenario_suite(args.output)
     elif args.command == "field-audit":
         run_field_audit(
             args.output,

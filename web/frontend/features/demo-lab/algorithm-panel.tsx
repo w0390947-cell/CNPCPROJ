@@ -30,7 +30,7 @@ export function AlgorithmPanel({
         title="运行算法"
       />
       <p className="demo-panel-copy">
-        使用服务已捕获的合成资料包提交独立求解任务，运行进度和结果在对应算法页面查看。
+        使用服务已捕获的资料包提交独立求解任务，运行进度和结果在对应算法页面查看。
       </p>
       <div className="demo-actions">
         {Object.entries(presets ?? {}).map(([key, request]) => (

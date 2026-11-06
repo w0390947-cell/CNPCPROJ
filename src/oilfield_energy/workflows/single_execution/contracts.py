@@ -2,10 +2,13 @@
 
 from typing import Literal
 
+from .contracts_preparation import PreparedUnifiedCycle as PreparedUnifiedCycle
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from oilfield_energy.modules.control.contracts import (
     DeviceCheckpoint,
+    PlantInputs,
 )
 from oilfield_energy.workflows.cluster_execution.contracts import (
     ExecutionPolicy,
@@ -59,6 +62,9 @@ from .contracts_unified import (
 )
 
 
+from .contracts_provenance import SingleInputRecord
+
+
 class SingleExecution(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
     version: Literal["single-execution-v9"]
@@ -78,6 +84,10 @@ class SingleExecution(BaseModel):
     total_minutes: int = Field(gt=0)
     completed_minutes: int = Field(default=0, ge=0)
     unified: UnifiedExecution | None = None
+    # Display provenance only; absent in historical records. Never reconstructed
+    # from an uncertainty envelope or from future plant observations.
+    input_forecast: PlantInputs | None = None
+    input_record: SingleInputRecord | None = None
 
     @model_validator(mode="after")
     def causal_evidence(self) -> "SingleExecution":

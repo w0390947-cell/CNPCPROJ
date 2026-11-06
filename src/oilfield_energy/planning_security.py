@@ -12,11 +12,10 @@ from zlib import crc32
 
 import numpy as np
 
+from .modules.dispatch.contracts import PlanningSecurityConfig, SecurityThresholdInput
 from .data import MicrogridData, ProjectCase
-from .group_control import calculate_thresholds
+from .modules.dispatch.api import calculate_thresholds
 from .hierarchy_types import (
-    GroupControlConfig,
-    GroupControlInput,
     PlanningSecurityTrajectory,
 )
 
@@ -36,7 +35,7 @@ def estimate_reverse_flow_probability(
     pv_forecast_mw: np.ndarray,
     *,
     dt_minutes: float,
-    config: GroupControlConfig,
+    config: PlanningSecurityConfig,
     random_seed: int,
 ) -> np.ndarray:
     """用负荷/光伏预测误差场景估计窗口内至少一次倒送的概率。
@@ -85,10 +84,10 @@ def build_planning_security_trajectory(
     case: ProjectCase,
     microgrid: MicrogridData,
     *,
-    config: GroupControlConfig | None = None,
+    config: PlanningSecurityConfig | None = None,
 ) -> PlanningSecurityTrajectory:
     """根据一个区域的计划预测构造逐时风险特征与唯一有效安全下界。"""
-    cfg = config or GroupControlConfig()
+    cfg = config or PlanningSecurityConfig()
     steps = len(case.time_hours)
     load = _sum_profiles(microgrid.load_p_mw, steps)
     wind = _sum_profiles(microgrid.wind_available_mw, steps)
@@ -111,7 +110,7 @@ def build_planning_security_trajectory(
     for t in range(steps):
         previous = net_load[t - 1] if t > 0 else net_load[t]
         snapshot = calculate_thresholds(
-            GroupControlInput(
+            SecurityThresholdInput(
                 time_minutes=float(t * case.assumptions.dt_hours * 60.0),
                 pcc_power_mw=float(net_load[t]),
                 current_net_load_mw=float(net_load[t]),
@@ -146,7 +145,7 @@ def build_planning_security_trajectories(
     case: ProjectCase,
     microgrid_names: Sequence[str] | None = None,
     *,
-    config: GroupControlConfig | None = None,
+    config: PlanningSecurityConfig | None = None,
 ) -> dict[str, PlanningSecurityTrajectory]:
     """为所选区域生成可重复的计划安全轨迹，并检查集群可行性。"""
     lookup = {microgrid.name: microgrid for microgrid in case.microgrids}
@@ -173,7 +172,7 @@ def resolve_security_floors(
     microgrids: Sequence[MicrogridData],
     security_floors_mw: Mapping[str, np.ndarray] | None,
     *,
-    config: GroupControlConfig | None = None,
+    config: PlanningSecurityConfig | None = None,
 ) -> dict[str, np.ndarray]:
     """验证外部轨迹，或生成默认动态轨迹，返回防御性副本。"""
     if security_floors_mw is None:

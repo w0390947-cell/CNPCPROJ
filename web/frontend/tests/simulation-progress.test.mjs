@@ -39,6 +39,12 @@ test('rolling progress advances only with completed windows, including restored 
   );
 });
 
+test('five-stage single-microgrid jobs report rolling progress', () => {
+  const current = { ...status(48), stage_sequence: 3, total_stages: 5 };
+  assert.equal(jobProgressPresentation(current).percent, 50);
+  assert.match(jobProgressPresentation(current).detail, /48\/96/);
+});
+
 test('window totals and final partial window are server-owned and 24:00 never wraps', () => {
   const current = status();
   current.rolling = {

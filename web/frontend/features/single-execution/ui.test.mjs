@@ -61,7 +61,7 @@ test('safe continuation cannot turn failed tracking and economics into passes', 
   assert.match(html, /安全与备用续接<\/td><td>通过/);
   assert.match(html, /硬任务未获保证/);
   assert.match(html, /PCC 期限后跟踪<\/td><td>未通过/);
-  assert.match(html, /计划经济性改善至少 10%<\/td><td>未通过/);
+  assert.match(html, /计划经济性改善至少 10%<\/td><td>未通过（4\.69%）/);
   assert.match(html, /declared fixture/);
   assert.match(html, /存在未接纳目标/);
   assert.match(html, /接纳 0 \/ 1 个，拒绝 1 个/);

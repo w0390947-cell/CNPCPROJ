@@ -287,7 +287,7 @@ def test_radial_outages_are_reported_as_islanded(bundle):
     assert all(r["status"] == "islanded" for r in outages)
 
 
-def test_live_api_independent_worker_result_stream_and_cancel(tmp_path):
+def test_live_api_independent_worker_stream_and_cancel(tmp_path):
     from websockets.sync.client import connect
 
     generate_bundle(tmp_path / "bundle")
@@ -295,23 +295,34 @@ def test_live_api_independent_worker_result_stream_and_cancel(tmp_path):
         create_demo_app(tmp_path / "bundle/bundle.json", tmp_path / "runs", 0.1)
     ) as client:
         started = client.get("/api/demo/telemetry").json()["sequence"]
+        rejected = client.post(
+            "/api/simulations", json={"scenario_type": "group_control", "steps": 4}
+        )
+        assert rejected.status_code == 422
         job = client.post(
-            "/api/simulations", json={"scenario_type": "group_control", "steps": 8}
+            "/api/simulations", json={"scenario_type": "single_microgrid", "steps": 4}
         ).json()
         job_id = job["simulation_id"]
         with connect(
             client.base.replace("http:", "ws:") + f"/api/simulations/{job_id}/stream"
         ) as socket:
+            deadline = time.monotonic() + 120
             while True:
-                status = json.loads(socket.recv(timeout=30))
-                if status["state"] not in {"queued", "running"}:
+                remaining = deadline - time.monotonic()
+                assert remaining > 0, "worker did not reach real solver progress"
+                status = json.loads(socket.recv(timeout=remaining))
+                if (
+                    status["state"] not in {"queued", "running"}
+                    or (status["stage_sequence"] or 0) >= 4
+                ):
                     break
-        assert status["state"] == "succeeded", status
-        assert client.get(f"/api/simulations/{job_id}/result").json()["group_control"][
-            "all_passed"
-        ]
+        # This transport test stops after both reference solves. Full-day rolling
+        # execution is a numerical study; the installed-wheel smoke completes a
+        # bounded real execution and checks the resulting evidence separately.
+        assert status["state"] == "running", status
+        assert not status["result_available"]
+        assert client.get(f"/api/simulations/{job_id}/result").status_code == 409
         assert client.get("/api/demo/telemetry").json()["sequence"] > started
-        pending = client.post("/api/simulations", json={"steps": 96}).json()
         queued = client.post("/api/simulations", json={"steps": 96}).json()
         assert (
             client.post(
@@ -321,13 +332,16 @@ def test_live_api_independent_worker_result_stream_and_cancel(tmp_path):
         )
         assert (
             client.post(
-                f"/api/simulations/{pending['simulation_id']}/cancel", json={}
+                f"/api/simulations/{job_id}/cancel", json={}
             ).json()["state"]
             == "cancelled"
         )
     copied = next((tmp_path / "runs").glob(f"*/jobs/{job_id}/bundle.json"))
     assert copied.read_bytes() == (tmp_path / "bundle/bundle.json").read_bytes()
-    provenance = json.loads(copied.with_name("input_provenance.json").read_bytes())
+    # Cancelled jobs retain worker evidence in their attempt directory; only a
+    # completed result may be published to the canonical job directory.
+    provenance_path = next(copied.parent.glob("attempts/*/input_provenance.json"))
+    provenance = json.loads(provenance_path.read_bytes())
     assert provenance["sha256"] == hashlib.sha256(copied.read_bytes()).hexdigest()
 
 

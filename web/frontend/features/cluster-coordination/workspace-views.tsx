@@ -18,7 +18,7 @@ const views = [
   {
     value: 'execution',
     label: '执行校核',
-    description: '查看日前、日内与分钟级模拟执行证据，定位未通过项及对应时段。',
+    description: '查看日前、日内与分钟级执行证据，定位未通过项及对应时段。',
   },
 ] as const;
 

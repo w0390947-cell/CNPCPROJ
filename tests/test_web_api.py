@@ -50,7 +50,7 @@ class WebApiContractTests(unittest.TestCase):
     def test_quick_endpoint_rejects_non_single_scenario(self) -> None:
         with self.assertRaises(HTTPException) as caught:
             run_quick_simulation(SimulationRequest(
-                scenario_type=ScenarioType.GROUP_CONTROL,
+                scenario_type=ScenarioType.CLUSTER_COORDINATION,
                 steps=4,
             ))
         self.assertEqual(caught.exception.status_code, 422)

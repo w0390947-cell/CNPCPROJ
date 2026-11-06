@@ -6,6 +6,46 @@ import pytest
 from oilfield_energy.service import SimulationRequest, SimulationResult, run_simulation
 
 
+def test_single_result_assesses_economic_baseline(monkeypatch):
+    import oilfield_energy.service as service
+    from oilfield_energy.workflows.single_execution.contracts import SingleExecution
+
+    original_solve = service._solve
+    solves = []
+
+    def record_solve(*args, **kwargs):
+        solves.append(kwargs["storage_enabled"])
+        return original_solve(*args, **kwargs)
+
+    def planning_only(case, reference, region, **kwargs):
+        return SingleExecution(
+            version="single-execution-v9", region=region, status="not_computed",
+            storage_enabled=kwargs["storage_enabled"], policy=kwargs["policy"],
+            input_basis="short service test", total_minutes=30,
+        )
+
+    monkeypatch.setattr(service, "_solve", record_solve)
+    monkeypatch.setattr(service, "run_single_execution", planning_only)
+    progress = []
+    result = run_simulation(SimulationRequest(steps=2), progress.append)
+
+    assert solves == [False, True]
+    base = result.executive_summary.baseline_economic_cost_cny
+    selected = result.executive_summary.optimized_economic_cost_cny
+    expected = 100 * (base - selected) / base
+    assert result.executive_summary.economic_improvement_percent == pytest.approx(expected)
+    assert result.comparison["economic_improvement_percent"] == pytest.approx(expected)
+    check = next(item for item in result.validation_items if item.code == "SINGLE_ECONOMIC_REQUIREMENT")
+    assert check.actual == pytest.approx(expected)
+    assert check.passed == (expected >= 10)
+    assert result.executive_summary.overall_passed == all(item.passed for item in result.validation_items)
+    assert all(p.p_grid_baseline_mw is not None for p in result.timeseries)
+    assert "baseline" in result.solver
+    assert [p.sequence for p in progress] == [1, 2, 3, 4, 5, 6]
+    assert all(p.total_stages == 6 for p in progress)
+    SimulationResult.model_validate_json(result.model_dump_json())
+
+
 @pytest.mark.parametrize(
     "region,steps,storage",
     [("SC", 8, True), ("SC", 96, True), ("YA_B", 24, False), ("YA_C", 24, True)],
@@ -110,7 +150,7 @@ def test_feasible_single_result_with_insufficient_quality_is_preserved_but_not_p
     )
 
 
-@pytest.mark.parametrize("scenario", ["communication_fault", "group_control"])
+@pytest.mark.parametrize("scenario", ["communication_fault"])
 def test_other_research_scenarios_cannot_silently_enable_this_policy(scenario):
     with pytest.raises(ValueError, match="quality-first"):
         SimulationRequest(scenario_type=scenario, solver={"quality_policy": "quality-first-v1"})

@@ -16,6 +16,7 @@ from oilfield_energy.modules.control.api import (
 from oilfield_energy.modules.control.contracts import TubeBox, TubeCommand, TubeState
 from .contracts_safety import (
     ClusterSafetyDomain,
+    ClusterRegionDomain,
     ClusterContinuation,
     JointPathCertificate,
 )
@@ -118,10 +119,15 @@ def certify_terminal(
     return digest.hexdigest()
 
 
-def construct_terminal(
+def construct_initial_continuation(
     domain: ClusterSafetyDomain,
-) -> tuple[tuple[TubeCommand, ...], str]:
-    """Finite constructive search; terminal generation need not be zero."""
+) -> tuple[tuple[TubeCommand, ...], str, ClusterContinuation]:
+    """Select a certified terminal AND a reachable initial path as one pair.
+
+    A safe terminal alone need not be reachable under the original recovery
+    deadline and cluster import limit. Try the remaining declared candidates
+    when a path fails; never change a limit or reset the initial state.
+    """
     failures: list[str] = []
     for fraction in (0.0, 0.25, 0.5, 0.75, 1.0):
         commands: list[TubeCommand] = []
@@ -149,11 +155,19 @@ def construct_terminal(
             commands.append(TubeCommand(p_mw=tuple(p), q_mvar=tuple(q)))
         try:
             selected = tuple(commands)
-            return selected, certify_terminal(domain, selected)
+            digest = certify_terminal(domain, selected)
+            path = certify_continuation(
+                domain,
+                tuple(point_box(r.initial) for r in domain.regions),
+                0,
+                selected,
+                digest,
+            )
+            return selected, digest, path
         except ValueError as exc:
             failures.append(str(exc))
     raise ValueError(
-        "joint invariant terminal construction unproven: "
+        "joint initial continuation construction unproven: "
         + "; ".join(dict.fromkeys(failures))
     )
 
@@ -172,6 +186,37 @@ def settled(
         and b.energy_mwh.high <= energy_band(domain, i).high
         for i, (b, u) in enumerate(zip(boxes, commands, strict=True))
     )
+
+
+def stopping_energy(region: ClusterRegionDomain, power: float) -> float:
+    """Candidate-only estimate of energy during bounded PCS braking.
+
+    This does not certify a path. It prevents the return heuristic from charging
+    up to its energy target and only then noticing that the lagged PCS needs
+    several more minutes to stop. Every chosen step and deadline is still proved.
+    """
+    model = region.devices
+    storage = next(x for x in model.resources if x.kind == "storage")
+    energy = 0.0
+    for _ in range(120):
+        if abs(power) < 1e-12:
+            break
+        alpha = storage.alpha_p
+        radius = 0.98 * storage.ramp_p_mw / alpha
+        command = max(
+            storage.p.low,
+            power - radius,
+            min(storage.p.high, power + radius, -(1 - alpha) * power / alpha),
+        )
+        after = (1 - alpha) * power + alpha * command
+        average = (power + after) / 2
+        energy -= (
+            average / model.eta_discharge
+            if average >= 0
+            else average * model.eta_charge
+        ) / 60
+        power = after
+    return energy
 
 
 def certify_continuation(
@@ -222,8 +267,17 @@ def certify_continuation(
                     band = energy_band(domain, i)
                     deficit = band.low - b.energy_mwh.low
                     excess = b.energy_mwh.high - band.high
+                    current_power = midpoint(b).p_mw[j]
+                    braking = stopping_energy(r, current_power)
+                    can_brake = (
+                        b.energy_mwh.low + braking >= band.low
+                        and b.energy_mwh.high + braking <= band.high
+                    )
                     remaining = max(1, r.recovery_deadline_minute - minute - 4)
-                    if deficit > 0:
+                    if can_brake and abs(current_power) > 1e-10:
+                        alpha = r.devices.resources[j].alpha_p
+                        p[j] = -(1 - alpha) * current_power / alpha
+                    elif deficit > 0:
                         p[j] = -min(
                             -r.devices.resources[j].p.low,
                             1.3
@@ -254,6 +308,20 @@ def certify_continuation(
                         movement_fraction=fraction,
                         next_model=model_at(r, minute + 1),
                     )
+                    # The continuous certificate encloses P and Q in a box.
+                    # A command on the wind Q/P cone can be valid at both
+                    # endpoints yet fail that box while P is still rising.
+                    # Stage Q behind the already attained active power.
+                    q = list(choice.q_mvar)
+                    for j, resource in enumerate(r.devices.resources):
+                        if resource.q_over_p is not None:
+                            cap = (
+                                0.98
+                                * resource.q_over_p
+                                * max(0.0, min(b.p_mw[j].low, choice.p_mw[j]))
+                            )
+                            q[j] = min(cap, max(-cap, q[j]))
+                    choice = choice.model_copy(update={"q_mvar": tuple(q)})
                 choices.append(choice)
             try:
                 step = certify_step(domain, boxes, tuple(choices), minute)

@@ -1,0 +1,894 @@
+{
+  "$defs": {
+    "BoundedBusLoad": {
+      "additionalProperties": false,
+      "properties": {
+        "bus": {
+          "minLength": 1,
+          "title": "Bus",
+          "type": "string"
+        },
+        "p_mw": {
+          "$ref": "#/$defs/Interval"
+        },
+        "q_mvar": {
+          "$ref": "#/$defs/Interval"
+        }
+      },
+      "required": [
+        "bus",
+        "p_mw",
+        "q_mvar"
+      ],
+      "title": "BoundedBusLoad",
+      "type": "object"
+    },
+    "BusSeries": {
+      "additionalProperties": false,
+      "properties": {
+        "bus_id": {
+          "minLength": 1,
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "values": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Values",
+          "type": "array"
+        }
+      },
+      "required": [
+        "bus_id",
+        "values"
+      ],
+      "title": "BusSeries",
+      "type": "object"
+    },
+    "CostRates": {
+      "properties": {
+        "curtailment_cny_per_mwh": {
+          "title": "Curtailment Cny Per Mwh",
+          "type": "number"
+        },
+        "storage_throughput_cny_per_mwh": {
+          "title": "Storage Throughput Cny Per Mwh",
+          "type": "number"
+        },
+        "loss_cny_per_mwh": {
+          "title": "Loss Cny Per Mwh",
+          "type": "number"
+        }
+      },
+      "required": [
+        "curtailment_cny_per_mwh",
+        "storage_throughput_cny_per_mwh",
+        "loss_cny_per_mwh"
+      ],
+      "title": "CostRates",
+      "type": "object"
+    },
+    "EnvelopeBranch": {
+      "additionalProperties": false,
+      "properties": {
+        "parent": {
+          "minimum": 0,
+          "title": "Parent",
+          "type": "integer"
+        },
+        "child": {
+          "minimum": 0,
+          "title": "Child",
+          "type": "integer"
+        },
+        "r_pu": {
+          "minimum": 0,
+          "title": "R Pu",
+          "type": "number"
+        },
+        "x_pu": {
+          "minimum": 0,
+          "title": "X Pu",
+          "type": "number"
+        },
+        "tap": {
+          "exclusiveMinimum": 0,
+          "title": "Tap",
+          "type": "number"
+        },
+        "rating_mva": {
+          "exclusiveMinimum": 0,
+          "title": "Rating Mva",
+          "type": "number"
+        }
+      },
+      "required": [
+        "parent",
+        "child",
+        "r_pu",
+        "x_pu",
+        "tap",
+        "rating_mva"
+      ],
+      "title": "EnvelopeBranch",
+      "type": "object"
+    },
+    "FirmGeneration": {
+      "additionalProperties": false,
+      "properties": {
+        "resource_id": {
+          "minLength": 1,
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "minimum_available_mw": {
+          "minimum": 0,
+          "title": "Minimum Available Mw",
+          "type": "number"
+        }
+      },
+      "required": [
+        "resource_id",
+        "minimum_available_mw"
+      ],
+      "title": "FirmGeneration",
+      "type": "object"
+    },
+    "Interval": {
+      "additionalProperties": false,
+      "properties": {
+        "low": {
+          "title": "Low",
+          "type": "number"
+        },
+        "high": {
+          "title": "High",
+          "type": "number"
+        }
+      },
+      "required": [
+        "low",
+        "high"
+      ],
+      "title": "Interval",
+      "type": "object"
+    },
+    "PlantInputs": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "default": "synthetic-plant-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        },
+        "step_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Step Minutes",
+          "type": "integer"
+        },
+        "load_p": {
+          "items": {
+            "$ref": "#/$defs/BusSeries"
+          },
+          "title": "Load P",
+          "type": "array"
+        },
+        "load_q": {
+          "items": {
+            "$ref": "#/$defs/BusSeries"
+          },
+          "title": "Load Q",
+          "type": "array"
+        },
+        "wind_available": {
+          "items": {
+            "$ref": "#/$defs/BusSeries"
+          },
+          "title": "Wind Available",
+          "type": "array"
+        },
+        "pv_available": {
+          "items": {
+            "$ref": "#/$defs/BusSeries"
+          },
+          "title": "Pv Available",
+          "type": "array"
+        }
+      },
+      "required": [
+        "start",
+        "step_minutes",
+        "load_p",
+        "load_q",
+        "wind_available",
+        "pv_available"
+      ],
+      "title": "PlantInputs",
+      "type": "object"
+    },
+    "RadialEnvelope": {
+      "additionalProperties": false,
+      "properties": {
+        "slack_voltage_bounds_pu": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "network_id": {
+          "minLength": 1,
+          "title": "Network Id",
+          "type": "string"
+        },
+        "buses": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Buses",
+          "type": "array"
+        },
+        "branches": {
+          "items": {
+            "$ref": "#/$defs/EnvelopeBranch"
+          },
+          "title": "Branches",
+          "type": "array"
+        },
+        "slack": {
+          "minimum": 0,
+          "title": "Slack",
+          "type": "integer"
+        },
+        "base_mva": {
+          "exclusiveMinimum": 0,
+          "title": "Base Mva",
+          "type": "number"
+        },
+        "slack_voltage_pu": {
+          "exclusiveMinimum": 0,
+          "title": "Slack Voltage Pu",
+          "type": "number"
+        },
+        "shunt_q_mvar": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Shunt Q Mvar",
+          "type": "array"
+        },
+        "voltage_min_pu": {
+          "exclusiveMinimum": 0,
+          "title": "Voltage Min Pu",
+          "type": "number"
+        },
+        "voltage_max_pu": {
+          "exclusiveMinimum": 0,
+          "title": "Voltage Max Pu",
+          "type": "number"
+        },
+        "pcc_min_mw": {
+          "minimum": 0,
+          "title": "Pcc Min Mw",
+          "type": "number"
+        },
+        "pcc_max_mw": {
+          "exclusiveMinimum": 0,
+          "title": "Pcc Max Mw",
+          "type": "number"
+        },
+        "pf_min": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Pf Min",
+          "type": "number"
+        }
+      },
+      "required": [
+        "network_id",
+        "buses",
+        "branches",
+        "slack",
+        "base_mva",
+        "slack_voltage_pu",
+        "shunt_q_mvar",
+        "voltage_min_pu",
+        "voltage_max_pu",
+        "pcc_min_mw",
+        "pcc_max_mw",
+        "pf_min"
+      ],
+      "title": "RadialEnvelope",
+      "type": "object"
+    },
+    "SingleForecastEnvelope": {
+      "additionalProperties": false,
+      "properties": {
+        "loads": {
+          "items": {
+            "$ref": "#/$defs/BoundedBusLoad"
+          },
+          "title": "Loads",
+          "type": "array"
+        },
+        "generation": {
+          "items": {
+            "$ref": "#/$defs/FirmGeneration"
+          },
+          "title": "Generation",
+          "type": "array"
+        }
+      },
+      "required": [
+        "loads",
+        "generation"
+      ],
+      "title": "SingleForecastEnvelope",
+      "type": "object"
+    },
+    "SingleResearchPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "single-research-v3",
+          "default": "single-research-v3",
+          "title": "Version",
+          "type": "string"
+        },
+        "source": {
+          "default": "Configurable research bounds for the seeded synthetic study; not field-validated limits",
+          "title": "Source",
+          "type": "string"
+        },
+        "load_relative_error": {
+          "default": 0.025,
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "Load Relative Error",
+          "type": "number"
+        },
+        "wind_nameplate_error": {
+          "default": 0.05,
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "Wind Nameplate Error",
+          "type": "number"
+        },
+        "pv_nameplate_error": {
+          "default": 0.15,
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "Pv Nameplate Error",
+          "type": "number"
+        },
+        "settling_resolution": {
+          "default": 0.0001,
+          "exclusiveMinimum": 0,
+          "maximum": 0.001,
+          "title": "Settling Resolution",
+          "type": "number"
+        },
+        "backup_maximum_steps": {
+          "default": 90,
+          "maximum": 240,
+          "minimum": 10,
+          "title": "Backup Maximum Steps",
+          "type": "integer"
+        },
+        "planning_pf_tangent_fraction": {
+          "default": 0.6,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Planning Pf Tangent Fraction",
+          "type": "number"
+        },
+        "forecast_interpolation": {
+          "default": "linear",
+          "enum": [
+            "linear",
+            "hold"
+          ],
+          "title": "Forecast Interpolation",
+          "type": "string"
+        },
+        "storage_tracking_reserve_mwh": {
+          "default": 0.002,
+          "minimum": 0,
+          "title": "Storage Tracking Reserve Mwh",
+          "type": "number"
+        },
+        "energy_reference_cost_cny_per_mwh": {
+          "default": 50,
+          "minimum": 0,
+          "title": "Energy Reference Cost Cny Per Mwh",
+          "type": "number"
+        },
+        "certified_economic_candidates": {
+          "default": 3,
+          "maximum": 8,
+          "minimum": 1,
+          "title": "Certified Economic Candidates",
+          "type": "integer"
+        },
+        "allocation_search_budget": {
+          "default": 6,
+          "maximum": 32,
+          "minimum": 1,
+          "title": "Allocation Search Budget",
+          "type": "integer"
+        },
+        "renewable_command_reserve_mw": {
+          "default": 0.02,
+          "minimum": 0,
+          "title": "Renewable Command Reserve Mw",
+          "type": "number"
+        },
+        "reactive_regulator_reference_fraction": {
+          "default": 0.7,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Reactive Regulator Reference Fraction",
+          "type": "number"
+        },
+        "terminal_persistence": {
+          "const": "last_forecast_envelope",
+          "default": "last_forecast_envelope",
+          "title": "Terminal Persistence",
+          "type": "string"
+        },
+        "within_step_disturbance": {
+          "const": "zero_order_hold",
+          "default": "zero_order_hold",
+          "title": "Within Step Disturbance",
+          "type": "string"
+        }
+      },
+      "title": "SingleResearchPolicy",
+      "type": "object"
+    },
+    "TerminalEnergyTask": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "deadline_step": {
+          "exclusiveMinimum": 0,
+          "title": "Deadline Step",
+          "type": "integer"
+        },
+        "energy_mwh": {
+          "$ref": "#/$defs/Interval"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "deadline_step",
+        "energy_mwh",
+        "source"
+      ],
+      "title": "TerminalEnergyTask",
+      "type": "object"
+    },
+    "TubeCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "p_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "P Mw",
+          "type": "array"
+        },
+        "q_mvar": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Q Mvar",
+          "type": "array"
+        }
+      },
+      "required": [
+        "p_mw",
+        "q_mvar"
+      ],
+      "title": "TubeCommand",
+      "type": "object"
+    },
+    "TubeDeviceModel": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "default": "unified-device-v1",
+          "enum": [
+            "unified-device-v1",
+            "cluster-device-v1"
+          ],
+          "title": "Version",
+          "type": "string"
+        },
+        "resources": {
+          "items": {
+            "$ref": "#/$defs/TubeResource"
+          },
+          "title": "Resources",
+          "type": "array"
+        },
+        "alpha_q": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Alpha Q",
+          "type": "number"
+        },
+        "aggregate_q_ramp_mvar": {
+          "minimum": 0,
+          "title": "Aggregate Q Ramp Mvar",
+          "type": "number"
+        },
+        "step_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Step Minutes",
+          "type": "number"
+        },
+        "energy_mwh": {
+          "$ref": "#/$defs/Interval"
+        },
+        "eta_charge": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Eta Charge",
+          "type": "number"
+        },
+        "eta_discharge": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Eta Discharge",
+          "type": "number"
+        },
+        "context_id": {
+          "minLength": 1,
+          "title": "Context Id",
+          "type": "string"
+        },
+        "settling_resolution": {
+          "default": 0.0001,
+          "exclusiveMinimum": 0,
+          "maximum": 0.001,
+          "title": "Settling Resolution",
+          "type": "number"
+        }
+      },
+      "required": [
+        "resources",
+        "alpha_q",
+        "aggregate_q_ramp_mvar",
+        "step_minutes",
+        "energy_mwh",
+        "eta_charge",
+        "eta_discharge",
+        "context_id"
+      ],
+      "title": "TubeDeviceModel",
+      "type": "object"
+    },
+    "TubeResource": {
+      "additionalProperties": false,
+      "properties": {
+        "resource_id": {
+          "minLength": 1,
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "bus": {
+          "minLength": 1,
+          "title": "Bus",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "wind",
+            "pv",
+            "storage",
+            "svg"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "p": {
+          "$ref": "#/$defs/Interval"
+        },
+        "q": {
+          "$ref": "#/$defs/Interval"
+        },
+        "s_mva": {
+          "exclusiveMinimum": 0,
+          "title": "S Mva",
+          "type": "number"
+        },
+        "q_over_p": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Q Over P"
+        },
+        "alpha_p": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Alpha P",
+          "type": "number"
+        },
+        "ramp_p_mw": {
+          "minimum": 0,
+          "title": "Ramp P Mw",
+          "type": "number"
+        }
+      },
+      "required": [
+        "resource_id",
+        "bus",
+        "kind",
+        "p",
+        "q",
+        "s_mva",
+        "alpha_p",
+        "ramp_p_mw"
+      ],
+      "title": "TubeResource",
+      "type": "object"
+    },
+    "TubeState": {
+      "additionalProperties": false,
+      "properties": {
+        "p_mw": {
+          "items": {
+            "type": "number"
+          },
+          "title": "P Mw",
+          "type": "array"
+        },
+        "q_mvar": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Q Mvar",
+          "type": "array"
+        },
+        "energy_mwh": {
+          "title": "Energy Mwh",
+          "type": "number"
+        }
+      },
+      "required": [
+        "p_mw",
+        "q_mvar",
+        "energy_mwh"
+      ],
+      "title": "TubeState",
+      "type": "object"
+    },
+    "UnifiedDomain": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "unified-single-v7",
+          "default": "unified-single-v7",
+          "title": "Version",
+          "type": "string"
+        },
+        "research": {
+          "$ref": "#/$defs/SingleResearchPolicy"
+        },
+        "bound_source": {
+          "default": "Explicit research domain",
+          "minLength": 1,
+          "title": "Bound Source",
+          "type": "string"
+        },
+        "network": {
+          "$ref": "#/$defs/RadialEnvelope"
+        },
+        "devices": {
+          "$ref": "#/$defs/TubeDeviceModel"
+        },
+        "forecasts": {
+          "items": {
+            "$ref": "#/$defs/SingleForecastEnvelope"
+          },
+          "title": "Forecasts",
+          "type": "array"
+        },
+        "terminal_command": {
+          "$ref": "#/$defs/TubeCommand"
+        },
+        "p_band_mw": {
+          "exclusiveMinimum": 0,
+          "title": "P Band Mw",
+          "type": "number"
+        },
+        "q_band_mvar": {
+          "exclusiveMinimum": 0,
+          "title": "Q Band Mvar",
+          "type": "number"
+        },
+        "response_steps": {
+          "minimum": 1,
+          "title": "Response Steps",
+          "type": "integer"
+        },
+        "context_id": {
+          "title": "Context Id",
+          "type": "string"
+        },
+        "energy_task": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TerminalEnergyTask"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "economic_prices_cny_per_mwh": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "Economic Prices Cny Per Mwh",
+          "type": "array"
+        },
+        "economic_rates": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CostRates"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "research",
+        "network",
+        "devices",
+        "forecasts",
+        "terminal_command",
+        "p_band_mw",
+        "q_band_mvar",
+        "response_steps",
+        "context_id"
+      ],
+      "title": "UnifiedDomain",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "region": {
+      "title": "Region",
+      "type": "string"
+    },
+    "total": {
+      "title": "Total",
+      "type": "integer"
+    },
+    "update_steps": {
+      "title": "Update Steps",
+      "type": "integer"
+    },
+    "reference_time_hours": {
+      "items": {
+        "type": "number"
+      },
+      "title": "Reference Time Hours",
+      "type": "array"
+    },
+    "dataset_sha256": {
+      "title": "Dataset Sha256",
+      "type": "string"
+    },
+    "dataset_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Dataset Id"
+    },
+    "dataset_revision": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Dataset Revision"
+    },
+    "execution_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Execution Version"
+    },
+    "input_basis": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Input Basis"
+    },
+    "domain": {
+      "$ref": "#/$defs/UnifiedDomain"
+    },
+    "initial": {
+      "$ref": "#/$defs/TubeState"
+    },
+    "input_forecast": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PlantInputs"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "region",
+    "total",
+    "update_steps",
+    "reference_time_hours",
+    "dataset_sha256",
+    "domain",
+    "initial"
+  ],
+  "title": "SingleExampleInputs",
+  "type": "object"
+}

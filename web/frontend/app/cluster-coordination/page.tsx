@@ -1,5 +1,5 @@
-import SimulationDashboard from '@/components/simulation-dashboard';
+import { redirect } from 'next/navigation';
 
 export default function ClusterCoordinationPage() {
-  return <SimulationDashboard key="cluster_coordination" initialView="cluster_coordination" />;
+  redirect('/patent2');
 }

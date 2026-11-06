@@ -162,7 +162,7 @@ class MinuteNetworkTests(unittest.TestCase):
         available = {"pv": 4.0}
         arbiter.apply(
             available,
-            (StationCapIntent("group_control", "pv", CapIntentAction.SET_CAP, 3.0),),
+            (StationCapIntent("recovery_hold", "pv", CapIntentAction.SET_CAP, 3.0),),
         )
         bad = self.feedback(snapshot=replace(self.snapshot, quality_valid=False))
         gate.update(bad, arbiter, available, {"pv": 2.0})
@@ -171,7 +171,7 @@ class MinuteNetworkTests(unittest.TestCase):
         # An already issued owner release cannot override the network freeze.
         arbiter.apply(
             available,
-            (StationCapIntent("group_control", "pv", CapIntentAction.RELEASE_CAP),),
+            (StationCapIntent("recovery_hold", "pv", CapIntentAction.RELEASE_CAP),),
         )
         self.assertEqual(arbiter.resolve(available)[0].effective_cap_mw, 2.0)
         first = self.feedback(1)
@@ -191,7 +191,7 @@ class MinuteNetworkTests(unittest.TestCase):
         )
         self.assertFalse(gate.blocked)
         self.assertEqual(arbiter.owner_caps("network_safety"), {})
-        self.assertEqual(arbiter.owner_caps("group_control"), {"pv": 2.0})
+        self.assertEqual(arbiter.owner_caps("recovery_hold"), {"pv": 2.0})
 
     def test_hard_cap_is_never_released_by_network_rearm_and_gaps_reset_confirmation(
         self,

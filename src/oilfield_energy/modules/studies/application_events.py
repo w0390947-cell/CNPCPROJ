@@ -22,8 +22,6 @@ def validate_scenario_events(
     if len(events) > 20 or len({event.event_id for event in events}) != len(events):
         raise ValueError("at most 20 events with unique event_id values are supported")
     for event in events:
-        if scenario == "group_control":
-            raise ValueError("group_control runs a fixed suite; custom events are unsupported")
         communication = event.time_axis is EventTimeAxis.COORDINATION_ITERATION
         if communication and scenario != "communication_fault":
             raise ValueError(

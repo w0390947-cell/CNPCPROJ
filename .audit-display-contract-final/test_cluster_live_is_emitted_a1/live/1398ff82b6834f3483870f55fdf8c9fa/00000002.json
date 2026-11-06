@@ -1,0 +1,1252 @@
+{
+  "kind": "cluster_window",
+  "window": {
+    "start_minute": 0,
+    "end_minute": 1,
+    "horizon_end_minute": 2,
+    "status": "unknown",
+    "adopted": false,
+    "continuation_available": true,
+    "reserve_tasks": [],
+    "reserve_certificates": [],
+    "reserve_correction_round": 0,
+    "reserve_import_margin_mw": 0.0,
+    "reserve_attempt_certificates": [],
+    "reason": "economic solver unavailable",
+    "reference_recovery": null,
+    "coordination_quality": [],
+    "optimization_quality": {},
+    "ac_recovery": {},
+    "initial_energy_mwh": {},
+    "initial_storage_power_mw": {},
+    "initial_reactive_mvar": {},
+    "terminal_target_mwh": {},
+    "unreserved_terminal_target_mwh": {},
+    "reserve_up_mw": {},
+    "reserve_down_mw": {},
+    "reserve_energy_floor_mwh": {},
+    "reserve_energy_ceiling_mwh": {},
+    "actual_end_energy_mwh": {},
+    "previous_p_target_mw": {},
+    "previous_q_target_mvar": {},
+    "previous_target_source": null,
+    "p_target_mw": {},
+    "q_target_mvar": {},
+    "adopted_p_mw": {},
+    "adopted_q_mvar": {},
+    "admm_iterations": 0,
+    "regional_checks": {},
+    "forecast_basis": "同版本日内预测按窗口读取；反馈仅使用已执行状态，不读取未来分钟实绩"
+  },
+  "observations": [
+    {
+      "start_minute": 0,
+      "status": "certified",
+      "reason": "",
+      "regions": [
+        {
+          "model": "reserve-delivery-box-v1",
+          "inputs": {
+            "region": "SC",
+            "start_minute": 0,
+            "support_minutes": 15,
+            "policy": {
+              "version": "reserve-delivery-box-v1",
+              "response_minutes": 1,
+              "activation_slew_fraction_per_minute": 1.0,
+              "pcc_tolerance_mw": 1e-05,
+              "response_roundoff_mw": 1e-09,
+              "correction_rounds": 2,
+              "source": "研究要求：一分钟内响应；并非现场核定值"
+            },
+            "network": {
+              "slack_voltage_bounds_pu": null,
+              "network_id": "SC:synthetic-normal",
+              "buses": [
+                "pcc",
+                "load",
+                "pv"
+              ],
+              "branches": [
+                {
+                  "parent": 0,
+                  "child": 1,
+                  "r_pu": 0.01,
+                  "x_pu": 0.01,
+                  "tap": 1.0,
+                  "rating_mva": 10.0
+                },
+                {
+                  "parent": 0,
+                  "child": 2,
+                  "r_pu": 0.01,
+                  "x_pu": 0.01,
+                  "tap": 1.0,
+                  "rating_mva": 10.0
+                }
+              ],
+              "slack": 0,
+              "base_mva": 10.0,
+              "slack_voltage_pu": 1.0,
+              "shunt_q_mvar": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "voltage_min_pu": 0.95,
+              "voltage_max_pu": 1.05,
+              "pcc_min_mw": 0.15,
+              "pcc_max_mw": 10.0,
+              "pf_min": 0.9
+            },
+            "demand_p_mw": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 1.95,
+                "high": 2.05
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "demand_q_mvar": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "storage_bus": 1,
+            "baseline_power_mw": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "initial_power_mw": 0.0,
+            "initial_energy_mwh": 2.0,
+            "initial_energy_bounds_mwh": {
+              "low": 2.0,
+              "high": 2.0
+            },
+            "minimum_energy_mwh": 0.5,
+            "maximum_energy_mwh": 4.0,
+            "maximum_power_mw": 2.0,
+            "storage_s_mva": 2.2,
+            "storage_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "eta_charge": 0.95,
+            "eta_discharge": 0.95,
+            "response_alpha": 0.3934693402873666,
+            "ramp_mw_per_minute": 0.65,
+            "required_mw": 0.094,
+            "activation_headroom_mw": 0.09870000000000001,
+            "context_id": "64ff6598cbc15f11ee86cc13d19605b3da6da0c0c036b4c398b1b43a672ace9c",
+            "other_resources": []
+          },
+          "status": "certified",
+          "reason": "",
+          "storage_power_mw": {
+            "low": -0.09870000100000002,
+            "high": 0.09870000100000002
+          },
+          "energy_mwh": {
+            "low": 1.9722947365614034,
+            "high": 2.0250040002533334
+          },
+          "command_mw": {
+            "low": -0.2473402293077168,
+            "high": 0.2473402293077168
+          },
+          "maximum_change_mw": 0.09642607843366045,
+          "network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": true,
+            "reason": "",
+            "voltage_center": [
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.9979919678067107,
+                -0.0019999999999999983
+              ],
+              [
+                1.0,
+                0.0
+              ]
+            ],
+            "voltage_radius_pu": 0.0005,
+            "contraction_upper": 0.0030540083651677107,
+            "high_voltage_uniqueness_upper": 0.0033670035267426963,
+            "voltage_bounds": [
+              {
+                "low": 1.0,
+                "high": 1.0
+              },
+              {
+                "low": 0.9974939718288436,
+                "high": 0.9984939718288437
+              },
+              {
+                "low": 0.9994999999999999,
+                "high": 1.0005000000000002
+              }
+            ],
+            "branch_mva_upper": [
+              2.1540982318524606,
+              0.0
+            ],
+            "branch_current_pu_bounds": [
+              {
+                "low": 0.18539420097833892,
+                "high": 0.21540982318524604
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "pcc_p_mw": {
+              "low": 1.8547370999756394,
+              "high": 2.15334014019247
+            },
+            "pcc_q_mvar": {
+              "low": 0.003437100975639672,
+              "high": 0.0046401391924698965
+            },
+            "balance_scope": "aggregate_constrained_box",
+            "aggregate_p_mw": {
+              "low": 1.8512999989999999,
+              "high": 2.148700001
+            },
+            "aggregate_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            }
+          },
+          "nominal_network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": true,
+            "reason": "",
+            "voltage_center": [
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.9979919678067107,
+                -0.0019999999999999983
+              ],
+              [
+                1.0,
+                0.0
+              ]
+            ],
+            "voltage_radius_pu": 0.0001,
+            "contraction_upper": 0.0029113878193567735,
+            "high_voltage_uniqueness_upper": 0.0032123410558059225,
+            "voltage_bounds": [
+              {
+                "low": 1.0,
+                "high": 1.0
+              },
+              {
+                "low": 0.9978939718288435,
+                "high": 0.9980939718288437
+              },
+              {
+                "low": 0.9998999999999999,
+                "high": 1.0001000000000002
+              }
+            ],
+            "branch_mva_upper": [
+              2.054326469417345,
+              0.0
+            ],
+            "branch_current_pu_bounds": [
+              {
+                "low": 0.19537137722185047,
+                "high": 0.20543264694173452
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "pcc_p_mw": {
+              "low": 1.953816997503756,
+              "high": 2.0542202572429487
+            },
+            "pcc_q_mvar": {
+              "low": 0.003816997503756259,
+              "high": 0.004220257242948735
+            },
+            "balance_scope": "aggregate_constrained_box",
+            "aggregate_p_mw": {
+              "low": 1.95,
+              "high": 2.05
+            },
+            "aggregate_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            }
+          },
+          "up_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": true,
+            "reason": "",
+            "voltage_center": [
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.9980914424664511,
+                -0.0019012999999999992
+              ],
+              [
+                1.0,
+                0.0
+              ]
+            ],
+            "voltage_radius_pu": 0.0001,
+            "contraction_upper": 0.0027706638071010544,
+            "high_voltage_uniqueness_upper": 0.0030576785864361447,
+            "voltage_bounds": [
+              {
+                "low": 1.0,
+                "high": 1.0
+              },
+              {
+                "low": 0.9979932533919117,
+                "high": 0.9981932533919119
+              },
+              {
+                "low": 0.9998999999999999,
+                "high": 1.0001000000000002
+              }
+            ],
+            "branch_mva_upper": [
+              1.955223638404422,
+              0.0
+            ],
+            "branch_current_pu_bounds": [
+              {
+                "low": 0.18546408077054738,
+                "high": 0.1955223638404422
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "pcc_p_mw": {
+              "low": 1.8547396925256063,
+              "high": 1.9551228994761753
+            },
+            "pcc_q_mvar": {
+              "low": 0.003439692525606412,
+              "high": 0.003822899476175426
+            },
+            "balance_scope": "aggregate_constrained_box",
+            "aggregate_p_mw": {
+              "low": 1.8513,
+              "high": 1.9512999999999998
+            },
+            "aggregate_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            }
+          },
+          "down_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": true,
+            "reason": "",
+            "voltage_center": [
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.9978924537069326,
+                -0.002098699999999998
+              ],
+              [
+                1.0,
+                0.0
+              ]
+            ],
+            "voltage_radius_pu": 0.0001,
+            "contraction_upper": 0.003052167969581296,
+            "high_voltage_uniqueness_upper": 0.0033670035251757006,
+            "voltage_bounds": [
+              {
+                "low": 1.0,
+                "high": 1.0
+              },
+              {
+                "low": 0.9977946606265274,
+                "high": 0.9979946606265276
+              },
+              {
+                "low": 0.9998999999999999,
+                "high": 1.0001000000000002
+              }
+            ],
+            "branch_mva_upper": [
+              2.1534490860582527,
+              0.0
+            ],
+            "branch_current_pu_bounds": [
+              {
+                "low": 0.20528065094618844,
+                "high": 0.21534490860582525
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "pcc_p_mw": {
+              "low": 2.0529140145652884,
+              "high": 2.1533373429662452
+            },
+            "pcc_q_mvar": {
+              "low": 0.004214014565289086,
+              "high": 0.004637342966245124
+            },
+            "balance_scope": "aggregate_constrained_box",
+            "aggregate_p_mw": {
+              "low": 2.0486999999999997,
+              "high": 2.1487
+            },
+            "aggregate_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            }
+          }
+        },
+        {
+          "model": "reserve-delivery-box-v1",
+          "inputs": {
+            "region": "YA_B",
+            "start_minute": 0,
+            "support_minutes": 15,
+            "policy": {
+              "version": "reserve-delivery-box-v1",
+              "response_minutes": 1,
+              "activation_slew_fraction_per_minute": 1.0,
+              "pcc_tolerance_mw": 1e-05,
+              "response_roundoff_mw": 1e-09,
+              "correction_rounds": 2,
+              "source": "研究要求：一分钟内响应；并非现场核定值"
+            },
+            "network": {
+              "slack_voltage_bounds_pu": null,
+              "network_id": "YA_B:synthetic-normal",
+              "buses": [
+                "pcc",
+                "load",
+                "pv"
+              ],
+              "branches": [
+                {
+                  "parent": 0,
+                  "child": 1,
+                  "r_pu": 0.01,
+                  "x_pu": 0.01,
+                  "tap": 1.0,
+                  "rating_mva": 10.0
+                },
+                {
+                  "parent": 0,
+                  "child": 2,
+                  "r_pu": 0.01,
+                  "x_pu": 0.01,
+                  "tap": 1.0,
+                  "rating_mva": 10.0
+                }
+              ],
+              "slack": 0,
+              "base_mva": 10.0,
+              "slack_voltage_pu": 1.0,
+              "shunt_q_mvar": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "voltage_min_pu": 0.95,
+              "voltage_max_pu": 1.05,
+              "pcc_min_mw": 0.15,
+              "pcc_max_mw": 10.0,
+              "pf_min": 0.9
+            },
+            "demand_p_mw": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 1.95,
+                "high": 2.05
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "demand_q_mvar": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "storage_bus": 1,
+            "baseline_power_mw": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "initial_power_mw": 0.0,
+            "initial_energy_mwh": 2.0,
+            "initial_energy_bounds_mwh": {
+              "low": 2.0,
+              "high": 2.0
+            },
+            "minimum_energy_mwh": 0.5,
+            "maximum_energy_mwh": 4.0,
+            "maximum_power_mw": 2.0,
+            "storage_s_mva": 2.2,
+            "storage_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "eta_charge": 0.95,
+            "eta_discharge": 0.95,
+            "response_alpha": 0.3934693402873666,
+            "ramp_mw_per_minute": 0.65,
+            "required_mw": 0.094,
+            "activation_headroom_mw": 0.09870000000000001,
+            "context_id": "1398b2732b5317ef48336bba2521b05949631e6f528e92870fa83be387a54816",
+            "other_resources": []
+          },
+          "status": "certified",
+          "reason": "",
+          "storage_power_mw": {
+            "low": -0.09870000100000002,
+            "high": 0.09870000100000002
+          },
+          "energy_mwh": {
+            "low": 1.9722947365614034,
+            "high": 2.0250040002533334
+          },
+          "command_mw": {
+            "low": -0.2473402293077168,
+            "high": 0.2473402293077168
+          },
+          "maximum_change_mw": 0.09642607843366045,
+          "network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": true,
+            "reason": "",
+            "voltage_center": [
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.9979919678067107,
+                -0.0019999999999999983
+              ],
+              [
+                1.0,
+                0.0
+              ]
+            ],
+            "voltage_radius_pu": 0.0005,
+            "contraction_upper": 0.0030540083651677107,
+            "high_voltage_uniqueness_upper": 0.0033670035267426963,
+            "voltage_bounds": [
+              {
+                "low": 1.0,
+                "high": 1.0
+              },
+              {
+                "low": 0.9974939718288436,
+                "high": 0.9984939718288437
+              },
+              {
+                "low": 0.9994999999999999,
+                "high": 1.0005000000000002
+              }
+            ],
+            "branch_mva_upper": [
+              2.1540982318524606,
+              0.0
+            ],
+            "branch_current_pu_bounds": [
+              {
+                "low": 0.18539420097833892,
+                "high": 0.21540982318524604
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "pcc_p_mw": {
+              "low": 1.8547370999756394,
+              "high": 2.15334014019247
+            },
+            "pcc_q_mvar": {
+              "low": 0.003437100975639672,
+              "high": 0.0046401391924698965
+            },
+            "balance_scope": "aggregate_constrained_box",
+            "aggregate_p_mw": {
+              "low": 1.8512999989999999,
+              "high": 2.148700001
+            },
+            "aggregate_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            }
+          },
+          "nominal_network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": true,
+            "reason": "",
+            "voltage_center": [
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.9979919678067107,
+                -0.0019999999999999983
+              ],
+              [
+                1.0,
+                0.0
+              ]
+            ],
+            "voltage_radius_pu": 0.0001,
+            "contraction_upper": 0.0029113878193567735,
+            "high_voltage_uniqueness_upper": 0.0032123410558059225,
+            "voltage_bounds": [
+              {
+                "low": 1.0,
+                "high": 1.0
+              },
+              {
+                "low": 0.9978939718288435,
+                "high": 0.9980939718288437
+              },
+              {
+                "low": 0.9998999999999999,
+                "high": 1.0001000000000002
+              }
+            ],
+            "branch_mva_upper": [
+              2.054326469417345,
+              0.0
+            ],
+            "branch_current_pu_bounds": [
+              {
+                "low": 0.19537137722185047,
+                "high": 0.20543264694173452
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "pcc_p_mw": {
+              "low": 1.953816997503756,
+              "high": 2.0542202572429487
+            },
+            "pcc_q_mvar": {
+              "low": 0.003816997503756259,
+              "high": 0.004220257242948735
+            },
+            "balance_scope": "aggregate_constrained_box",
+            "aggregate_p_mw": {
+              "low": 1.95,
+              "high": 2.05
+            },
+            "aggregate_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            }
+          },
+          "up_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": true,
+            "reason": "",
+            "voltage_center": [
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.9980914424664511,
+                -0.0019012999999999992
+              ],
+              [
+                1.0,
+                0.0
+              ]
+            ],
+            "voltage_radius_pu": 0.0001,
+            "contraction_upper": 0.0027706638071010544,
+            "high_voltage_uniqueness_upper": 0.0030576785864361447,
+            "voltage_bounds": [
+              {
+                "low": 1.0,
+                "high": 1.0
+              },
+              {
+                "low": 0.9979932533919117,
+                "high": 0.9981932533919119
+              },
+              {
+                "low": 0.9998999999999999,
+                "high": 1.0001000000000002
+              }
+            ],
+            "branch_mva_upper": [
+              1.955223638404422,
+              0.0
+            ],
+            "branch_current_pu_bounds": [
+              {
+                "low": 0.18546408077054738,
+                "high": 0.1955223638404422
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "pcc_p_mw": {
+              "low": 1.8547396925256063,
+              "high": 1.9551228994761753
+            },
+            "pcc_q_mvar": {
+              "low": 0.003439692525606412,
+              "high": 0.003822899476175426
+            },
+            "balance_scope": "aggregate_constrained_box",
+            "aggregate_p_mw": {
+              "low": 1.8513,
+              "high": 1.9512999999999998
+            },
+            "aggregate_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            }
+          },
+          "down_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": true,
+            "reason": "",
+            "voltage_center": [
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.9978924537069326,
+                -0.002098699999999998
+              ],
+              [
+                1.0,
+                0.0
+              ]
+            ],
+            "voltage_radius_pu": 0.0001,
+            "contraction_upper": 0.003052167969581296,
+            "high_voltage_uniqueness_upper": 0.0033670035251757006,
+            "voltage_bounds": [
+              {
+                "low": 1.0,
+                "high": 1.0
+              },
+              {
+                "low": 0.9977946606265274,
+                "high": 0.9979946606265276
+              },
+              {
+                "low": 0.9998999999999999,
+                "high": 1.0001000000000002
+              }
+            ],
+            "branch_mva_upper": [
+              2.1534490860582527,
+              0.0
+            ],
+            "branch_current_pu_bounds": [
+              {
+                "low": 0.20528065094618844,
+                "high": 0.21534490860582525
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "pcc_p_mw": {
+              "low": 2.0529140145652884,
+              "high": 2.1533373429662452
+            },
+            "pcc_q_mvar": {
+              "low": 0.004214014565289086,
+              "high": 0.004637342966245124
+            },
+            "balance_scope": "aggregate_constrained_box",
+            "aggregate_p_mw": {
+              "low": 2.0486999999999997,
+              "high": 2.1487
+            },
+            "aggregate_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            }
+          }
+        },
+        {
+          "model": "reserve-delivery-box-v1",
+          "inputs": {
+            "region": "YA_C",
+            "start_minute": 0,
+            "support_minutes": 15,
+            "policy": {
+              "version": "reserve-delivery-box-v1",
+              "response_minutes": 1,
+              "activation_slew_fraction_per_minute": 1.0,
+              "pcc_tolerance_mw": 1e-05,
+              "response_roundoff_mw": 1e-09,
+              "correction_rounds": 2,
+              "source": "研究要求：一分钟内响应；并非现场核定值"
+            },
+            "network": {
+              "slack_voltage_bounds_pu": null,
+              "network_id": "YA_C:synthetic-normal",
+              "buses": [
+                "pcc",
+                "load",
+                "pv"
+              ],
+              "branches": [
+                {
+                  "parent": 0,
+                  "child": 1,
+                  "r_pu": 0.01,
+                  "x_pu": 0.01,
+                  "tap": 1.0,
+                  "rating_mva": 10.0
+                },
+                {
+                  "parent": 0,
+                  "child": 2,
+                  "r_pu": 0.01,
+                  "x_pu": 0.01,
+                  "tap": 1.0,
+                  "rating_mva": 10.0
+                }
+              ],
+              "slack": 0,
+              "base_mva": 10.0,
+              "slack_voltage_pu": 1.0,
+              "shunt_q_mvar": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "voltage_min_pu": 0.95,
+              "voltage_max_pu": 1.05,
+              "pcc_min_mw": 0.15,
+              "pcc_max_mw": 10.0,
+              "pf_min": 0.9
+            },
+            "demand_p_mw": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 1.95,
+                "high": 2.05
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "demand_q_mvar": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "storage_bus": 1,
+            "baseline_power_mw": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "initial_power_mw": 0.0,
+            "initial_energy_mwh": 2.0,
+            "initial_energy_bounds_mwh": {
+              "low": 2.0,
+              "high": 2.0
+            },
+            "minimum_energy_mwh": 0.5,
+            "maximum_energy_mwh": 4.0,
+            "maximum_power_mw": 2.0,
+            "storage_s_mva": 2.2,
+            "storage_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "eta_charge": 0.95,
+            "eta_discharge": 0.95,
+            "response_alpha": 0.3934693402873666,
+            "ramp_mw_per_minute": 0.65,
+            "required_mw": 0.094,
+            "activation_headroom_mw": 0.09870000000000001,
+            "context_id": "a08f630e622ce86a42ca16b0bff0cb0b5a586004deb20308d867a40c79c1de5f",
+            "other_resources": []
+          },
+          "status": "certified",
+          "reason": "",
+          "storage_power_mw": {
+            "low": -0.09870000100000002,
+            "high": 0.09870000100000002
+          },
+          "energy_mwh": {
+            "low": 1.9722947365614034,
+            "high": 2.0250040002533334
+          },
+          "command_mw": {
+            "low": -0.2473402293077168,
+            "high": 0.2473402293077168
+          },
+          "maximum_change_mw": 0.09642607843366045,
+          "network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": true,
+            "reason": "",
+            "voltage_center": [
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.9979919678067107,
+                -0.0019999999999999983
+              ],
+              [
+                1.0,
+                0.0
+              ]
+            ],
+            "voltage_radius_pu": 0.0005,
+            "contraction_upper": 0.0030540083651677107,
+            "high_voltage_uniqueness_upper": 0.0033670035267426963,
+            "voltage_bounds": [
+              {
+                "low": 1.0,
+                "high": 1.0
+              },
+              {
+                "low": 0.9974939718288436,
+                "high": 0.9984939718288437
+              },
+              {
+                "low": 0.9994999999999999,
+                "high": 1.0005000000000002
+              }
+            ],
+            "branch_mva_upper": [
+              2.1540982318524606,
+              0.0
+            ],
+            "branch_current_pu_bounds": [
+              {
+                "low": 0.18539420097833892,
+                "high": 0.21540982318524604
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "pcc_p_mw": {
+              "low": 1.8547370999756394,
+              "high": 2.15334014019247
+            },
+            "pcc_q_mvar": {
+              "low": 0.003437100975639672,
+              "high": 0.0046401391924698965
+            },
+            "balance_scope": "aggregate_constrained_box",
+            "aggregate_p_mw": {
+              "low": 1.8512999989999999,
+              "high": 2.148700001
+            },
+            "aggregate_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            }
+          },
+          "nominal_network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": true,
+            "reason": "",
+            "voltage_center": [
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.9979919678067107,
+                -0.0019999999999999983
+              ],
+              [
+                1.0,
+                0.0
+              ]
+            ],
+            "voltage_radius_pu": 0.0001,
+            "contraction_upper": 0.0029113878193567735,
+            "high_voltage_uniqueness_upper": 0.0032123410558059225,
+            "voltage_bounds": [
+              {
+                "low": 1.0,
+                "high": 1.0
+              },
+              {
+                "low": 0.9978939718288435,
+                "high": 0.9980939718288437
+              },
+              {
+                "low": 0.9998999999999999,
+                "high": 1.0001000000000002
+              }
+            ],
+            "branch_mva_upper": [
+              2.054326469417345,
+              0.0
+            ],
+            "branch_current_pu_bounds": [
+              {
+                "low": 0.19537137722185047,
+                "high": 0.20543264694173452
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "pcc_p_mw": {
+              "low": 1.953816997503756,
+              "high": 2.0542202572429487
+            },
+            "pcc_q_mvar": {
+              "low": 0.003816997503756259,
+              "high": 0.004220257242948735
+            },
+            "balance_scope": "aggregate_constrained_box",
+            "aggregate_p_mw": {
+              "low": 1.95,
+              "high": 2.05
+            },
+            "aggregate_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            }
+          },
+          "up_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": true,
+            "reason": "",
+            "voltage_center": [
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.9980914424664511,
+                -0.0019012999999999992
+              ],
+              [
+                1.0,
+                0.0
+              ]
+            ],
+            "voltage_radius_pu": 0.0001,
+            "contraction_upper": 0.0027706638071010544,
+            "high_voltage_uniqueness_upper": 0.0030576785864361447,
+            "voltage_bounds": [
+              {
+                "low": 1.0,
+                "high": 1.0
+              },
+              {
+                "low": 0.9979932533919117,
+                "high": 0.9981932533919119
+              },
+              {
+                "low": 0.9998999999999999,
+                "high": 1.0001000000000002
+              }
+            ],
+            "branch_mva_upper": [
+              1.955223638404422,
+              0.0
+            ],
+            "branch_current_pu_bounds": [
+              {
+                "low": 0.18546408077054738,
+                "high": 0.1955223638404422
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "pcc_p_mw": {
+              "low": 1.8547396925256063,
+              "high": 1.9551228994761753
+            },
+            "pcc_q_mvar": {
+              "low": 0.003439692525606412,
+              "high": 0.003822899476175426
+            },
+            "balance_scope": "aggregate_constrained_box",
+            "aggregate_p_mw": {
+              "low": 1.8513,
+              "high": 1.9512999999999998
+            },
+            "aggregate_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            }
+          },
+          "down_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": true,
+            "reason": "",
+            "voltage_center": [
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.9978924537069326,
+                -0.002098699999999998
+              ],
+              [
+                1.0,
+                0.0
+              ]
+            ],
+            "voltage_radius_pu": 0.0001,
+            "contraction_upper": 0.003052167969581296,
+            "high_voltage_uniqueness_upper": 0.0033670035251757006,
+            "voltage_bounds": [
+              {
+                "low": 1.0,
+                "high": 1.0
+              },
+              {
+                "low": 0.9977946606265274,
+                "high": 0.9979946606265276
+              },
+              {
+                "low": 0.9998999999999999,
+                "high": 1.0001000000000002
+              }
+            ],
+            "branch_mva_upper": [
+              2.1534490860582527,
+              0.0
+            ],
+            "branch_current_pu_bounds": [
+              {
+                "low": 0.20528065094618844,
+                "high": 0.21534490860582525
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "pcc_p_mw": {
+              "low": 2.0529140145652884,
+              "high": 2.1533373429662452
+            },
+            "pcc_q_mvar": {
+              "low": 0.004214014565289086,
+              "high": 0.004637342966245124
+            },
+            "balance_scope": "aggregate_constrained_box",
+            "aggregate_p_mw": {
+              "low": 2.0486999999999997,
+              "high": 2.1487
+            },
+            "aggregate_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            }
+          }
+        }
+      ],
+      "import_upper_mw": 6.46002042057741,
+      "import_limit_mw": 20.0,
+      "pf_target": 0.92
+    }
+  ],
+  "tasks": [],
+  "sequence": 2
+}

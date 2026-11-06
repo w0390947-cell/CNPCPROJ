@@ -10,11 +10,13 @@ from .certificates import (
     validate_unified_observation,
 )
 from .forecast import build_unified_domain
+from .preparation import prepare_certified_cycle
 from .run_unified import run_unified_feedback
 from .tracking import certify_tracking_target
 from .unified import UnifiedSingleController, verify_unified_execution
 
 __all__ = [
+    "prepare_certified_cycle",
     "admit_tracking_target",
     "certify_tracking_target",
     "run_unified_feedback",

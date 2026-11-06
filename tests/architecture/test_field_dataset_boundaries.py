@@ -84,6 +84,10 @@ def violation(source, target):
             }
             return not (target.startswith(workflow) or target in allowed)
     if source.startswith(PREFIX + "entrypoints."):
+        for handler in REGISTRY.get("entrypoint_handlers", []):
+            path = handler["path"].removeprefix("src/").removesuffix(".py").replace("/", ".")
+            if source == path:
+                return target not in handler["allow_public"]
         return not (
             target.startswith(PREFIX + "bootstrap.")
             or target == PREFIX + "workflows.field_dataset.contracts"
@@ -183,6 +187,10 @@ def test_dependency_graph_and_no_dynamic_bypass():
 
 
 def test_checker_positive_and_negative_examples():
+    handler = PREFIX + "entrypoints.field_initialization_http"
+    assert not violation(handler, PREFIX + "workflows.field_initialization.api")
+    assert violation(handler, PREFIX + "bootstrap.field_initialization")
+    assert violation(handler, PREFIX + "workflows.field_initialization.adapters.storage")
     module = PREFIX + "modules.measurements."
     workflow = PREFIX + "workflows.field_dataset."
     assert not violation(workflow + "api", module + "api")
@@ -229,7 +237,9 @@ print(DatasetManifest.__name__)
 def test_legacy_root_exports_remain_resolvable():
     import oilfield_energy
 
-    assert len(oilfield_energy.__all__) == 123
+    assert not {
+        "GroupControlSupervisor", "GroupControlConfig", "run_group_scenario_suite"
+    } & set(oilfield_energy.__all__)
     assert set(oilfield_energy.__all__) == set(oilfield_energy._EXPORTS)
     for name, (module, original) in oilfield_energy._EXPORTS.items():
         assert getattr(oilfield_energy, name) is getattr(

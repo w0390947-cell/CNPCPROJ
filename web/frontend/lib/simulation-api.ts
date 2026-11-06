@@ -1,4 +1,5 @@
 import type { ReferenceEconomics } from '../shared/api/generated/economics';
+import type { Patent2Evidence } from '../shared/api/generated/patent2';
 import type { ComputationQualityReport } from '../shared/api/generated/computation-quality';
 import type { JobStatus } from '../shared/api/generated/job-status';
 export type { JobState, JobStatus } from '../shared/api/generated/job-status';
@@ -17,11 +18,10 @@ import type {
   ScenarioEvent,
 } from '../shared/api/generated/study-events';
 export type { ScenarioEvent } from '../shared/api/generated/study-events';
-
 export type { TimeSeriesPoint as SimulationPoint } from '../shared/api/generated/timeseries';
 import type { TimeSeriesPoint as SimulationPoint } from '../shared/api/generated/timeseries';
-
 export type SimulationResult = {
+  patent2_evidence?: Patent2Evidence | null;
   computation_quality?: ComputationQualityReport | null;
   economic_accounting_version?: string | null;
   reference_economics?: ReferenceEconomics | null;
@@ -62,13 +62,21 @@ export type SimulationResult = {
   executive_summary: {
     overall_passed: boolean;
     headline: string;
-    economic_improvement_percent: number;
+    economic_improvement_percent: number | null;
     optimized_economic_cost_cny: number;
     optimized_peak_import_mw: number;
     total_active_loss_mwh: number;
   };
-  topology_nodes: Array<{ id: string; label: string; kind: string }>;
-  topology_edges: Array<{ id: string; source: string; target: string }>;
+  topology_nodes: Array<{
+    id: string;
+    label: string;
+    kind: string;
+  }>;
+  topology_edges: Array<{
+    id: string;
+    source: string;
+    target: string;
+  }>;
   validation_items: Array<{
     code: string;
     label: string;
@@ -110,44 +118,11 @@ export type SimulationResult = {
     outage_start_iteration: number | null;
     outage_end_iteration: number | null;
   } | null;
-  group_control: {
-    all_passed: boolean;
-    scenario_count: number;
-    scenario_checks: Record<string, Record<string, boolean>>;
-    records: Array<{
-      scenario: string;
-      time_minute: number;
-      pcc_power_mw: number;
-      risk_limit_mw: number;
-      safety_threshold_mw: number;
-      restore_threshold_mw: number;
-      risk_index: number;
-      state: string;
-      action: string;
-      trigger_reason: string;
-      requested_curtailment_mw: number;
-      requested_restoration_mw: number;
-      remaining_curtailment_mw: number;
-    }>;
-    events: Array<{
-      scenario: string;
-      time_minute: number;
-      event_type: string;
-      reason: string;
-      previous_state: string;
-      new_state: string;
-      requested_power_mw: number;
-      achieved_power_mw: number;
-    }>;
-  } | null;
 };
-
 export type ScenarioType =
   | 'single_microgrid'
   | 'cluster_coordination'
-  | 'communication_fault'
-  | 'group_control';
-
+  | 'communication_fault';
 export type SimulationConfiguration = {
   region: 'SC' | 'YA_B' | 'YA_C';
   steps: number;
@@ -160,17 +135,14 @@ export type SimulationConfiguration = {
   communicationOutageStartIteration: number;
   communicationOutageEndIteration: number;
 };
-
 export class SimulationCancelledError extends Error {
   constructor() {
     super('仿真已取消');
     this.name = 'SimulationCancelledError';
   }
 }
-
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000';
-
 export type HealthResponse = {
   status: string;
   service: string;
@@ -178,13 +150,11 @@ export type HealthResponse = {
   solvers: string[];
   packages: Record<string, string>;
 };
-
 function websocketUrl(simulationId: string): string {
   const url = new URL(`${API_BASE}/api/simulations/${simulationId}/stream`);
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   return url.toString();
 }
-
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     signal: AbortSignal.timeout(15000),
@@ -194,7 +164,9 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
     const raw = await response.text();
     let detail = raw || response.statusText;
     try {
-      const body = JSON.parse(raw) as { detail?: unknown };
+      const body = JSON.parse(raw) as {
+        detail?: unknown;
+      };
       if (body.detail != null)
         detail =
           typeof body.detail === 'string'
@@ -207,11 +179,9 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   }
   return response.json() as Promise<T>;
 }
-
 export function getHealth(): Promise<HealthResponse> {
   return apiRequest<HealthResponse>('/api/health');
 }
-
 /** Backend-managed quality for optimization views; research scenarios stay manual. */
 export function usesQualityPolicy(scenarioType: ScenarioType): boolean {
   return (
@@ -219,7 +189,6 @@ export function usesQualityPolicy(scenarioType: ScenarioType): boolean {
     scenarioType === 'single_microgrid'
   );
 }
-
 /** Only cluster tasks override the configured time grid. */
 export function effectiveSimulationSteps(
   scenarioType: ScenarioType,
@@ -227,7 +196,6 @@ export function effectiveSimulationSteps(
 ): number {
   return scenarioType === 'cluster_coordination' ? 96 : configuredSteps;
 }
-
 function simulationPayload(
   scenarioType: ScenarioType,
   configuration: SimulationConfiguration,
@@ -260,7 +228,6 @@ function simulationPayload(
     },
   };
 }
-
 export function createSimulation(
   scenarioType: ScenarioType = 'single_microgrid',
   configuration: SimulationConfiguration,
@@ -274,23 +241,38 @@ export function createSimulation(
     ),
   });
 }
-
+export function getRecentSingleResults(): Promise<JobStatus[]> {
+  return apiRequest<JobStatus[]>('/api/simulations/recent-single');
+}
+export function getSingleExampleLibrary(): Promise<'core'[]> {
+  return apiRequest<'core'[]>('/api/single-example/library');
+}
+export function getSingleExampleRecord(): Promise<SimulationResult> {
+  return apiRequest<SimulationResult>('/api/single-example/library/core');
+}
 export function getSimulation(simulationId: string): Promise<JobStatus> {
   return apiRequest<JobStatus>(`/api/simulations/${simulationId}`);
 }
-
 export function cancelSimulation(simulationId: string): Promise<JobStatus> {
   return apiRequest<JobStatus>(`/api/simulations/${simulationId}/cancel`, {
     method: 'POST',
   });
 }
-
 export function getSimulationResult(
   simulationId: string,
 ): Promise<SimulationResult> {
   return apiRequest<SimulationResult>(
     `/api/simulations/${simulationId}/result`,
   );
+}
+export async function getSimulationLive(
+  id: string,
+  after = 0,
+  stream: string | null = null,
+): Promise<import('../shared/api/simulation-live').LiveBatch> {
+  const query = new URLSearchParams({ after: String(after) });
+  if (stream) query.set('stream', stream);
+  return apiRequest(`/api/simulations/${id}/live?${query}`);
 }
 
 export async function waitForSimulation(
@@ -301,7 +283,6 @@ export async function waitForSimulation(
 ): Promise<SimulationResult> {
   let status = initial;
   onStatus(status);
-
   signal?.throwIfAborted();
   try {
     if (!['queued', 'running'].includes(status.state))
@@ -376,9 +357,7 @@ export async function waitForSimulation(
       onStatus(status);
     }
   }
-
   signal?.throwIfAborted();
-
   if (status.state === 'succeeded') {
     return getSimulationResult(status.simulation_id);
   }

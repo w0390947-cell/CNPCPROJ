@@ -4,6 +4,7 @@
  * It is not browser layout or network E2E coverage.
  */
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
@@ -55,6 +56,1024 @@ test('single execution separates retained target feedback from failed economic p
     await app.close();
   }
 });
+
+function coreCaseFixture() {
+  // A shortened synthetic result exercises presentation only; no numerical claims.
+  const result = structuredClone(first);
+  result.metadata.steps = 8;
+  result.metadata.dt_hours = 3;
+  result.request.steps = 8;
+  result.request.events = [];
+  result.single_execution.total_minutes = 1440;
+  result.single_execution.status = 'unknown';
+  result.single_execution.unified.requested_steps = 1440;
+  result.single_execution.unified.status = 'unproven';
+  result.single_execution.unified.hard_task.guarantee = 'unproven';
+  result.single_execution.unified.hard_task.outcome = 'pending';
+  result.single_execution.unified.domain.research.forecast_interpolation =
+    'linear';
+  result.single_execution.unified.domain.energy_task.deadline_step = 1440;
+  return result;
+}
+
+function provenanceFixture() {
+  const result = coreCaseFixture();
+  const snapshot = '{\n  "raw_name": "山城", "value": 0\n}\n';
+  result.single_execution.input_record = {
+    version: 'single-input-snapshot-v1',
+    recorded_at: '2026-11-06T00:00:00+00:00',
+    code_snapshot_phase: 'before_run',
+    code_sha256: 'a'.repeat(64),
+    snapshot_scope: 'reference_and_execution',
+    input_sha256: createHash('sha256').update(snapshot).digest('hex'),
+    input_snapshot_json: snapshot,
+    dataset_id: 'recorded-dataset', dataset_revision: 'recorded-revision',
+    dataset_sha256: 'b'.repeat(64), execution_version: 'unified-single-v7',
+    input_basis: 'recorded-input-basis', runtime_versions: { python: '3.13.1' },
+  };
+  return result;
+}
+
+function provenanceValues(doc) {
+  const panel = doc.querySelector('[aria-label="输入来源、版本与可追溯记录"]');
+  assert.ok(panel);
+  return Object.fromEntries([...panel.querySelectorAll('dt')].map((dt) => [dt.textContent, dt.nextElementSibling.textContent]));
+}
+
+test('single provenance preserves historical missing values and never fills them from preview', async () => {
+  const result = coreCaseFixture();
+  result.metadata.dataset_revision = null;
+  result.single_execution.policy.single_execution_version = null;
+  const app = await mountDashboard({ dedicated: true, hydrate: true, result });
+  try {
+    const values = provenanceValues(app.document);
+    assert.equal(values['数据集标识 / 版本'], `${result.metadata.dataset_id} / 未记录`);
+    assert.equal(values['执行模型版本'], '未记录');
+    assert.equal(values['结果生成时间'], result.metadata.generated_at);
+    assert.equal(app.document.querySelector('[aria-label="输入来源、版本与可追溯记录"] button'), null);
+  } finally { await app.close(); }
+});
+
+test('single provenance removes technical fields and download controls while keeping client information', async () => {
+  const result = provenanceFixture();
+  const original = JSON.stringify(result);
+  const app = await mountDashboard({ dedicated: true, hydrate: true, result });
+  try {
+    const values = provenanceValues(app.document);
+    assert.deepEqual(Object.keys(values), ['记录来源', '输入来源', '边界来源', '数据集标识 / 版本', '执行模型版本', '求解策略', '结果生成时间']);
+    assert.match(values['求解策略'], /混合整数二阶锥优化（MISOCP）/);
+    const panel = app.document.querySelector('[aria-label="输入来源、版本与可追溯记录"]');
+    assert.equal(panel.closest('[hidden]'), null);
+    assert.equal(panel.parentElement.lastElementChild, panel);
+    assert.doesNotMatch(panel.textContent, /山城|SHA-256|摘要|源码|快照|运行环境|技术追溯详情|结果格式/);
+    assert.equal(panel.querySelector('button'), null);
+    assert.equal(JSON.stringify(result), original);
+  } finally { await app.close(); }
+});
+
+test('single provenance distinguishes pending results and does not borrow a previous run identity', async () => {
+  const result = provenanceFixture();
+  const app = await mountDashboard({ dedicated: true, hydrate: true, result });
+  try {
+    assert.equal(provenanceValues(app.document)['执行模型版本'], result.single_execution.policy.single_execution_version);
+    await app.clickButton('现场重新计算');
+    const values = provenanceValues(app.document);
+    assert.equal(values['执行模型版本'], '待运行记录返回');
+    assert.equal(values['数据集标识 / 版本'], '待运行记录返回');
+    assert.equal(values['求解策略'], '待运行结果返回');
+    assert.equal(values['结果生成时间'], '待计算完成');
+    await app.finish('succeeded', coreCaseFixture());
+    assert.equal(provenanceValues(app.document)['结果生成时间'], result.metadata.generated_at);
+  } finally { await app.close(); }
+});
+
+test('single provenance exposes committed live input record before a final result exists', async () => {
+  const result = provenanceFixture();
+  const u = result.single_execution.unified;
+  const app = await mountDashboard({
+    dedicated: true, hydrate: true, result,
+    runningStatus: { simulation_id: idA, state: 'running', stage: 'validating' },
+    liveEvents: [{kind: 'initial', sequence: 1, total: 1440, initial: u.initial, domain: u.domain,
+      devices: u.domain.devices, network: u.domain.network, update_steps: 15,
+      input_record: result.single_execution.input_record}],
+  });
+  try {
+    const values = provenanceValues(app.document);
+    assert.equal(values['输入来源'], 'recorded-input-basis');
+    assert.equal(values['数据集标识 / 版本'], 'recorded-dataset / recorded-revision');
+    assert.equal(values['执行模型版本'], 'unified-single-v7');
+    assert.equal(values['结果生成时间'], '待计算完成');
+    assert.equal(values['求解策略'], '待运行结果返回');
+  } finally { await app.close(); }
+});
+
+test('single provenance describes preview-only fields as not yet generated', async () => {
+  const app = await mountDashboard({ dedicated: true });
+  try {
+    const values = provenanceValues(app.document);
+    assert.equal(values['记录来源'], '固定条件预览');
+    assert.equal(values['执行模型版本'], 'unified-single-v7');
+    assert.equal(values['求解策略'], '待运行确认');
+    assert.equal(values['结果生成时间'], '待运行生成');
+    assert.ok(Object.values(values).every((value) => !value.includes('未记录')));
+  } finally { await app.close(); }
+});
+
+test('single provenance stops waiting after a failed calculation without borrowing old results', async () => {
+  const app = await mountDashboard({ dedicated: true, hydrate: true, result: provenanceFixture() });
+  try {
+    await app.clickButton('现场重新计算');
+    await app.finish('failed');
+    const values = provenanceValues(app.document);
+    assert.equal(values['执行模型版本'], '未记录');
+    assert.equal(values['结果生成时间'], '未生成结果');
+    assert.ok(Object.values(values).every((value) => !value.includes('待运行') && !value.includes('待计算')));
+  } finally { await app.close(); }
+});
+
+test('dedicated page loads a saved example only after explicit selection without submitting a job', async () => {
+  const good = coreCaseFixture();
+  good.single_execution.completed_minutes = 1440;
+  const app = await mountDashboard({
+    dedicated: true,
+    library: ['core'],
+    result: good,
+  });
+  try {
+    assert.equal(
+      app.document.querySelector('[aria-label="实施例运行结果"]'),
+      null,
+    );
+    assert.equal(app.libraryReads(), 0);
+    assert.equal(app.document.querySelector('[aria-label="实时执行摘要"]'), null);
+    assert.doesNotMatch(app.document.body.textContent, /仿真运行过程与结果|尚未选择运行记录|尚未运行/);
+    await app.changeSelect(
+      '[aria-label="选择已保存的真实运行记录"]',
+      'library:core',
+    );
+    assert.match(
+      app.document.querySelector('[aria-live="polite"]').textContent,
+      /已载入保存的示范计算/,
+    );
+    assert.ok(app.document.querySelector('[aria-label="实施例运行结果"]'));
+    assert.equal(app.document.querySelector('[aria-label="实时执行摘要"]'), null);
+    assert.match(app.document.querySelector('[aria-label="当前回放周期"]').textContent, /当前位置/);
+    assert.equal(app.requests.length, 0);
+    assert.match(
+      app.document.querySelector('[aria-label="输入来源、版本与可追溯记录"]')
+        .textContent,
+      /SC 单微网 · 已保存示范计算/,
+    );
+    assert.equal(
+      new URL(app.document.URL).searchParams.get('simulation'),
+      'library:core',
+    );
+    await app.click('[aria-label="刷新保存记录"]');
+    assert.equal(app.libraryReads(), 1);
+    assert.equal(app.requests.length, 0);
+    assert.doesNotMatch(
+      app.document.querySelector('[aria-label="仿真实时演示"]').textContent,
+      /尚未运行|任务：未记录/,
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('loading a saved record locks calculation and duplicate selection until it finishes', async () => {
+  let resolve;
+  const result = coreCaseFixture();
+  result.single_execution.completed_minutes = 1440;
+  const response = new Promise((done) => {
+    resolve = done;
+  });
+  const app = await mountDashboard({
+    dedicated: true,
+    library: ['core'],
+    libraryResult: () => response,
+  });
+  try {
+    await app.changeSelect(
+      '[aria-label="选择已保存的真实运行记录"]',
+      'library:core',
+    );
+    assert.equal(app.document.querySelector('select').disabled, true);
+    assert.equal(
+      [...app.document.querySelectorAll('button')].find(
+        (b) => b.textContent === '现场重新计算',
+      ).disabled,
+      true,
+    );
+    assert.match(
+      app.document.querySelector('select').textContent,
+      /正在读取完整结果/,
+    );
+    await act(async () => {
+      resolve(result);
+      await response;
+    });
+    assert.ok(app.document.querySelector('[aria-label="实施例运行结果"]'));
+    assert.equal(app.requests.length, 0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('saved-record read failure retains the selected result and identity', async () => {
+  const result = coreCaseFixture();
+  result.single_execution.completed_minutes = 1440;
+  let reads = 0;
+  const app = await mountDashboard({
+    dedicated: true,
+    library: ['core'],
+    libraryResult: () => {
+      if (++reads === 1) return result;
+      throw new Error('保存记录暂时不可用');
+    },
+  });
+  try {
+    await app.changeSelect(
+      '[aria-label="选择已保存的真实运行记录"]',
+      'library:core',
+    );
+    await app.changeSelect(
+      '[aria-label="选择已保存的真实运行记录"]',
+      'library:core',
+    );
+    assert.match(
+      app.document.querySelector('[role="alert"]').textContent,
+      /保存记录暂时不可用/,
+    );
+    assert.ok(app.document.querySelector('[aria-label="实施例运行结果"]'));
+    assert.equal(
+      new URL(app.document.URL).searchParams.get('simulation'),
+      'library:core',
+    );
+    assert.equal(app.document.querySelector('select').disabled, false);
+    assert.equal(app.requests.length, 0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('an incomplete saved record is refused without starting a job', async () => {
+  const app = await mountDashboard({
+    dedicated: true,
+    result: coreCaseFixture(),
+    hydrate: true,
+    simulationId: 'library:core',
+  });
+  try {
+    assert.match(
+      app.document.querySelector('[role="alert"]').textContent,
+      /不是本页面固定实施例的完整计算结果/,
+    );
+    assert.equal(
+      app.document.querySelector('[aria-label="实施例运行结果"]'),
+      null,
+    );
+    assert.equal(app.requests.length, 0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('new calculations do not add jobs to or replace the saved-example selector', async () => {
+  const saved = coreCaseFixture();
+  saved.single_execution.completed_minutes = 1440;
+  const app = await mountDashboard({
+    dedicated: true,
+    result: coreCaseFixture(),
+    library: ['core'],
+    libraryResult: saved,
+  });
+  try {
+    await app.changeSelect(
+      '[aria-label="选择已保存的真实运行记录"]',
+      'library:core',
+    );
+    await app.clickButton('现场重新计算');
+    assert.equal(app.requests.length, 1);
+    assert.deepEqual(
+      [...app.document.querySelector('select').options].map((o) => o.value),
+      ['', 'library:core'],
+    );
+    assert.notEqual(
+      new URL(app.document.URL).searchParams.get('simulation'),
+      'library:core',
+    );
+    await app.changeSelect(
+      '[aria-label="选择已保存的真实运行记录"]',
+      'library:core',
+    );
+    assert.equal(
+      new URL(app.document.URL).searchParams.get('simulation'),
+      'library:core',
+    );
+    assert.equal(app.requests.length, 1);
+  } finally {
+    await app.close();
+  }
+});
+
+test('dedicated page uses shared service connection labels', async () => {
+  for (const health of ['ok', 'offline']) {
+    const app = await mountDashboard({ dedicated: true, health });
+    try {
+      const indicator = app.document.querySelector('.system-ready');
+      assert.equal(
+        indicator.textContent,
+        health === 'ok' ? '仿真服务已连接' : '仿真服务未连接',
+      );
+      assert.ok(indicator.classList.contains(health === 'ok' ? 'online' : 'offline'));
+    } finally {
+      await app.close();
+    }
+  }
+});
+
+test('dedicated page reports no complete result without starting a simulation', async () => {
+  const app = await mountDashboard({ dedicated: true });
+  try {
+    assert.deepEqual([...app.document.querySelectorAll('nav[aria-label="主导航"] button')].map(b => b.textContent.trim()), ['新能源最优协同控制算法仿真', '多层级微电网集群控制算法仿真']);
+    assert.match(
+      app.document.querySelector('[aria-live="polite"]').textContent,
+      /请选择保存的示范计算/,
+    );
+    assert.match(
+      app.document.querySelector('select').textContent,
+      /暂无已保存的示范计算/,
+    );
+    assert.equal(
+      app.document.querySelector('[aria-label="实施例运行结果"]'),
+      null,
+    );
+    assert.equal(app.requests.length, 0);
+    assert.match(app.document.body.textContent, /共同条件 · SC 单微网/);
+    assert.equal(app.document.querySelector('[aria-label="实时执行摘要"]'), null);
+    assert.equal(app.document.querySelector('[aria-label="统一执行记录控制"]'), null);
+    assert.doesNotMatch(app.document.body.textContent, /仿真运行过程与结果|尚未选择运行记录|尚未运行/);
+    assert.match(
+      app.document.body.textContent,
+      /固定条件预览；实际执行条件以运行记录为准/,
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('dedicated display codes historical names and nested evidence without changing the source record', async () => {
+  const result = coreCaseFixture();
+  result.single_execution.completed_minutes = 1440;
+  result.single_execution.reason = '山城执行记录';
+  result.single_execution.unified.hard_task.reason = 'Shancheng 原期限任务';
+  result.single_execution.unified.economic_proposals[0].result.reason =
+    '山城滚动规划';
+  const original = JSON.stringify(result);
+  const app = await mountDashboard({
+    dedicated: true,
+    hydrate: true,
+    result,
+    runningStatus: {
+      simulation_id: idA,
+      state: 'succeeded',
+      result_available: true,
+      name: '山城历史记录',
+    },
+  });
+  try {
+    for (const label of [
+      '01共同条件',
+      '02规划决策',
+      '03执行监控',
+      '04专项任务',
+      '05证据与结论',
+    ]) {
+      await app.clickButton(label);
+      assert.doesNotMatch(
+        app.document.body.textContent,
+        /山城|化子坪|榆树|延安|shancheng/i,
+      );
+      for (const element of app.document.querySelectorAll(
+        '[title], [aria-label]',
+      )) {
+        assert.doesNotMatch(
+          `${element.getAttribute('title')} ${element.getAttribute('aria-label')}`,
+          /山城|化子坪|榆树|shancheng/i,
+        );
+      }
+    }
+    assert.match(app.document.body.textContent, /SC历史记录/);
+    assert.match(app.document.body.textContent, /SC 原期限任务/);
+    assert.equal(JSON.stringify(result), original);
+  } finally {
+    await app.close();
+  }
+});
+
+test(
+  'dedicated page loads an actual retained full-day example from an explicit link',
+  { skip: !process.env.SINGLE_DEMO_ARCHIVE },
+  async () => {
+    const result = JSON.parse(
+      fs.readFileSync(process.env.SINGLE_DEMO_ARCHIVE, 'utf8'),
+    );
+    const app = await mountDashboard({
+      dedicated: true,
+      result,
+      hydrate: true,
+      simulationId: 'library:core',
+    });
+    try {
+      assert.match(
+        app.document.querySelector('[aria-live="polite"]').textContent,
+        /已载入保存的示范计算/,
+      );
+      assert.match(
+        app.document.querySelector('[aria-label="仿真实时演示"]').textContent,
+        /1440 \/ 1440 周期/,
+      );
+      assert.equal(app.requests.length, 0);
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test('a pending library listing never replaces a user-started run', async () => {
+  let resolveHistory;
+  const lookup = new Promise((resolve) => {
+    resolveHistory = resolve;
+  });
+  const result = coreCaseFixture();
+  result.single_execution.completed_minutes = 1440;
+  const app = await mountDashboard({
+    dedicated: true,
+    result,
+    library: () => lookup,
+  });
+  try {
+    await app.clickButton('现场重新计算');
+    await act(async () => {
+      resolveHistory(['core']);
+      await lookup;
+    });
+    assert.match(
+      app.document.querySelector('[aria-live="polite"]').textContent,
+      /实施例计算完成/,
+    );
+    assert.equal(app.requests.length, 1);
+    assert.match(
+      app.document.querySelector('[aria-label="单微网核心实施例执行演示"]')
+        .textContent,
+      /Synthetic identity test/,
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('dedicated page runs only the fixed core example and presents its recorded result', async () => {
+  const result = coreCaseFixture();
+  const app = await mountDashboard({ dedicated: true, result });
+  try {
+    assert.equal(app.document.querySelector('.config-button'), null);
+    assert.equal(
+      app.document.querySelector('[aria-label="算例与数据说明"]'),
+      null,
+    );
+    assert.equal(app.document.querySelector('input[type="file"]'), null);
+    assert.equal(
+      app.document.querySelector('[aria-label="新能源事件注入"]'),
+      null,
+    );
+    assert.equal(app.document.querySelector('.playback-bar'), null);
+    await app.clickButton('现场重新计算');
+    assert.equal(app.requests.length, 1);
+    const request = app.requests[0];
+    assert.equal(request.scenario_type, 'single_microgrid');
+    assert.equal(request.region, 'SC');
+    assert.equal(request.steps, 8);
+    assert.equal(request.storage_enabled, true);
+    assert.deepEqual(request.events, []);
+    assert.equal(request.solver.quality_policy, 'quality-first-v1');
+    assert.match(
+      app.document.querySelector('[aria-label="仿真实时演示"]').textContent,
+      /30 \/ 1440 周期/,
+    );
+    assert.match(
+      app.document.querySelector('[aria-label="实施例运行结果"]').textContent,
+      /未确认/,
+    );
+    assert.ok(app.document.querySelector('[aria-label="统一执行记录控制"]'));
+    assert.equal(
+      app.document.querySelector('[aria-label="实际执行回放控制"]'),
+      null,
+    );
+    assert.equal(
+      app.document.querySelector('[aria-label="执行回放步进"]'),
+      null,
+    );
+    await app.clickButton('查看上一周期');
+    assert.match(
+      app.document.querySelector('[aria-label="单微网核心实施例执行演示"]')
+        .textContent,
+      /第 29 周期设备实际状态/,
+    );
+    await app.clickButton('查看下一周期');
+    assert.match(
+      app.document.querySelector('[aria-label="单微网核心实施例执行演示"]')
+        .textContent,
+      /第 30 周期设备实际状态/,
+    );
+    assert.equal(
+      app.document.querySelector(
+        '[aria-label="单微网核心实施例执行演示"] input[type="file"]',
+      ),
+      null,
+    );
+    assert.ok(
+      [...app.document.querySelectorAll('button')].every(
+        (b) => !/仿真参数|新能源事件|核心实施例配置/.test(b.textContent),
+      ),
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('dedicated page displays committed live data before final result exists', async () => {
+  const result = coreCaseFixture();
+  const u = result.single_execution.unified;
+  const row = u.steps[0];
+  const app = await mountDashboard({
+    dedicated: true,
+    hydrate: true,
+    result,
+    runningStatus: {
+      simulation_id: idA,
+      state: 'running',
+      stage: 'validating',
+    },
+    liveEvents: [
+      {
+        kind: 'initial',
+        sequence: 1,
+        total: 1440,
+        initial: u.initial,
+        devices: u.domain.devices,
+        network: u.domain.network,
+      },
+      {
+        kind: 'cycle',
+        sequence: 2,
+        minute: 1,
+        row,
+        voltage: null,
+        network_certified: true,
+        tracking_until: 15,
+        message: '山城设备执行与反馈',
+      },
+    ],
+  });
+  try {
+    const panel = app.document.querySelector('[aria-label="仿真实时演示"]');
+    assert.ok(panel);
+    assert.match(panel.textContent, /1 \/ 1440 周期/);
+    assert.match(panel.textContent, /SC设备执行与反馈/);
+    const summary = panel.querySelector('[aria-label="实时执行摘要"]');
+    assert.match(summary.textContent, /本次仿真 · 已完成 1 \/ 1440 周期/);
+    await app.clickButton('查看上一周期');
+    assert.match(panel.querySelector('[aria-label="当前回放周期"]').textContent, /0 \/ 1440 周期/);
+    assert.match(summary.textContent, /已完成 1 \/ 1440 周期/);
+    await app.clickButton('跟随最新周期');
+    assert.doesNotMatch(app.document.body.textContent, /山城|化子坪|榆树/);
+    assert.match(panel.textContent, /所选周期设备状态/);
+    assert.match(
+      panel.textContent,
+      /规划、目标接纳及网络校核等完整证据将在结果生成后显示/,
+    );
+    assert.match(
+      panel.textContent,
+      new RegExp(row.after.energy_mwh.toFixed(4)),
+    );
+    assert.equal(
+      app.document.querySelector('[aria-label="实施例运行结果"]'),
+      null,
+    );
+    await app.reportStatus({ simulation_id: idA, state: 'failed' });
+    assert.match(panel.textContent, /计算已停止/);
+    assert.match(panel.textContent, /1 \/ 1440 周期/);
+  } finally {
+    await app.close();
+  }
+});
+
+test('the same charts and topology continue from live execution into the final result', async () => {
+  const result = coreCaseFixture();
+  const u = result.single_execution.unified;
+  const row = u.steps[0];
+  const app = await mountDashboard({
+    dedicated: true,
+    hydrate: true,
+    result,
+    runningStatus: {
+      simulation_id: idA,
+      state: 'running',
+      stage: 'validating',
+    },
+    liveEvents: [
+      {
+        kind: 'initial',
+        sequence: 1,
+        total: 1440,
+        initial: u.initial,
+        devices: u.domain.devices,
+        network: u.domain.network,
+      },
+      {
+        kind: 'cycle',
+        sequence: 2,
+        minute: 1,
+        row,
+        voltage: null,
+        network_certified: null,
+        tracking_until:
+          u.plans[row.plan_index]?.tracking?.guaranteed_until_step ?? null,
+        message: '设备执行与反馈',
+      },
+    ],
+  });
+  try {
+    const panel = app.document.querySelector('[aria-label="仿真实时演示"]');
+    const chart = panel.querySelector(
+      '[aria-label="设备有功 / MW，左右方向键定位周期"]',
+    );
+    const topology = panel.querySelector('[aria-label="实时网络节点与接线"]');
+    assert.ok(chart && topology);
+    await app.clickButton('查看上一周期');
+    await app.clickButton('查看下一周期');
+    const before = panel.querySelector('[aria-label="选择执行记录周期"]').value;
+    assert.equal(before, '1');
+    await app.reportStatus({
+      simulation_id: idA,
+      state: 'succeeded',
+      result_available: true,
+    });
+    await app.finish('succeeded', result);
+    assert.equal(
+      app.document.querySelector('[aria-label="仿真实时演示"]'),
+      panel,
+    );
+    assert.equal(
+      panel.querySelector('[aria-label="设备有功 / MW，左右方向键定位周期"]'),
+      chart,
+    );
+    assert.equal(
+      panel.querySelector('[aria-label="实时网络节点与接线"]'),
+      topology,
+    );
+    assert.equal(
+      panel.querySelector('[aria-label="选择执行记录周期"]').value,
+      '1',
+    );
+    assert.match(
+      panel.textContent,
+      new RegExp(row.after.energy_mwh.toFixed(4)),
+    );
+    const details = panel.querySelector(
+      '[aria-label="单微网核心实施例执行演示"]',
+    );
+    assert.ok(details);
+    await app.clickButton('05证据与结论');
+    assert.equal(details.parentElement.hidden, false);
+    assert.equal(
+      panel.querySelector('[aria-label="选择执行记录周期"]').value,
+      '1',
+    );
+    assert.match(details.textContent, /第 1 周期设备实际状态/);
+    assert.equal(
+      panel.querySelectorAll('[aria-label="实际执行回放控制"]').length,
+      0,
+    );
+    assert.equal(
+      panel.querySelectorAll('[aria-label="实时网络节点与接线"]').length,
+      1,
+    );
+    await app.clickButton('跟随最新周期');
+    assert.equal(
+      panel.querySelector('[aria-label="选择执行记录周期"]').value,
+      '30',
+    );
+    assert.match(details.textContent, /第 30 周期设备实际状态/);
+    await app.clickButton('PCC 目标跟踪');
+    assert.match(details.textContent, /12 \/ 12 通过/);
+    assert.equal(details.querySelectorAll('figure').length, 0);
+    await app.changeInput('[aria-label="选择执行记录周期"]', 16);
+    assert.equal(
+      panel.querySelector('[aria-label="选择执行记录周期"]').value,
+      '16',
+    );
+    assert.match(details.textContent, /D=25/);
+    await app.clickButton('滚动规划与接纳');
+    await app.changeSelect('[aria-label="选择滚动规划窗口"]', '15');
+    assert.equal(
+      panel.querySelector('[aria-label="选择执行记录周期"]').value,
+      '16',
+    );
+    assert.match(details.textContent, /窗口起点为已完成第 15 周期/);
+    await app.clickButton('网络与约束证据');
+    assert.equal(
+      panel.querySelectorAll('[aria-label="实时网络节点与接线"]').length,
+      1,
+    );
+    assert.equal(
+      panel.querySelectorAll('[aria-label="实际网络接线与节点证据"]').length,
+      0,
+    );
+    assert.ok(
+      panel.querySelector('[aria-label="PCC P 跟踪 / MW，左右方向键定位周期"]'),
+    );
+    assert.ok(
+      panel.querySelector(
+        '[aria-label="PCC Q 跟踪 / Mvar，左右方向键定位周期"]',
+      ),
+    );
+    await app.clickButton('03执行监控');
+    assert.equal(chart.closest('[hidden]'), null);
+    assert.equal(details.parentElement.hidden, true);
+    assert.equal(
+      panel.querySelector('[aria-label="选择执行记录周期"]').value,
+      '16',
+    );
+    await app.changeSelect(
+      '[aria-label="选择实际响应资源"]',
+      u.domain.devices.resources[0].resource_id,
+    );
+    assert.match(panel.textContent, /采用命令/);
+    await app.clickButton('05证据与结论');
+    await app.clickButton('设备实际响应');
+    await app.clickButton('10');
+    assert.equal(
+      panel.querySelector('[aria-label="选择执行记录周期"]').value,
+      '10',
+    );
+    assert.match(details.textContent, /第 10 周期设备实际状态/);
+  } finally {
+    await app.close();
+  }
+});
+
+test('input curves join committed live observations to completion nodes and keep the same values in replay', async () => {
+  const result = coreCaseFixture();
+  const u = result.single_execution.unified;
+  const row = u.steps[0];
+  const app = await mountDashboard({
+    dedicated: true, hydrate: true, result,
+    runningStatus: { simulation_id: idA, state: 'running' },
+    liveEvents: [
+      { kind: 'initial', sequence: 1, total: 1440, initial: u.initial,
+        devices: u.domain.devices, network: u.domain.network, domain: u.domain, update_steps: 15 },
+      { kind: 'cycle', sequence: 2, minute: 1, row, voltage: null,
+        network_certified: true, tracking_until: 15, message: '设备执行与反馈' },
+    ],
+  });
+  try {
+    const curves = () => [...app.document.querySelectorAll('[aria-label="外部输入与执行联动"]')].find(e => !e.closest('[hidden]'));
+    assert.match(curves().textContent, /0→1 min 执行区间/);
+    assert.match(curves().textContent, /未保存原始预测曲线/);
+    assert.match(curves().textContent, /观测值/);
+    assert.doesNotMatch(app.document.body.textContent, /不是现场实测|非现场|仿真观测|模拟执行|not field-validated/i);
+    const observation = curves().querySelector('figure dd:last-child');
+    assert.ok(observation);
+    const currentValues = curves().querySelector('figure dl').textContent;
+    const livePath = curves().querySelector('[data-series="observed"]').getAttribute('d');
+    assert.ok(livePath.length > 0);
+    await app.clickButton('查看上一周期');
+    assert.match(curves().textContent, /尚未执行/);
+    await app.clickButton('查看下一周期');
+    assert.equal(curves().querySelector('figure dl').textContent, currentValues);
+    await app.reportStatus({ simulation_id: idA, state: 'succeeded', result_available: true });
+    await app.finish('succeeded', result);
+    assert.match(curves().textContent, /0→1 min 执行区间/);
+    assert.equal(curves().querySelector('figure dl').textContent, currentValues);
+    const plot = curves().querySelector('button[aria-label^="负荷有功 P输入曲线"]');
+    await act(async () => plot.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })));
+    assert.equal(app.document.querySelector('[aria-label="选择执行记录周期"]').value, '2');
+    const planningButton = [...curves().querySelectorAll('button')].find(b => b.textContent === '查看对应规划');
+    await act(async () => planningButton.click());
+    assert.equal(app.document.querySelector('nav[aria-label="实施例讲解步骤"] [aria-current="step"]').textContent, '02规划决策');
+    assert.equal(app.document.querySelector('[aria-label="选择执行记录周期"]').value, '2');
+    await app.clickButton('01共同条件');
+    assert.match(curves().textContent, /1→2 min 执行区间/);
+  } finally { await app.close(); }
+});
+
+test('new live task never combines previous result evidence with current data', async () => {
+  const old = coreCaseFixture();
+  old.single_execution.completed_minutes = 1440;
+  const app = await mountDashboard({
+    dedicated: true,
+    result: old,
+    library: ['core'],
+    runningStatus: {
+      simulation_id: idA,
+      state: 'running',
+      stage: 'validating',
+    },
+  });
+  try {
+    await app.changeSelect(
+      '[aria-label="选择已保存的真实运行记录"]',
+      'library:core',
+    );
+    assert.ok(app.document.querySelector('[aria-label="实施例运行结果"]'));
+    await app.clickButton('现场重新计算');
+    assert.equal(app.document.querySelector('select').disabled, true);
+    assert.equal(
+      app.document.querySelector('[aria-label="刷新保存记录"]').disabled,
+      true,
+    );
+    assert.equal(
+      app.document.querySelector('[aria-label="实施例运行结果"]'),
+      null,
+    );
+    assert.equal(
+      app.document.querySelector('[aria-label="单微网核心实施例执行演示"]'),
+      null,
+    );
+    assert.match(
+      app.document.querySelector('[aria-live="polite"]').textContent,
+      /新任务与上一次完成的结果相互独立/,
+    );
+    assert.ok(
+      app.document.querySelector(
+        'a[href="/single-microgrid?simulation=library%3Acore"]',
+      ),
+    );
+    await app.reportStatus({
+      simulation_id: idA,
+      state: 'failed',
+      stage_label: '任务失败',
+    });
+    await app.finish('failed');
+    assert.equal(
+      app.document.querySelector('[aria-label="实施例运行结果"]'),
+      null,
+    );
+    assert.ok(
+      app.document.querySelector(
+        'a[href="/single-microgrid?simulation=library%3Acore"]',
+      ),
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('dedicated page rejects a restored task that is not the fixed example', async () => {
+  const app = await mountDashboard({
+    dedicated: true,
+    hydrate: true,
+    result: structuredClone(first),
+  });
+  try {
+    assert.match(
+      app.document.querySelector('[role="alert"]').textContent,
+      /不属于本页面的 8.2 固定实施例/,
+    );
+    assert.equal(
+      app.document.querySelector('[aria-label="实施例运行结果"]'),
+      null,
+    );
+    assert.equal(app.requests.length, 0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('dedicated cost card shows missing data when improvement is unavailable', async () => {
+  const result = coreCaseFixture();
+  result.executive_summary.economic_improvement_percent = null;
+  const app = await mountDashboard({ dedicated: true, hydrate: true, result });
+  try {
+    const card = [
+      ...app.document.querySelectorAll('[aria-label="实施例运行结果"] span'),
+    ].find((element) => element.textContent === '计划成本改善').parentElement;
+    assert.equal(card.textContent, '计划成本改善无可用数据');
+  } finally {
+    await app.close();
+  }
+});
+
+test('dedicated page rejects a changed example response tolerance', async () => {
+  const result = coreCaseFixture();
+  result.single_execution.unified.domain.p_band_mw = 0.1;
+  const app = await mountDashboard({ dedicated: true, hydrate: true, result });
+  try {
+    assert.match(
+      app.document.querySelector('[role="alert"]').textContent,
+      /不属于本页面的 8.2 固定实施例/,
+    );
+    assert.equal(
+      app.document.querySelector('[aria-label="实施例运行结果"]'),
+      null,
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+for (const variation of ['region', 'storage', 'event', 'initial']) {
+  test(`dedicated page refuses a restored result with changed ${variation}`, async () => {
+    const result = coreCaseFixture();
+    if (variation === 'region') result.request.region = 'YA_B';
+    if (variation === 'storage') result.request.storage_enabled = false;
+    if (variation === 'event')
+      result.request.events = [{ event_type: 'wind_surge' }];
+    if (variation === 'initial')
+      result.single_execution.unified.initial.energy_mwh = 2.4;
+    const app = await mountDashboard({
+      dedicated: true,
+      hydrate: true,
+      result,
+    });
+    try {
+      assert.match(
+        app.document.querySelector('[role="alert"]').textContent,
+        /不属于本页面的 8.2 固定实施例/,
+      );
+      assert.equal(
+        app.document.querySelector('[aria-label="实施例运行结果"]'),
+        null,
+      );
+    } finally {
+      await app.close();
+    }
+  });
+}
+
+test('dedicated page keeps the run cancellable and does not create a second job', async () => {
+  const app = await mountDashboard({
+    dedicated: true,
+    result: coreCaseFixture(),
+    runningStatus: { simulation_id: idA, state: 'running' },
+  });
+  try {
+    await app.clickButton('现场重新计算');
+    assert.equal(app.requests.length, 1);
+    await app.clickButton('取消仿真');
+    assert.match(
+      app.document.querySelector('[aria-live="polite"]').textContent,
+      /已取消/,
+    );
+    assert.equal(app.requests.length, 1);
+    assert.equal(
+      app.document.querySelector('[aria-label="实施例运行结果"]'),
+      null,
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test(
+  'dedicated page displays the existing full-day core result when restored',
+  { skip: !process.env.SINGLE_DEMO_ARCHIVE },
+  async () => {
+    const result = JSON.parse(
+      fs.readFileSync(process.env.SINGLE_DEMO_ARCHIVE, 'utf8'),
+    );
+    const app = await mountDashboard({
+      dedicated: true,
+      hydrate: true,
+      result,
+    });
+    try {
+      assert.equal(app.document.querySelector('[role="alert"]'), null);
+      assert.doesNotMatch(app.document.body.textContent, /不是现场实测|非现场|并非现场|待现场|仿真观测|模拟执行|not field-validated/i);
+      const costCard = [
+        ...app.document.querySelectorAll('[aria-label="实施例运行结果"] span'),
+      ].find((element) => element.textContent === '计划成本改善').parentElement;
+      assert.equal(costCard.textContent, '计划成本改善4.69%');
+      assert.match(
+        app.document.querySelector('[aria-label="仿真实时演示"]').textContent,
+        /1440 \/ 1440 周期/,
+      );
+      await app.clickButton('PCC 目标跟踪');
+      assert.match(
+        app.document.querySelector('[aria-label="单微网核心实施例执行演示"]')
+          .textContent,
+        /576 \/ 576 通过/,
+      );
+      assert.equal(app.document.querySelector('input[type="file"]'), null);
+      assert.equal(app.document.querySelector('.config-button'), null);
+      assert.equal(app.requests.length, 0);
+    } finally {
+      await app.close();
+    }
+  },
+);
 const idA = 'a'.repeat(32),
   idB = 'b'.repeat(32);
 
@@ -303,9 +1322,15 @@ async function mountDashboard({
   health = 'ok',
   realCharts = false,
   runningStatus = null,
+  dedicated = false,
+  liveEvents = [],
+  library = [],
+  libraryResult,
+  simulationId = idA,
+  resultsById = {},
 } = {}) {
   const dom = new JSDOM('<div id="root"></div>', {
-    url: `http://localhost/${view === 'overview' ? '' : view.replaceAll('_', '-')}${hydrate ? `?simulation=${idA}` : ''}`,
+    url: `http://localhost/${view === 'overview' ? '' : view.replaceAll('_', '-')}${hydrate ? `?simulation=${simulationId}` : ''}`,
   });
   const previous = {
     window: globalThis.window,
@@ -319,6 +1344,7 @@ async function mountDashboard({
     requests = [],
     blobs = new Map(),
     cache = new Map();
+  let libraryReads = 0;
   let pending,
     count = hydrate ? 1 : 0;
   class CaptureURL extends URL {
@@ -351,6 +1377,22 @@ async function mountDashboard({
     };
   const Icon = () => null;
   const fetch = async (_url, init) => {
+    if (_url.endsWith('/api/single-example/inputs')) {
+      const u = coreCaseFixture().single_execution.unified;
+      return new Response(
+        JSON.stringify({
+          region: 'SC',
+          total: 1440,
+          update_steps: 15,
+          reference_time_hours: [0, 3, 6, 9, 12, 15, 18, 21],
+          dataset_sha256: 'fixture',
+          dataset_id: 'preview-dataset', dataset_revision: 'preview-revision',
+          execution_version: 'unified-single-v7', input_basis: 'preview-input-basis',
+          domain: u.domain,
+          initial: u.initial,
+        }),
+      );
+    }
     assert.equal(init.method, 'POST');
     requests.push(JSON.parse(init.body));
     count++;
@@ -384,6 +1426,7 @@ async function mountDashboard({
         module: loadedModule,
         exports: loadedModule.exports,
         console,
+        Error,
         process: { env: {} },
         window: dom.window,
         document: dom.window.document,
@@ -427,8 +1470,13 @@ async function mountDashboard({
               default: new Proxy({}, { get: (_target, key) => key }),
               __esModule: true,
             };
-          if (name.startsWith('./')) {
+          if (name.startsWith('.')) {
             const relative = path.posix.join(path.posix.dirname(file), name);
+            if (relative.endsWith('.json'))
+              return {
+                default: require(path.join(frontend, relative)),
+                __esModule: true,
+              };
             const extension = ['.ts', '.tsx'].find((ext) =>
               fs.existsSync(path.join(frontend, relative + ext)),
             );
@@ -504,7 +1552,27 @@ async function mountDashboard({
     getHealth: async () => ({ status: health }),
     getSimulation: async () =>
       runningStatus ?? { simulation_id: idA, state: 'succeeded' },
-    getSimulationResult: async () => structuredClone(result),
+    getRecentSingleResults: async () => {
+      throw new Error('The page must not query temporary job history');
+    },
+    getSingleExampleLibrary: async () =>
+      typeof library === 'function' ? library() : structuredClone(library),
+    getSingleExampleRecord: async () => {
+      libraryReads += 1;
+      return typeof libraryResult === 'function'
+        ? libraryResult()
+        : structuredClone(libraryResult ?? result);
+    },
+    getSimulationResult: async (id) => {
+      if (resultsById[id] === null) throw new Error('missing result');
+      return structuredClone(resultsById[id] ?? result);
+    },
+    getSimulationLive: async (_id, after = 0) => ({
+      stream: 'test-stream',
+      events: liveEvents.filter((e) => e.sequence > after),
+      cursor: liveEvents.length,
+      more: false,
+    }),
     waitForSimulation: async (status, onStatus) => {
       onStatus({ ...status, stage_label: 'Synthetic job', total_stages: 6 });
       if (count === 1 && !runningStatus) {
@@ -520,7 +1588,11 @@ async function mountDashboard({
       return { simulation_id: idB, state: 'cancelled' };
     },
   };
-  const Dashboard = load('components/simulation-dashboard.tsx').default;
+  const Dashboard = load(
+    dedicated
+      ? 'features/single-execution/case-page.tsx'
+      : 'components/simulation-dashboard.tsx',
+  ).default;
   const root = createRoot(dom.window.document.getElementById('root'));
   await act(async () => {
     root.render(React.createElement(Dashboard, { initialView: view }));
@@ -528,6 +1600,33 @@ async function mountDashboard({
   return {
     document: dom.window.document,
     requests,
+    libraryReads: () => libraryReads,
+    async changeInput(selector, value) {
+      const input = dom.window.document.querySelector(selector);
+      assert.ok(input, selector);
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(
+          dom.window.HTMLInputElement.prototype,
+          'value',
+        ).set.call(input, String(value));
+        input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+      });
+    },
+    async uploadResult(payload, filename = 'saved-single.json') {
+      const input = dom.window.document.querySelector(
+        '[aria-label="单微网核心实施例执行演示"] input[type="file"]',
+      );
+      assert.ok(input);
+      const body =
+        typeof payload === 'string' ? payload : JSON.stringify(payload);
+      Object.defineProperty(input, 'files', {
+        configurable: true,
+        value: [{ name: filename, size: body.length, text: async () => body }],
+      });
+      await act(async () =>
+        input.dispatchEvent(new dom.window.Event('change', { bubbles: true })),
+      );
+    },
     async reportStatus(status) {
       await act(async () => pending.onStatus(status));
     },
@@ -584,6 +1683,211 @@ async function mountDashboard({
     },
   };
 }
+
+test('core example links native execution time, tracking, task and rolling windows without a solve', async () => {
+  const app = await mountDashboard({ hydrate: true });
+  try {
+    const selector = '[aria-label="单微网核心实施例执行演示"]';
+    await app.changeInput('[aria-label="定位实际完成分钟"]', 16);
+    assert.match(
+      app.document.querySelector(selector).textContent,
+      /00:16.*第 16 周期末.*原生记录/,
+    );
+    assert.match(
+      app.document.querySelector(selector).textContent,
+      /响应过渡期/,
+    );
+    await app.clickButton('滚动规划与接纳');
+    assert.equal(
+      app.document.querySelector('[aria-label="选择滚动规划窗口"]').value,
+      '15',
+    );
+    assert.match(
+      app.document.querySelector(selector).textContent,
+      /窗口起点为已完成第 15 周期/,
+    );
+    assert.match(
+      app.document.querySelector(selector).textContent,
+      /有限保证终点 G=30/,
+    );
+    await app.clickButton('PCC 目标跟踪');
+    assert.match(
+      app.document.querySelector(selector).textContent,
+      /12 \/ 12 通过/,
+    );
+    await app.changeInput('[aria-label="定位实际完成分钟"]', 25);
+    assert.match(
+      app.document.querySelector(selector).textContent,
+      /到期评价通过/,
+    );
+    await app.clickButton('原期限电量任务');
+    assert.match(
+      app.document.querySelector(selector).textContent,
+      /原截止周期 T=30/,
+    );
+    assert.match(
+      app.document.querySelector(selector).textContent,
+      /原任务截止 T 30/,
+    );
+    assert.match(
+      app.document.querySelector(selector).textContent,
+      new RegExp(
+        first.single_execution.unified.steps[24].after.energy_mwh
+          .toFixed(6)
+          .replace('.', '\\.'),
+      ),
+    );
+    await app.clickButton('网络与约束证据');
+    assert.match(
+      app.document.querySelector(selector).textContent,
+      /10 个节点、9 条支路/,
+    );
+    assert.match(
+      app.document.querySelector(selector).textContent,
+      /当前周期未记录过程网络与状态盒明细/,
+    );
+    assert.equal(app.requests.length, 0);
+    assert.deepEqual((await app.exported()).body, first);
+  } finally {
+    await app.close();
+  }
+});
+
+test('local result import validates axes and keeps display, exports and source together', async () => {
+  const app = await mountDashboard({ hydrate: true });
+  try {
+    const imported = structuredClone(first);
+    imported.metadata.generated_at = '2026-11-02T02:00:00Z';
+    await app.uploadResult(imported, 'core-example.json');
+    assert.equal(app.document.querySelector('[role="alert"]'), null);
+    assert.match(
+      app.document.querySelector('[aria-label="单微网核心实施例执行演示"]')
+        .textContent,
+      /本地文件 core-example.json/,
+    );
+    assert.deepEqual((await app.exported()).body, imported);
+    assert.equal(app.requests.length, 0);
+    const broken = structuredClone(imported);
+    broken.single_execution.unified.steps[1].before.energy_mwh += 0.1;
+    await app.uploadResult(broken);
+    assert.match(
+      app.document.querySelector('[role="alert"]').textContent,
+      /状态、时钟或证书轴缺口/,
+    );
+    assert.deepEqual((await app.exported()).body, imported);
+    await app.uploadResult('{bad json');
+    assert.ok(app.document.querySelector('[role="alert"]'));
+    assert.deepEqual((await app.exported()).body, imported);
+  } finally {
+    await app.close();
+  }
+});
+
+test('core preset changes the next request without launching or replacing a result', async () => {
+  const app = await mountDashboard({ hydrate: true });
+  try {
+    await app.changeSelect('#region-select', 'YA_C');
+    await app.changeSelect('#steps-select', '24');
+    await app.clickButton('使用 8.2 核心实施例配置');
+    assert.equal(app.document.querySelector('#region-select').value, 'SC');
+    assert.equal(app.document.querySelector('#steps-select').value, '8');
+    assert.equal(app.requests.length, 0);
+    assert.deepEqual((await app.exported()).body, first);
+  } finally {
+    await app.close();
+  }
+});
+
+test('recorded cycle network evidence is displayed with the matching completed minute', async () => {
+  const result = structuredClone(first);
+  const u = result.single_execution.unified;
+  const row = u.steps[0];
+  const box = (state) => ({
+    p_mw: state.p_mw.map((n) => ({ low: n, high: n })),
+    q_mvar: state.q_mvar.map((n) => ({ low: n, high: n })),
+    energy_mwh: { low: state.energy_mwh, high: state.energy_mwh },
+  });
+  const cert = {
+    certified: true,
+    voltage_bounds: u.domain.network.buses.map(() => ({
+      low: 0.98,
+      high: 1.01,
+    })),
+    branch_mva_upper: u.domain.network.branches.map(() => 1.23),
+    branch_current_pu_bounds: u.domain.network.branches.map(() => ({
+      low: 0.01,
+      high: 0.02,
+    })),
+    pcc_p_mw: row.pcc_p_mw,
+    pcc_q_mvar: row.pcc_q_mvar,
+    contraction_upper: 0.0123,
+    high_voltage_uniqueness_upper: 0.0456,
+  };
+  row.cycle_evidence = {
+    command: row.command,
+    predicted_endpoint: row.after,
+    transition: {
+      initial: box(row.before),
+      command: row.command,
+      path: box(row.before),
+      endpoint: box(row.after),
+    },
+    path_network: cert,
+    endpoint_network: cert,
+    expected_next: box(row.after),
+    feedback_policy: true,
+    energy_feedback: false,
+  };
+  const app = await mountDashboard({ hydrate: true, result });
+  try {
+    await app.changeInput('[aria-label="定位实际完成分钟"]', 1);
+    await app.clickButton('网络与约束证据');
+    const text = app.document.querySelector(
+      '[aria-label="单微网核心实施例执行演示"]',
+    ).textContent;
+    assert.match(text, /后台过程网络认证通过/);
+    assert.match(text, /0.012300/);
+    assert.match(text, /1.230000/);
+    assert.match(text, /设备状态盒/);
+    assert.doesNotMatch(text, /当前周期未记录过程网络/);
+    assert.deepEqual((await app.exported()).body, result);
+  } finally {
+    await app.close();
+  }
+});
+
+test(
+  'optional existing full-day record renders 8.2 evidence without optimizing',
+  { skip: !process.env.SINGLE_DEMO_ARCHIVE },
+  async () => {
+    const archived = JSON.parse(
+      fs.readFileSync(process.env.SINGLE_DEMO_ARCHIVE, 'utf8'),
+    );
+    const app = await mountDashboard();
+    try {
+      await app.uploadResult(archived, 'full-day-result.json');
+      assert.equal(app.document.querySelector('[role="alert"]'), null);
+      await app.clickButton('PCC 目标跟踪');
+      const panel = app.document.querySelector(
+        '[aria-label="单微网核心实施例执行演示"]',
+      );
+      assert.match(panel.textContent, /576 \/ 576 通过/);
+      assert.match(panel.textContent, /0.0129526519/);
+      await app.changeInput('[aria-label="定位实际完成分钟"]', 1440);
+      await app.clickButton('原期限电量任务');
+      assert.match(panel.textContent, /2.497675/);
+      assert.match(panel.textContent, /T=1440/);
+      assert.match(
+        app.document.querySelector('[aria-label="单微电网执行反馈"]')
+          .textContent,
+        /未通过（4\.69%）/,
+      );
+      assert.equal(app.requests.length, 0);
+    } finally {
+      await app.close();
+    }
+  },
+);
 
 for (const outcome of ['cancelled', 'failed', 'succeeded']) {
   test(`completed A remains identifiable while B runs and then ${outcome}`, async () => {
@@ -1243,7 +2547,7 @@ for (const terminal of ['failed', 'cancelled']) {
   });
 }
 
-test('cluster coordination declares all regions with one navigation entry and renewable controls', async () => {
+test('retained cluster component declares all regions without a public navigation entry', async () => {
   const app = await mountDashboard({
     view: 'cluster_coordination',
     result: clusterFixture(),
@@ -1257,7 +2561,7 @@ test('cluster coordination declares all regions with one navigation entry and re
     assert.ok(app.document.querySelector(eventArea));
     assert.equal(
       app.document.querySelectorAll('nav button[aria-label="集群协调"]').length,
-      1,
+      0,
     );
     assert.equal(
       app.document.querySelectorAll('nav button[aria-label="综合态势"]').length,
@@ -1334,7 +2638,7 @@ test('overview event uses the fixed grid while preserving other baseline paramet
       start: 180,
       end: 360,
       magnitude: 1.35,
-      label: '延安合成微网 B（YA_B）03:00 起光伏大发',
+      label: '延安微网 B（YA_B）03:00 起光伏大发',
     });
     assert.match(
       app.document.querySelector('.run-feedback').textContent,
@@ -1385,7 +2689,7 @@ test('single microgrid labels the next simulation region but keeps event targets
     await app.changeSelect('#region-select', 'YA_C');
     assert.match(
       app.document.querySelector(eventArea).textContent,
-      /延安合成微网 B/,
+      /延安微网 B/,
     );
     assert.equal(app.requests.length, 0);
     await app.clickButton('当前时刻注入风电大发');

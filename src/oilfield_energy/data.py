@@ -103,6 +103,10 @@ class MicrogridData:
     wind_q_abs_max_mvar: Dict[str, float] | None = None
     wind_reactive_policy: str | None = None
     wind_capacity_provenance: Dict[str, str] | None = None
+    # Completed startup measurements, keyed by stable resource identity. Empty
+    # maps preserve historical idle startup; a declaration must cover both axes.
+    initial_resource_p_mw: Dict[str, float] = field(default_factory=dict)
+    initial_resource_q_mvar: Dict[str, float] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.wind_q_abs_max_mvar is not None and set(self.wind_q_abs_max_mvar) != set(
@@ -146,6 +150,23 @@ class MicrogridData:
                     "resource identities must cover each modeled resource exactly once"
                 )
         self.svg_capability()
+        if self.initial_resource_p_mw or self.initial_resource_q_mvar:
+            resources = (
+                {self.resource_id("wind", b) for b in self.wind_capacity_mw}
+                | {self.resource_id("pv", b) for b in self.pv_capacity_mw}
+                | {
+                    self.resource_id("storage", self.storage.bus),
+                    self.resource_id("svg", self.svg_bus),
+                }
+            )
+            if any(
+                set(values) != resources
+                or not all(np.isfinite(v) for v in values.values())
+                for values in (self.initial_resource_p_mw, self.initial_resource_q_mvar)
+            ):
+                raise ValueError(
+                    "initial P/Q must cover every resource with finite values"
+                )
 
     def resource_id(self, kind: ResourceKind, bus: str) -> str:
         if self.resource_identities:

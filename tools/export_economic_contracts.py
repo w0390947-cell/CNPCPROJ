@@ -8,6 +8,7 @@ from typing import Any
 from pydantic import TypeAdapter
 
 from oilfield_energy.job_manager import JobStatus
+from oilfield_energy.modules.studies.contracts_patent2 import Patent2Inputs, Patent2Evidence
 from oilfield_energy.modules.dispatch.contracts import (
     ComputationQualityReport,
     CoordinationSnapshot,
@@ -27,6 +28,8 @@ from oilfield_energy.service import (
 from oilfield_energy.web_api import app
 from oilfield_energy.workflows.cluster_execution.contracts import ClusterExecution
 from oilfield_energy.workflows.single_execution.contracts import SingleExecution
+from oilfield_energy.workflows.single_execution.contracts_example import SingleExampleInputs
+from oilfield_energy.bootstrap.adapters.cluster_live import ClusterLiveEvent
 
 
 def typescript(schema: dict[str, Any]) -> str:
@@ -96,6 +99,18 @@ def type_bundle(*models: type) -> str:
 
 def artifacts(root: Path) -> dict[Path, str]:
     return {
+        root / "web/frontend/shared/api/generated/cluster-live.ts": type_bundle(ClusterLiveEvent),
+        root / "web/frontend/shared/api/generated/cluster-live.schema.json": json.dumps(
+            ClusterLiveEvent.model_json_schema(), ensure_ascii=False, indent=2) + "\n",
+        root / "web/frontend/shared/api/generated/single-example.ts": type_bundle(SingleExampleInputs),
+        root / "web/frontend/shared/api/generated/single-example.schema.json": json.dumps(
+            SingleExampleInputs.model_json_schema(), ensure_ascii=False, indent=2) + "\n",
+        root / "web/frontend/shared/api/generated/patent2.ts": type_bundle(Patent2Inputs, Patent2Evidence),
+        root / "web/frontend/shared/api/generated/patent2-inputs.schema.json": json.dumps(
+            Patent2Inputs.model_json_schema(), ensure_ascii=False, indent=2) + "\n",
+        root / "web/frontend/shared/api/generated/simulation-result.schema.json": json.dumps(
+            SimulationResult.model_json_schema(), ensure_ascii=False, indent=2
+        ) + "\n",
         root / "web/frontend/shared/api/generated/single-execution.ts": type_bundle(
             SingleExecution
         ),

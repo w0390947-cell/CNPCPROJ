@@ -1,0 +1,292 @@
+{
+  "$defs": {
+    "InterfaceError": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "field_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Field Path"
+        },
+        "resource_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resource Id"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        },
+        "required_action": {
+          "default": "Correct the input or resolve the stated prerequisite.",
+          "title": "Required Action",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "InterfaceError",
+      "type": "object"
+    },
+    "PccGoal": {
+      "additionalProperties": false,
+      "properties": {
+        "p_import_mw": {
+          "title": "P Import Mw",
+          "type": "number"
+        },
+        "q_import_mvar": {
+          "title": "Q Import Mvar",
+          "type": "number"
+        }
+      },
+      "required": [
+        "p_import_mw",
+        "q_import_mvar"
+      ],
+      "title": "PccGoal",
+      "type": "object"
+    },
+    "PccTargetResponsePayload": {
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {
+          "enum": [
+            "accepted",
+            "rejected"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "errors": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/InterfaceError"
+          },
+          "title": "Errors",
+          "type": "array"
+        },
+        "data": {
+          "$ref": "#/$defs/PccTargetResult"
+        }
+      },
+      "required": [
+        "outcome",
+        "data"
+      ],
+      "title": "PccTargetResponsePayload",
+      "type": "object"
+    },
+    "PccTargetResult": {
+      "additionalProperties": false,
+      "properties": {
+        "target_id": {
+          "title": "Target Id",
+          "type": "string"
+        },
+        "target_status": {
+          "enum": [
+            "accepted",
+            "rejected"
+          ],
+          "title": "Target Status",
+          "type": "string"
+        },
+        "requested_target": {
+          "$ref": "#/$defs/PccGoal"
+        },
+        "accepted_target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PccGoal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "response_deadline_at": {
+          "format": "date-time",
+          "title": "Response Deadline At",
+          "type": "string"
+        },
+        "guaranteed_until": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Guaranteed Until"
+        },
+        "context_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Context Id"
+        },
+        "previous_target_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Previous Target Id"
+        },
+        "previous_strategy_status": {
+          "enum": [
+            "none",
+            "conditional",
+            "expired",
+            "context_changed",
+            "unconfirmed",
+            "not_assessed"
+          ],
+          "title": "Previous Strategy Status",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "evidence_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Evidence Ref"
+        },
+        "energy_task_guarantee": {
+          "enum": [
+            "not_assessed",
+            "not_required",
+            "maintained",
+            "unproven"
+          ],
+          "title": "Energy Task Guarantee",
+          "type": "string"
+        },
+        "mode": {
+          "default": "shadow",
+          "enum": [
+            "shadow",
+            "closed_loop"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "dispatch_enabled": {
+          "const": false,
+          "default": false,
+          "title": "Dispatch Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "target_id",
+        "target_status",
+        "requested_target",
+        "accepted_target",
+        "response_deadline_at",
+        "guaranteed_until",
+        "context_id",
+        "previous_target_id",
+        "previous_strategy_status",
+        "reason",
+        "evidence_ref",
+        "energy_task_guarantee"
+      ],
+      "title": "PccTargetResult",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "interface_version": {
+      "const": "single-microgrid-field-v0.1-draft",
+      "default": "single-microgrid-field-v0.1-draft",
+      "title": "Interface Version",
+      "type": "string"
+    },
+    "operation": {
+      "const": "RequestPccTarget",
+      "default": "RequestPccTarget",
+      "title": "Operation",
+      "type": "string"
+    },
+    "message_id": {
+      "title": "Message Id",
+      "type": "string"
+    },
+    "correlation_id": {
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "microgrid_id": {
+      "title": "Microgrid Id",
+      "type": "string"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/PccTargetResponsePayload"
+    }
+  },
+  "required": [
+    "message_id",
+    "correlation_id",
+    "microgrid_id",
+    "run_id",
+    "created_at",
+    "payload"
+  ],
+  "title": "RequestPccTargetResponse",
+  "type": "object"
+}

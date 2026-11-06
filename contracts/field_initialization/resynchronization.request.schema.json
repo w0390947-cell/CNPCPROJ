@@ -1,0 +1,1196 @@
+{
+  "$defs": {
+    "Authority": {
+      "additionalProperties": false,
+      "properties": {
+        "owner_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Owner Id",
+          "type": "string"
+        },
+        "epoch": {
+          "minimum": 0,
+          "title": "Epoch",
+          "type": "integer"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        },
+        "permission_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Permission Revision",
+          "type": "string"
+        },
+        "write_enabled": {
+          "default": false,
+          "title": "Write Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "owner_id",
+        "epoch",
+        "valid_until",
+        "permission_revision"
+      ],
+      "title": "Authority",
+      "type": "object"
+    },
+    "Availability": {
+      "additionalProperties": false,
+      "properties": {
+        "resource_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "available_p_mw": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "method_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Method Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource_id",
+        "available_p_mw",
+        "method_ref"
+      ],
+      "title": "Availability",
+      "type": "object"
+    },
+    "Bounds": {
+      "additionalProperties": false,
+      "properties": {
+        "low": {
+          "title": "Low",
+          "type": "number"
+        },
+        "high": {
+          "title": "High",
+          "type": "number"
+        }
+      },
+      "required": [
+        "low",
+        "high"
+      ],
+      "title": "Bounds",
+      "type": "object"
+    },
+    "BusLoad": {
+      "additionalProperties": false,
+      "properties": {
+        "bus_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "p_mw": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "q_mvar": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "scope_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Scope Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bus_id",
+        "p_mw",
+        "q_mvar",
+        "scope_ref"
+      ],
+      "title": "BusLoad",
+      "type": "object"
+    },
+    "DeviceState": {
+      "additionalProperties": false,
+      "properties": {
+        "status_timestamp_uncertainty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimestampUncertainty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "resource_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "p_mw": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "q_mvar": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "energy_mwh": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MeasuredValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "online": {
+          "title": "Online",
+          "type": "boolean"
+        },
+        "remote_enabled": {
+          "title": "Remote Enabled",
+          "type": "boolean"
+        },
+        "blocked": {
+          "title": "Blocked",
+          "type": "boolean"
+        },
+        "status_observed_at": {
+          "format": "date-time",
+          "title": "Status Observed At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource_id",
+        "p_mw",
+        "q_mvar",
+        "online",
+        "remote_enabled",
+        "blocked",
+        "status_observed_at"
+      ],
+      "title": "DeviceState",
+      "type": "object"
+    },
+    "EnergyTask": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Task Id",
+          "type": "string"
+        },
+        "deadline_at": {
+          "format": "date-time",
+          "title": "Deadline At",
+          "type": "string"
+        },
+        "energy_min_mwh": {
+          "minimum": 0,
+          "title": "Energy Min Mwh",
+          "type": "number"
+        },
+        "energy_max_mwh": {
+          "minimum": 0,
+          "title": "Energy Max Mwh",
+          "type": "number"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "deadline_at",
+        "energy_min_mwh",
+        "energy_max_mwh",
+        "required",
+        "source_ref"
+      ],
+      "title": "EnergyTask",
+      "type": "object"
+    },
+    "ForecastLoad": {
+      "additionalProperties": false,
+      "properties": {
+        "bus_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "p_forecast_mw": {
+          "minimum": 0,
+          "title": "P Forecast Mw",
+          "type": "number"
+        },
+        "q_forecast_mvar": {
+          "title": "Q Forecast Mvar",
+          "type": "number"
+        },
+        "p_bounds_mw": {
+          "$ref": "#/$defs/Bounds"
+        },
+        "q_bounds_mvar": {
+          "$ref": "#/$defs/Bounds"
+        }
+      },
+      "required": [
+        "bus_id",
+        "p_forecast_mw",
+        "q_forecast_mvar",
+        "p_bounds_mw",
+        "q_bounds_mvar"
+      ],
+      "title": "ForecastLoad",
+      "type": "object"
+    },
+    "ForecastPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "format": "date-time",
+          "title": "At",
+          "type": "string"
+        },
+        "bus_loads": {
+          "items": {
+            "$ref": "#/$defs/ForecastLoad"
+          },
+          "title": "Bus Loads",
+          "type": "array"
+        },
+        "renewables": {
+          "items": {
+            "$ref": "#/$defs/ForecastRenewable"
+          },
+          "title": "Renewables",
+          "type": "array"
+        }
+      },
+      "required": [
+        "at",
+        "bus_loads",
+        "renewables"
+      ],
+      "title": "ForecastPoint",
+      "type": "object"
+    },
+    "ForecastRenewable": {
+      "additionalProperties": false,
+      "properties": {
+        "resource_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "available_forecast_mw": {
+          "minimum": 0,
+          "title": "Available Forecast Mw",
+          "type": "number"
+        },
+        "minimum_available_mw": {
+          "minimum": 0,
+          "title": "Minimum Available Mw",
+          "type": "number"
+        },
+        "bound_method_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Bound Method Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource_id",
+        "available_forecast_mw",
+        "minimum_available_mw",
+        "bound_method_ref"
+      ],
+      "title": "ForecastRenewable",
+      "type": "object"
+    },
+    "HeldSetpoint": {
+      "additionalProperties": false,
+      "properties": {
+        "timestamp_uncertainty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimestampUncertainty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "held_since": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Held Since"
+        },
+        "since_uncertainty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimestampUncertainty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "resource_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "p_mw": {
+          "title": "P Mw",
+          "type": "number"
+        },
+        "q_mvar": {
+          "title": "Q Mvar",
+          "type": "number"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource_id",
+        "p_mw",
+        "q_mvar",
+        "observed_at",
+        "source_ref"
+      ],
+      "title": "HeldSetpoint",
+      "type": "object"
+    },
+    "MeasuredValue": {
+      "additionalProperties": false,
+      "properties": {
+        "uncertainty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MeasurementUncertainty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "quality": {
+          "enum": [
+            "good",
+            "bad",
+            "questionable",
+            "unknown"
+          ],
+          "title": "Quality",
+          "type": "string"
+        },
+        "source_kind": {
+          "enum": [
+            "measured",
+            "estimated"
+          ],
+          "title": "Source Kind",
+          "type": "string"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        },
+        "value_semantics": {
+          "enum": [
+            "instantaneous",
+            "interval_average",
+            "interval_energy"
+          ],
+          "title": "Value Semantics",
+          "type": "string"
+        },
+        "interval_start": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Interval Start"
+        },
+        "interval_end": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Interval End"
+        }
+      },
+      "required": [
+        "value",
+        "observed_at",
+        "quality",
+        "source_kind",
+        "source_ref",
+        "value_semantics"
+      ],
+      "title": "MeasuredValue",
+      "type": "object"
+    },
+    "MeasurementUncertainty": {
+      "additionalProperties": false,
+      "properties": {
+        "absolute_error": {
+          "minimum": 0,
+          "title": "Absolute Error",
+          "type": "number"
+        },
+        "calibration_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Calibration Revision",
+          "type": "string"
+        },
+        "provenance_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Provenance Ref",
+          "type": "string"
+        },
+        "valid_from": {
+          "format": "date-time",
+          "title": "Valid From",
+          "type": "string"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        },
+        "timestamp": {
+          "$ref": "#/$defs/TimestampUncertainty"
+        }
+      },
+      "required": [
+        "absolute_error",
+        "calibration_revision",
+        "provenance_ref",
+        "valid_from",
+        "valid_until",
+        "timestamp"
+      ],
+      "title": "MeasurementUncertainty",
+      "type": "object"
+    },
+    "Pcc": {
+      "additionalProperties": false,
+      "properties": {
+        "bus_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "p_import_mw": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "q_import_mvar": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "voltage_pu": {
+          "$ref": "#/$defs/MeasuredValue"
+        }
+      },
+      "required": [
+        "bus_id",
+        "p_import_mw",
+        "q_import_mvar",
+        "voltage_pu"
+      ],
+      "title": "Pcc",
+      "type": "object"
+    },
+    "PlanningInputs": {
+      "additionalProperties": false,
+      "properties": {
+        "input_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Input Revision",
+          "type": "string"
+        },
+        "issued_at": {
+          "format": "date-time",
+          "title": "Issued At",
+          "type": "string"
+        },
+        "effective_from": {
+          "format": "date-time",
+          "title": "Effective From",
+          "type": "string"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        },
+        "forecast_interpolation": {
+          "enum": [
+            "linear",
+            "hold"
+          ],
+          "title": "Forecast Interpolation",
+          "type": "string"
+        },
+        "forecast_points": {
+          "items": {
+            "$ref": "#/$defs/ForecastPoint"
+          },
+          "maxItems": 1441,
+          "minItems": 2,
+          "title": "Forecast Points",
+          "type": "array"
+        },
+        "tariff_intervals": {
+          "items": {
+            "$ref": "#/$defs/Tariff"
+          },
+          "maxItems": 1440,
+          "minItems": 1,
+          "title": "Tariff Intervals",
+          "type": "array"
+        },
+        "cost_rates": {
+          "$ref": "#/$defs/Rates"
+        },
+        "energy_task": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EnergyTask"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "terminal_boundary_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Terminal Boundary Ref",
+          "type": "string"
+        },
+        "terminal_boundary_policy": {
+          "const": "last_bounds_until_valid_until",
+          "title": "Terminal Boundary Policy",
+          "type": "string"
+        },
+        "context_id": {
+          "title": "Context Id",
+          "type": "null"
+        }
+      },
+      "required": [
+        "input_revision",
+        "issued_at",
+        "effective_from",
+        "valid_until",
+        "source_ref",
+        "forecast_interpolation",
+        "forecast_points",
+        "tariff_intervals",
+        "cost_rates",
+        "energy_task",
+        "terminal_boundary_ref",
+        "terminal_boundary_policy",
+        "context_id"
+      ],
+      "title": "PlanningInputs",
+      "type": "object"
+    },
+    "QuiescenceEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "timestamp_uncertainty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimestampUncertainty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "command_batch_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Command Batch Id",
+          "type": "string"
+        },
+        "previous_authority": {
+          "$ref": "#/$defs/Authority"
+        },
+        "fenced_at": {
+          "format": "date-time",
+          "title": "Fenced At",
+          "type": "string"
+        },
+        "settlements": {
+          "items": {
+            "$ref": "#/$defs/RecoverySettlement"
+          },
+          "title": "Settlements",
+          "type": "array"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command_batch_id",
+        "previous_authority",
+        "fenced_at",
+        "settlements",
+        "source_ref"
+      ],
+      "title": "QuiescenceEvidence",
+      "type": "object"
+    },
+    "Rates": {
+      "additionalProperties": false,
+      "properties": {
+        "curtailment_cny_per_mwh": {
+          "minimum": 0,
+          "title": "Curtailment Cny Per Mwh",
+          "type": "number"
+        },
+        "storage_throughput_cny_per_mwh": {
+          "minimum": 0,
+          "title": "Storage Throughput Cny Per Mwh",
+          "type": "number"
+        },
+        "loss_cny_per_mwh": {
+          "minimum": 0,
+          "title": "Loss Cny Per Mwh",
+          "type": "number"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "curtailment_cny_per_mwh",
+        "storage_throughput_cny_per_mwh",
+        "loss_cny_per_mwh",
+        "source_ref"
+      ],
+      "title": "Rates",
+      "type": "object"
+    },
+    "RecoverySettlement": {
+      "additionalProperties": false,
+      "properties": {
+        "timestamp_uncertainty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimestampUncertainty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "command_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "resource_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "disposition": {
+          "enum": [
+            "applied",
+            "rejected",
+            "cancelled",
+            "not_sent"
+          ],
+          "title": "Disposition",
+          "type": "string"
+        },
+        "terminal_at": {
+          "format": "date-time",
+          "title": "Terminal At",
+          "type": "string"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command_id",
+        "resource_id",
+        "disposition",
+        "terminal_at",
+        "source_ref"
+      ],
+      "title": "RecoverySettlement",
+      "type": "object"
+    },
+    "ResynchronizationProposal": {
+      "additionalProperties": false,
+      "properties": {
+        "context_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Context Id",
+          "type": "string"
+        },
+        "resynchronization_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Resynchronization Id",
+          "type": "string"
+        },
+        "pending_batch_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Pending Batch Id"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/SubmittedSnapshot"
+        },
+        "planning_inputs": {
+          "$ref": "#/$defs/PlanningInputs"
+        },
+        "authority": {
+          "$ref": "#/$defs/Authority"
+        },
+        "quiescence": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/QuiescenceEvidence"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "context_id",
+        "resynchronization_id",
+        "pending_batch_id",
+        "snapshot",
+        "planning_inputs",
+        "authority",
+        "quiescence",
+        "reason"
+      ],
+      "title": "ResynchronizationProposal",
+      "type": "object"
+    },
+    "SubmittedSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "snapshot_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Snapshot Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 0,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "snapshot_at": {
+          "format": "date-time",
+          "title": "Snapshot At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "model_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Model Revision",
+          "type": "string"
+        },
+        "mapping_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Mapping Revision",
+          "type": "string"
+        },
+        "operating_mode_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Operating Mode Id",
+          "type": "string"
+        },
+        "permission_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Permission Revision",
+          "type": "string"
+        },
+        "bus_loads": {
+          "items": {
+            "$ref": "#/$defs/BusLoad"
+          },
+          "maxItems": 512,
+          "minItems": 1,
+          "title": "Bus Loads",
+          "type": "array"
+        },
+        "device_states": {
+          "items": {
+            "$ref": "#/$defs/DeviceState"
+          },
+          "maxItems": 128,
+          "minItems": 1,
+          "title": "Device States",
+          "type": "array"
+        },
+        "renewable_availability": {
+          "items": {
+            "$ref": "#/$defs/Availability"
+          },
+          "title": "Renewable Availability",
+          "type": "array"
+        },
+        "pcc": {
+          "$ref": "#/$defs/Pcc"
+        },
+        "operating_state_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Operating State Ref",
+          "type": "string"
+        },
+        "held_setpoints": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/HeldSetpoint"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Held Setpoints"
+        },
+        "context_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Context Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "snapshot_id",
+        "sequence",
+        "snapshot_at",
+        "received_at",
+        "model_revision",
+        "mapping_revision",
+        "operating_mode_id",
+        "permission_revision",
+        "bus_loads",
+        "device_states",
+        "renewable_availability",
+        "pcc",
+        "operating_state_ref",
+        "context_id"
+      ],
+      "title": "SubmittedSnapshot",
+      "type": "object"
+    },
+    "Tariff": {
+      "additionalProperties": false,
+      "properties": {
+        "start_at": {
+          "format": "date-time",
+          "title": "Start At",
+          "type": "string"
+        },
+        "end_at": {
+          "format": "date-time",
+          "title": "End At",
+          "type": "string"
+        },
+        "import_price_cny_per_mwh": {
+          "minimum": 0,
+          "title": "Import Price Cny Per Mwh",
+          "type": "number"
+        }
+      },
+      "required": [
+        "start_at",
+        "end_at",
+        "import_price_cny_per_mwh"
+      ],
+      "title": "Tariff",
+      "type": "object"
+    },
+    "TimestampUncertainty": {
+      "additionalProperties": false,
+      "properties": {
+        "error_seconds": {
+          "minimum": 0,
+          "title": "Error Seconds",
+          "type": "number"
+        },
+        "clock_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Clock Revision",
+          "type": "string"
+        },
+        "provenance_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Provenance Ref",
+          "type": "string"
+        },
+        "valid_from": {
+          "format": "date-time",
+          "title": "Valid From",
+          "type": "string"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        }
+      },
+      "required": [
+        "error_seconds",
+        "clock_revision",
+        "provenance_ref",
+        "valid_from",
+        "valid_until"
+      ],
+      "title": "TimestampUncertainty",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "interface_version": {
+      "const": "single-microgrid-field-v0.1-draft",
+      "title": "Interface Version",
+      "type": "string"
+    },
+    "message_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Message Id",
+      "type": "string"
+    },
+    "correlation_id": {
+      "anyOf": [
+        {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Correlation Id"
+    },
+    "microgrid_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Microgrid Id",
+      "type": "string"
+    },
+    "run_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "operation": {
+      "const": "PrepareResynchronization",
+      "title": "Operation",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/ResynchronizationProposal"
+    }
+  },
+  "required": [
+    "interface_version",
+    "message_id",
+    "correlation_id",
+    "microgrid_id",
+    "run_id",
+    "created_at",
+    "operation",
+    "payload"
+  ],
+  "title": "PrepareResynchronizationRequest",
+  "type": "object"
+}

@@ -204,6 +204,9 @@ class RegionalExecution(EvidenceModel):
     q_mvar: tuple[float, ...] = ()
     p_target_mw: tuple[float, ...] = ()
     q_target_mvar: tuple[float, ...] = ()
+    # Preserve missing targets on their actual time axis in partial/live runs.
+    p_target_samples_mw: tuple[float | None, ...] = ()
+    q_target_samples_mvar: tuple[float | None, ...] = ()
     storage_power_mw: tuple[float, ...] = ()
     storage_energy_mwh: tuple[float, ...] = ()
     storage_reachability: StorageReachabilityEvidence | None = None
@@ -249,6 +252,10 @@ class RegionalExecution(EvidenceModel):
             if not proven and not self.ac_recovery.permits_feasible_adoption:
                 raise ValueError("feasible-only adoption was not authorized")
         n = len(self.time_minutes)
+        if any(samples and len(samples) != n for samples in (
+            self.p_target_samples_mw, self.q_target_samples_mvar,
+        )):
+            raise ValueError("partial target samples must retain the execution time axis")
         witness = self.storage_reachability
         if witness is not None and (
             witness.p_mw != self.storage_power_mw

@@ -42,6 +42,15 @@ def build_cluster_safety_domain(
     dynamics = policy.dynamic_tracking
     if research is None or dynamics is None:
         raise ValueError("cluster safety requires explicit research/response policies")
+    research = research.model_copy(
+        update={
+            "initial_condition": (
+                "case_energy_declared_resources"
+                if any(m.initial_resource_p_mw for m in case.microgrids)
+                else "case_energy_idle_resources"
+            )
+        }
+    )
     total = round(len(case.time_hours) * case.assumptions.dt_hours * 60)
     regions = []
     for mg in case.microgrids:
@@ -119,8 +128,14 @@ def build_cluster_safety_domain(
                 devices=devices,
                 forecasts=tuple(forecasts),
                 initial=TubeState(
-                    p_mw=tuple(0.0 for _ in devices.resources),
-                    q_mvar=tuple(0.0 for _ in devices.resources),
+                    p_mw=tuple(
+                        mg.initial_resource_p_mw.get(x.resource_id, 0.0)
+                        for x in devices.resources
+                    ),
+                    q_mvar=tuple(
+                        mg.initial_resource_q_mvar.get(x.resource_id, 0.0)
+                        for x in devices.resources
+                    ),
                     energy_mwh=mg.storage.e_initial_mwh,
                 ),
                 required_reserve_mw=reserve.minimum_error_mw
@@ -290,7 +305,37 @@ class ClusterSafetyPort:
                 plan.resource_q_mvar[x.resource_id][index] for x in r.devices.resources
             )
             commands.append(TubeCommand(p_mw=p, q_mvar=q))
-        return self.controller.commands_for_endpoints(tuple(commands))
+        proposal = self.controller.commands_for_endpoints(tuple(commands))
+        try:
+            self.controller.certify_candidate(proposal)
+            return proposal
+        except ValueError:
+            pass
+        # A large economic movement can fail an intersample network box even
+        # when a smaller movement preserves the original certified successor.
+        # Keep the original plan/targets for tracking evidence; only the proposed
+        # command changes, and every trial goes through the full joint proof.
+        for fraction in (0.5, 0.25, 0.125, 0.0625):
+            targets = tuple(
+                TubeCommand(
+                    p_mw=tuple(
+                        a + fraction * (b - a)
+                        for a, b in zip(s.p_mw, u.p_mw, strict=True)
+                    ),
+                    q_mvar=tuple(
+                        a + fraction * (b - a)
+                        for a, b in zip(s.q_mvar, u.q_mvar, strict=True)
+                    ),
+                )
+                for s, u in zip(self.controller.states, commands, strict=True)
+            )
+            try:
+                candidate = self.controller.commands_for_endpoints(targets)
+                self.controller.certify_candidate(candidate)
+                return candidate
+            except ValueError:
+                continue
+        return proposal
 
     def advance(
         self, reason: str = "", *, reserve_requests: tuple[float, ...] | None = None
@@ -399,6 +444,8 @@ class ClusterSafetyPort:
             checks=tuple(checks),
             dynamic_tracking=dynamic,
             time_minutes=tuple(float(s.minute) for s in steps),
+            p_target_samples_mw=tuple(x[2] for x in rows),
+            q_target_samples_mvar=tuple(x[3] for x in rows),
             p_mw=tuple(x[0] for x in rows),
             q_mvar=tuple(x[1] for x in rows),
             p_target_mw=tuple(x[2] for x in rows if x[2] is not None)

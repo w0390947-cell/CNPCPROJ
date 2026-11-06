@@ -42,6 +42,8 @@ def main() -> None:
             assert wheel.read(name) == content, name
             assert (installed.parent / name).read_bytes() == content, name
     for module in (
+        "group_control",
+        "group_control_scenarios",
         "workflows.single_execution.guarantee",
         "workflows.single_execution.contracts_guarantee",
         "modules.control.application_command_fit",
@@ -62,12 +64,15 @@ def main() -> None:
             check=True,
         )
         assert b"--legacy-milp" not in help_result.stdout
+        assert b"group-scenarios" not in help_result.stdout
     case = build_synthetic_case(96)
     energy = {m.name: m.storage.e_initial_mwh for m in case.microgrids}
     result = run_simulation(
         SimulationRequest(steps=2), input_case=window_case(case, 0, 2, energy, energy)
     )
     e = result.single_execution
+    assert result.metadata.schema_version == "2.0.0"
+    assert "group_control" not in result.model_dump()
     assert e is not None and e.unified is not None
     assert e.completed_minutes == 30 and e.status == "passed"
     assert e.unified.status == e.unified.tracking_status == "passed"

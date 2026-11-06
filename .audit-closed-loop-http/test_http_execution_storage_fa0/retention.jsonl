@@ -1,0 +1,2 @@
+{"at": "2026-11-03T13:34:56.953191+00:00", "action": "configured", "simulation_id": "", "policy": {"max_age_seconds": 86400, "max_bytes": 5000000000, "interval_seconds": 60, "batch_size": 32}}
+{"at": "2026-11-03T13:34:56.954190+00:00", "action": "sweep", "simulation_id": "", "bytes": 0, "complete": true, "over_capacity": false}

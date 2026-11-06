@@ -163,10 +163,6 @@ def test_old_request_evidence_remains_readable_but_cannot_be_reexecuted(
         ("cluster_coordination", event("fault")),
         ("single_microgrid", event("fault")),
         (
-            "group_control",
-            event("load", kind="load_drop", start=0, end=1440, magnitude=0.5),
-        ),
-        (
             "single_microgrid",
             event("other", target="YA_B", kind="pv_surge", start=0, end=60),
         ),

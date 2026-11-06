@@ -1,0 +1,414 @@
+{
+  "$defs": {
+    "Bounds": {
+      "additionalProperties": false,
+      "properties": {
+        "low": {
+          "title": "Low",
+          "type": "number"
+        },
+        "high": {
+          "title": "High",
+          "type": "number"
+        }
+      },
+      "required": [
+        "low",
+        "high"
+      ],
+      "title": "Bounds",
+      "type": "object"
+    },
+    "EnergyTask": {
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Task Id",
+          "type": "string"
+        },
+        "deadline_at": {
+          "format": "date-time",
+          "title": "Deadline At",
+          "type": "string"
+        },
+        "energy_min_mwh": {
+          "minimum": 0,
+          "title": "Energy Min Mwh",
+          "type": "number"
+        },
+        "energy_max_mwh": {
+          "minimum": 0,
+          "title": "Energy Max Mwh",
+          "type": "number"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "deadline_at",
+        "energy_min_mwh",
+        "energy_max_mwh",
+        "required",
+        "source_ref"
+      ],
+      "title": "EnergyTask",
+      "type": "object"
+    },
+    "ForecastLoad": {
+      "additionalProperties": false,
+      "properties": {
+        "bus_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "p_forecast_mw": {
+          "minimum": 0,
+          "title": "P Forecast Mw",
+          "type": "number"
+        },
+        "q_forecast_mvar": {
+          "title": "Q Forecast Mvar",
+          "type": "number"
+        },
+        "p_bounds_mw": {
+          "$ref": "#/$defs/Bounds"
+        },
+        "q_bounds_mvar": {
+          "$ref": "#/$defs/Bounds"
+        }
+      },
+      "required": [
+        "bus_id",
+        "p_forecast_mw",
+        "q_forecast_mvar",
+        "p_bounds_mw",
+        "q_bounds_mvar"
+      ],
+      "title": "ForecastLoad",
+      "type": "object"
+    },
+    "ForecastPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "format": "date-time",
+          "title": "At",
+          "type": "string"
+        },
+        "bus_loads": {
+          "items": {
+            "$ref": "#/$defs/ForecastLoad"
+          },
+          "title": "Bus Loads",
+          "type": "array"
+        },
+        "renewables": {
+          "items": {
+            "$ref": "#/$defs/ForecastRenewable"
+          },
+          "title": "Renewables",
+          "type": "array"
+        }
+      },
+      "required": [
+        "at",
+        "bus_loads",
+        "renewables"
+      ],
+      "title": "ForecastPoint",
+      "type": "object"
+    },
+    "ForecastRenewable": {
+      "additionalProperties": false,
+      "properties": {
+        "resource_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "available_forecast_mw": {
+          "minimum": 0,
+          "title": "Available Forecast Mw",
+          "type": "number"
+        },
+        "minimum_available_mw": {
+          "minimum": 0,
+          "title": "Minimum Available Mw",
+          "type": "number"
+        },
+        "bound_method_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Bound Method Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource_id",
+        "available_forecast_mw",
+        "minimum_available_mw",
+        "bound_method_ref"
+      ],
+      "title": "ForecastRenewable",
+      "type": "object"
+    },
+    "PlanningUpdate": {
+      "additionalProperties": false,
+      "properties": {
+        "input_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Input Revision",
+          "type": "string"
+        },
+        "issued_at": {
+          "format": "date-time",
+          "title": "Issued At",
+          "type": "string"
+        },
+        "effective_from": {
+          "format": "date-time",
+          "title": "Effective From",
+          "type": "string"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        },
+        "forecast_interpolation": {
+          "enum": [
+            "linear",
+            "hold"
+          ],
+          "title": "Forecast Interpolation",
+          "type": "string"
+        },
+        "forecast_points": {
+          "items": {
+            "$ref": "#/$defs/ForecastPoint"
+          },
+          "maxItems": 1441,
+          "minItems": 2,
+          "title": "Forecast Points",
+          "type": "array"
+        },
+        "tariff_intervals": {
+          "items": {
+            "$ref": "#/$defs/Tariff"
+          },
+          "maxItems": 1440,
+          "minItems": 1,
+          "title": "Tariff Intervals",
+          "type": "array"
+        },
+        "cost_rates": {
+          "$ref": "#/$defs/Rates"
+        },
+        "energy_task": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EnergyTask"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "terminal_boundary_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Terminal Boundary Ref",
+          "type": "string"
+        },
+        "terminal_boundary_policy": {
+          "const": "last_bounds_until_valid_until",
+          "title": "Terminal Boundary Policy",
+          "type": "string"
+        },
+        "context_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Context Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "input_revision",
+        "issued_at",
+        "effective_from",
+        "valid_until",
+        "source_ref",
+        "forecast_interpolation",
+        "forecast_points",
+        "tariff_intervals",
+        "cost_rates",
+        "energy_task",
+        "terminal_boundary_ref",
+        "terminal_boundary_policy",
+        "context_id"
+      ],
+      "title": "PlanningUpdate",
+      "type": "object"
+    },
+    "Rates": {
+      "additionalProperties": false,
+      "properties": {
+        "curtailment_cny_per_mwh": {
+          "minimum": 0,
+          "title": "Curtailment Cny Per Mwh",
+          "type": "number"
+        },
+        "storage_throughput_cny_per_mwh": {
+          "minimum": 0,
+          "title": "Storage Throughput Cny Per Mwh",
+          "type": "number"
+        },
+        "loss_cny_per_mwh": {
+          "minimum": 0,
+          "title": "Loss Cny Per Mwh",
+          "type": "number"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "curtailment_cny_per_mwh",
+        "storage_throughput_cny_per_mwh",
+        "loss_cny_per_mwh",
+        "source_ref"
+      ],
+      "title": "Rates",
+      "type": "object"
+    },
+    "Tariff": {
+      "additionalProperties": false,
+      "properties": {
+        "start_at": {
+          "format": "date-time",
+          "title": "Start At",
+          "type": "string"
+        },
+        "end_at": {
+          "format": "date-time",
+          "title": "End At",
+          "type": "string"
+        },
+        "import_price_cny_per_mwh": {
+          "minimum": 0,
+          "title": "Import Price Cny Per Mwh",
+          "type": "number"
+        }
+      },
+      "required": [
+        "start_at",
+        "end_at",
+        "import_price_cny_per_mwh"
+      ],
+      "title": "Tariff",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "interface_version": {
+      "const": "single-microgrid-field-v0.1-draft",
+      "title": "Interface Version",
+      "type": "string"
+    },
+    "operation": {
+      "const": "UpdatePlanningInputs",
+      "title": "Operation",
+      "type": "string"
+    },
+    "message_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Message Id",
+      "type": "string"
+    },
+    "correlation_id": {
+      "anyOf": [
+        {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Correlation Id"
+    },
+    "microgrid_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Microgrid Id",
+      "type": "string"
+    },
+    "run_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/PlanningUpdate"
+    }
+  },
+  "required": [
+    "interface_version",
+    "operation",
+    "message_id",
+    "correlation_id",
+    "microgrid_id",
+    "run_id",
+    "created_at",
+    "payload"
+  ],
+  "title": "UpdatePlanningRequest",
+  "type": "object"
+}

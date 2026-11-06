@@ -5,15 +5,10 @@ command is proved safe for every remaining sample and the persistent tail.
 Optimization success is never a premise of the safety induction.
 """
 
-from fractions import Fraction as F
 from typing import Literal
 
 from oilfield_energy.modules.control.api import (
     approach_device_command,
-    balance_policy_command,
-    certify_device_transition,
-    energy_return_command,
-    execute_tube_command,
     point_box,
     tube_contains,
     validate_device_box,
@@ -23,12 +18,12 @@ from oilfield_energy.modules.control.contracts import (
     TubeState,
 )
 
+from .preparation import prepare_certified_cycle
 from .admission import admit_tracking_target
 from .certificates import (
     certify_unified_plan,
     certify_unified_terminal,
     device_model_at,
-    unified_network_box,
     validate_unified_observation,
 )
 from .contracts_unified import (
@@ -123,6 +118,14 @@ class UnifiedSingleController:
                 raise ValueError(
                     "target admission changed the original response deadline"
                 )
+            # A new proof must cover the old promise's remaining evaluation cycles.
+            if (
+                previous_tracking is not None
+                and k < previous_tracking.guaranteed_until_step
+                and tracking.guaranteed_until_step
+                < previous_tracking.guaranteed_until_step
+            ):
+                raise ValueError("target admission shortens an active tracking guarantee")
             recomputed = certify_tracking_target(
                 domain,
                 point_box(self.state),
@@ -211,64 +214,19 @@ class UnifiedSingleController:
         deadline = self.deadline
         if self.target is None or (target_changed and target != self.target):
             deadline = k + domain.response_steps
-        command = (
-            plan.commands[offset]
-            if offset < len(plan.commands)
-            else domain.terminal_command
+        prepared = prepare_certified_cycle(
+            domain,
+            self.state,
+            plan.initial if replacement is not None else self.expected,
+            k,
+            plan,
+            observed,
         )
-        if feedback_policy:
-            assert tracking is not None
-            command = balance_policy_command(
-                device_model_at(domain, k),
-                self.state,
-                tracking.policies[offset],
-                float(sum((F(b.p_mw.low) for b in observed.loads), F(0))),
-                float(sum((F(b.q_mvar.low) for b in observed.loads), F(0))),
-            )
+        command, after = prepared.command, prepared.predicted_endpoint
+        if prepared.feedback_policy:
             disposition, accepted_fraction = feedback_disposition, 1.0
-        recovery = plan.task_continuation
-        recovery_offset = k - recovery.recovery_start_step if recovery else -1
-        energy_feedback = recovery is not None and 0 <= recovery_offset < len(
-            recovery.policies
-        )
-        if energy_feedback:
-            assert recovery is not None
-            command = energy_return_command(
-                device_model_at(domain, k),
-                self.state,
-                recovery.policies[recovery_offset],
-            )
-        # Recompute the retained prefix against the observed state before commit.
-        source = (
-            point_box(self.state)
-            if feedback_policy or energy_feedback
-            else plan.initial
-            if replacement is not None
-            else self.expected
-        )
-        transition = certify_device_transition(
-            device_model_at(domain, k), source, command
-        )
-        network = unified_network_box(domain, transition.path, observed)
-        if not network.certified:
-            raise ValueError(
-                "observed executed path fails its AC certificate: " + network.reason
-            )
-        after = execute_tube_command(device_model_at(domain, k), self.state, command)
-        if not tube_contains(transition.endpoint, after):
-            raise ValueError("executed response escaped its certified enclosure")
-        if feedback_policy:
-            assert tracking is not None
-            if not tube_contains(tracking.tubes[offset + 1], after):
-                raise ValueError("executed feedback escaped its target tracking tube")
-        if energy_feedback:
-            assert recovery is not None
-            if not tube_contains(recovery.tubes[recovery_offset + 1], after):
-                raise ValueError("executed energy feedback escaped its task tube")
-        endpoint = unified_network_box(domain, point_box(after), observed)
-        p, q = endpoint.pcc_p_mw, endpoint.pcc_q_mvar
-        if not endpoint.certified or p is None or q is None:
-            raise ValueError("executed endpoint has no AC enclosure")
+        p, q = prepared.endpoint_network.pcc_p_mw, prepared.endpoint_network.pcc_q_mvar
+        assert p is not None and q is not None
         track = (
             max(abs(p.low - target[0]), abs(p.high - target[0])) <= domain.p_band_mw
             and max(abs(q.low - target[1]), abs(q.high - target[1]))
@@ -292,6 +250,7 @@ class UnifiedSingleController:
             pcc_p_mw=p,
             pcc_q_mvar=q,
             tracking_certified=track,
+            cycle_evidence=prepared,
         )
         if replacement is not None:
             self.plans.append(replacement)
@@ -301,14 +260,7 @@ class UnifiedSingleController:
             )
         self.steps.append(row)
         self.state = after
-        if feedback_policy:
-            assert tracking is not None
-            self.expected = tracking.tubes[offset + 1]
-        elif energy_feedback:
-            assert recovery is not None
-            self.expected = recovery.tubes[recovery_offset + 1]
-        else:
-            self.expected = transition.endpoint
+        self.expected = prepared.expected_next
         self.deadline, self.target = deadline, target
         return row
 
@@ -408,6 +360,10 @@ def verify_unified_execution(evidence: UnifiedExecution) -> None:
             target_plan=plan,
             target_retained=retained,
         )
+        # Old results did not persist preparation details. Recompute their original
+        # fields exactly; when details are present they must also match in full.
+        if row.cycle_evidence is None:
+            replay = replay.model_copy(update={"cycle_evidence": None})
         if replay != row or controller.plans != list(
             evidence.plans[: len(controller.plans)]
         ):

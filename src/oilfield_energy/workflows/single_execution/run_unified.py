@@ -28,6 +28,7 @@ def run_unified_feedback(
     observe: Callable[[int], SingleForecastEnvelope],
     propose: Callable[[int, TubeState], SingleEconomicProposal],
     progress: Callable[[int], None] | None = None,
+    live: Callable[[dict], None] | None = None,
 ) -> UnifiedExecution:
     controller: UnifiedSingleController | None = None
     proposals: list[SingleEconomicProposal] = []
@@ -35,6 +36,12 @@ def run_unified_feedback(
     target = initial_target
     reason, failure = "", ""
     status: Literal["passed", "unproven", "assumption_violated"] = "unproven"
+    if live:
+        live({"kind": "initial", "total": total_steps, "initial": initial.model_dump(mode="json"),
+              "domain": domain.model_dump(mode="json"), "update_steps": update_steps,
+              "devices": domain.devices.model_dump(mode="json"), "network": domain.network.model_dump(mode="json"),
+              "energy_task": domain.energy_task.model_dump(mode="json") if domain.energy_task else None,
+              "p_band_mw": domain.p_band_mw, "q_band_mvar": domain.q_band_mvar})
     try:
         controller = UnifiedSingleController(domain, initial)
         for k in range(total_steps):
@@ -44,6 +51,8 @@ def run_unified_feedback(
             target_retained = False
             admission = None
             if k % update_steps == 0:
+                if live:
+                    live({"kind": "phase", "minute": k, "message": "滚动经济规划与目标接纳"})
                 failure = ""
                 try:
                     proposal = propose(k, controller.state)
@@ -114,7 +123,7 @@ def run_unified_feedback(
                         )
             command = None
             cycle_failure = failure
-            controller.advance(
+            row = controller.advance(
                 observed,
                 context_id=domain.context_id,
                 target=target,
@@ -124,6 +133,15 @@ def run_unified_feedback(
                 target_plan=target_plan,
                 target_retained=target_retained,
             )
+            if live:
+                tracking = controller.plans[row.plan_index].tracking
+                cycle = row.cycle_evidence
+                live({"kind": "cycle", "minute": k + 1,
+                      "row": row.model_dump(mode="json", exclude={"cycle_evidence"}),
+                      "voltage": ([v.model_dump(mode="json") for v in cycle.endpoint_network.voltage_bounds] if cycle and cycle.endpoint_network else None),
+                      "network_certified": cycle.endpoint_network.certified if cycle and cycle.endpoint_network else None,
+                      "tracking_until": tracking.guaranteed_until_step if tracking else None,
+                      "message": "设备执行与反馈"})
             if progress is not None:
                 progress(k + 1)
         status = "passed"

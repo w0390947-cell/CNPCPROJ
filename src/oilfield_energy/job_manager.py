@@ -390,6 +390,65 @@ class SimulationJobManager:
             self._refresh()
             return self._read_status(simulation_id)
 
+    def recent_single_results(self) -> list[JobStatus]:
+        return self._recent_results()
+
+    def recent_patent2_results(self) -> list[JobStatus]:
+        return self._recent_results(patent2=True)
+
+    def _recent_results(self, *, patent2: bool = False) -> list[JobStatus]:
+        """List retained completed fixed-example candidates, newest task first."""
+        with self._lock:
+            self._refresh()
+            matches: list[JobStatus] = []
+            for session in self.root.iterdir():
+                try:
+                    if not is_job_id(session.name) or not is_plain_directory(session):
+                        continue
+                    status = self._read_status(session.name)
+                    created = datetime.fromisoformat(status.created_at.replace('Z', '+00:00'))
+                    if created.tzinfo is None:
+                        continue
+                    if (status.simulation_id != session.name or status.state is not JobState.SUCCEEDED
+                            or not status.result_available or not (session / 'result.json').is_file()):
+                        continue
+                    request = json.loads((session / 'request.json').read_bytes())
+                    if patent2:
+                        if (request.get('patent2_case') in {'normal', 'low_energy'}
+                                and request.get('scenario_type') == 'cluster_coordination'):
+                            matches.append(status)
+                        continue
+                    if (request.get('scenario_type') == 'single_microgrid'
+                            and request.get('region') == 'SC' and request.get('steps') == 8
+                            and request.get('storage_enabled') is True and not request.get('events')
+                            and request.get('single_boundary') is None and request.get('single_research') is None):
+                        matches.append(status)
+                except (OSError, ValueError, TypeError, KeyError, AttributeError):
+                    continue
+            return sorted(matches, key=lambda item: (datetime.fromisoformat(item.created_at.replace('Z', '+00:00')).timestamp(), item.simulation_id), reverse=True)
+
+    def live(self, simulation_id: str, after: int = 0, stream: str | None = None) -> dict:
+        from .live_journal import read_live
+        with self._lock:
+            self._read_status(simulation_id)
+            session = self._session_dir(simulation_id)
+            execution = session / "execution.json"
+            if execution.is_file():
+                attempt_id = json.loads(execution.read_bytes()).get("attempt_id")
+                if not isinstance(attempt_id, str) or not is_job_id(attempt_id):
+                    raise KeyError("invalid execution attempt")
+                attempts = session / "attempts"
+                attempt = attempts / attempt_id
+                if (
+                    not is_plain_directory(attempts)
+                    or not is_plain_directory(attempt)
+                    or attempt.resolve() != attempt
+                ):
+                    raise KeyError("invalid execution directory")
+                return read_live(attempt, after, stream)
+            # Compatibility with historical sessions written directly by a worker.
+            return read_live(session, after, stream)
+
     def get(self, simulation_id: str) -> JobStatus:
         with self._lock:
             self._refresh()

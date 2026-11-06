@@ -31,10 +31,10 @@ def event(kind=EventType.COMMUNICATION_OUTAGE, **changes):
 
 @pytest.mark.parametrize("kind", list(EventType))
 @pytest.mark.parametrize(
-    "scenario", ["single_microgrid", "cluster_coordination", "communication_fault", "group_control"]
+    "scenario", ["single_microgrid", "cluster_coordination", "communication_fault"]
 )
 def test_request_applicability_matrix(kind, scenario):
-    supported = scenario != "group_control" and (
+    supported = (
         not kind.value.startswith("communication") or scenario == "communication_fault"
     )
     if supported:

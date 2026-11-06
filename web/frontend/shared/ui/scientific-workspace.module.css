@@ -1,0 +1,274 @@
+/* Opt-in theme for the two algorithm demonstration pages. */
+.scope:global(.control-room) {
+  --science-bg: #f3f5f8;
+  --science-surface: #ffffff;
+  --science-subtle: #f7f9fc;
+  --science-text: #243449;
+  --science-muted: #5d6d80;
+  --science-border: #d8e0e9;
+  --science-accent: #245fa6;
+  --science-selected: #eaf1fa;
+  --science-success: #217354;
+  --science-warning: #925a0c;
+  --science-danger: #b43e35;
+  --science-success-bg: #eaf5ef;
+  --science-warning-bg: #fff3df;
+  --science-danger-bg: #fbeceb;
+  --plot-blue: #2563a6;
+  --plot-orange: #a66514;
+  --plot-green: #21806c;
+  --plot-purple: #7953ab;
+  --plot-red: #bd4b47;
+  --plot-slate: #63768d;
+  --plot-grid: #e1e7ee;
+  --plot-cursor: #34465d;
+  --border: #d8e0e9;
+  --muted-foreground: #5d6d80;
+  color-scheme: light;
+  display: grid;
+  color: var(--science-text);
+  background: var(--science-bg);
+  grid-template: auto minmax(0, 1fr) / 184px minmax(0, 1fr);
+  font-variant-numeric: tabular-nums;
+}
+.scope :global(.topbar) {
+  min-height: 68px;
+  background: var(--science-surface);
+  border-color: var(--science-border);
+  box-shadow: none;
+}
+.scope :global(.title-block h1) {
+  color: var(--science-text);
+  font-size: 17px;
+  letter-spacing: 0;
+}
+.scope :global(.brand-mark) {
+  background: var(--science-selected);
+  border: 0;
+  box-shadow: none;
+  color: var(--science-accent);
+}
+.scope :global(.brand-mark svg) {
+  color: var(--science-accent);
+}
+.scope :global(.system-ready) {
+  color: var(--science-success);
+}
+.scope :global(.system-ready i) {
+  background: var(--science-success);
+  box-shadow: none;
+}
+.scope :global(.system-ready.offline i),
+.scope :global(.system-ready.checking i) {
+  background: var(--science-warning);
+}
+.scope :global(.system-ready.checking),
+.scope :global(.system-ready.offline) {
+  color: var(--science-warning);
+}
+.scope :global(.topbar time) {
+  color: var(--science-muted);
+}
+.scope :global(.sidebar) {
+  background: var(--science-surface);
+  border-color: var(--science-border);
+  padding: 24px 12px;
+}
+.scope :global(.sidebar nav) {
+  flex-direction: column;
+}
+.scope :global(.sidebar nav button) {
+  justify-content: flex-start;
+  color: var(--science-muted);
+  background: transparent;
+  box-shadow: none;
+  border-color: transparent;
+}
+.scope :global(.sidebar nav button span) {
+  display: inline;
+  min-width: 0;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.5;
+}
+.scope :global(.sidebar nav button:hover),
+.scope :global(.sidebar nav button.active) {
+  color: var(--science-accent);
+  background: var(--science-selected);
+  box-shadow: inset 3px 0 var(--science-accent);
+}
+.scope :global(.workspace) {
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 28px 32px 56px;
+}
+.scope :global(.panel) {
+  background: var(--science-surface);
+  color: var(--science-text);
+  border-color: var(--science-border);
+  box-shadow: none;
+  border-radius: 8px;
+}
+.scope :global(.panel-title) {
+  border-color: var(--science-border);
+  background: transparent;
+}
+.scope :global(.panel-title h3) {
+  color: var(--science-text);
+}
+.scope :global(.panel-title em) {
+  color: var(--science-muted);
+}
+.scope :is(button, select, input, summary, a):focus-visible {
+  outline: 2px solid var(--science-accent);
+  outline-offset: 3px;
+}
+.scope :is(button, select) {
+  font-family: inherit;
+}
+.scope input[type='range'],
+.scope progress {
+  accent-color: var(--science-accent);
+}
+.scope a {
+  color: var(--science-accent);
+}
+.scope figure {
+  overflow-x: auto;
+}
+.scope [hidden] {
+  display: none !important;
+}
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 0 0 20px;
+}
+.scope .heading h1 {
+  color: var(--science-text);
+  font-size: clamp(23px, 2vw, 29px);
+  line-height: 1.45;
+  font-weight: 650;
+  letter-spacing: 0;
+  margin: 4px 0 8px;
+}
+.scope .heading p {
+  color: var(--science-muted);
+  font-size: 14px;
+  line-height: 1.8;
+  margin: 0;
+}
+.eyebrow {
+  color: var(--science-muted);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--science-border);
+  margin: 20px 0;
+  padding: 0;
+}
+.scope .tabs button {
+  flex: 1 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 16px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--science-muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+.scope .tabs button[aria-current='step'] {
+  border-bottom-color: var(--science-accent);
+  background: var(--science-selected);
+  color: var(--science-accent);
+  font-weight: 600;
+}
+.scope .tabs button:hover:not(:disabled) {
+  background: var(--science-subtle);
+  color: var(--science-accent);
+}
+.tabs span {
+  font-size: 12px;
+  opacity: 0.7;
+}
+@media (max-width: 1000px) {
+  .scope:global(.control-room) {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+  .scope :global(.workspace) {
+    padding: 22px 20px 40px;
+  }
+  .scope :global(.sidebar nav button) {
+    justify-content: center;
+    padding: 12px 8px;
+  }
+  .scope :global(.sidebar nav button span),
+  .scope :global(.sidebar nav button svg:last-child:not(:first-child)) {
+    display: none;
+  }
+}
+@media (max-width: 650px) {
+  .scope:global(.control-room) {
+    grid-template: auto auto minmax(0, 1fr) / minmax(0, 1fr);
+  }
+  .scope :global(.topbar) {
+    padding: 14px 16px;
+    flex-wrap: wrap;
+  }
+  .scope :global(.title-block h1) {
+    font-size: 14px;
+  }
+  .scope :global(.topbar-status) {
+    display: flex;
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+  .scope :global(.system-ready) {
+    display: inline-flex;
+  }
+  .scope :global(.sidebar) {
+    grid-row: 2;
+    grid-column: 1;
+    padding: 8px;
+    overflow-x: auto;
+  }
+  .scope :global(.sidebar nav) {
+    display: flex;
+    flex-direction: row;
+    position: static;
+    width: max-content;
+  }
+  .scope :global(.sidebar nav button) {
+    width: auto;
+    min-height: 38px;
+    padding: 8px 12px;
+  }
+  .scope :global(.sidebar nav button span) {
+    display: inline;
+  }
+  .scope :global(.sidebar nav button svg) {
+    display: none;
+  }
+  .scope :global(.workspace) {
+    grid-row: 3;
+    grid-column: 1;
+    padding: 20px 14px 32px;
+  }
+  .scope .tabs button {
+    padding: 12px;
+  }
+}

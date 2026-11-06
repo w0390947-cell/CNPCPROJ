@@ -1,4 +1,5 @@
-import { DemoLab } from '@/features/demo-lab';
-import './style.css';
+import { redirect } from 'next/navigation';
 
-export default function Page() { return <DemoLab />; }
+export default function Page() {
+  redirect('/patent2');
+}

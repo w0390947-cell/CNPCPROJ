@@ -4,24 +4,34 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
+from datetime import datetime
 from contextlib import asynccontextmanager, nullcontext
 from importlib import metadata
 from pathlib import Path
-from typing import Annotated, cast
+from typing import Annotated, Literal, cast
 
 import cvxpy as cp
 import uvicorn
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict
 from starlette.requests import HTTPConnection
 
 from .bootstrap.demo import DemoConfig, demo_device_router, live_demo, materialize_default_bundle
+from .bootstrap.field_initialization import create_field_initializer, create_planning_updater, create_pcc_target_requester, create_snapshot_submitter, create_control_cycle_preparer, create_execution_services, create_recovery_services
+from .workflows.field_initialization.api import ExecutionTransport, RecoveryVerifier
+from .entrypoints.field_initialization_http import router as field_initialization_router
 from .job_manager import JobStatus, SimulationJobManager
 from .runtime.periodic import PeriodicWorker
 from .runtime.retention import RetentionCapacityError, RetentionPolicy
 from .service import ScenarioType, SimulationRequest, SimulationResult, run_simulation
+from .modules.studies.contracts_patent2 import Patent2Inputs, Patent2RunRequest, Patent2Scenario
+from .bootstrap.adapters.patent2_example import describe_example
+from .bootstrap.adapters.patent2_library import library_path, read_library
+from .bootstrap.adapters.single_example import describe_single_example
+from .bootstrap.adapters import single_library
+from .workflows.single_execution.contracts_example import SingleExampleInputs
 
 
 class HealthResponse(BaseModel):
@@ -95,6 +105,70 @@ def create_simulation(request: SimulationRequest, job_manager: Jobs) -> JobStatu
         raise HTTPException(status_code=507, detail=str(exc)) from exc
 
 
+@router.get("/api/simulations/recent-single", response_model=list[JobStatus])
+def recent_single_results(job_manager: Jobs) -> list[JobStatus]:
+    return job_manager.recent_single_results()
+
+
+@router.get("/api/patent2/inputs", response_model=Patent2Inputs)
+def patent2_inputs(scenario: Patent2Scenario = "normal") -> Patent2Inputs:
+    return describe_example(scenario)
+
+
+@router.get("/api/single-example/inputs", response_model=SingleExampleInputs)
+def single_example_inputs() -> SingleExampleInputs:
+    return describe_single_example()
+
+
+@router.get("/api/single-example/library", response_model=list[Literal["core"]])
+def single_example_library() -> list[Literal["core"]]:
+    return ["core"] if single_library.library_path().is_file() else []
+
+
+@router.get("/api/single-example/library/{example}", response_model=SimulationResult)
+def single_example_record(example: Literal["core"]) -> SimulationResult:
+    try:
+        return single_library.read_library()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="尚未保存单微网示范记录，请现场重新计算") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="保存记录不符合当前固定实施例或执行记录不完整，不能回放") from exc
+
+
+@router.get("/api/patent2/runs", response_model=list[JobStatus])
+def patent2_runs(job_manager: Jobs) -> list[JobStatus]:
+    return job_manager.recent_patent2_results()
+
+
+@router.get("/api/patent2/library", response_model=list[Patent2Scenario])
+def patent2_library() -> list[Patent2Scenario]:
+    return [s for s in ("normal", "low_energy") if library_path(s).is_file()]
+
+
+@router.get("/api/patent2/library/{scenario}", response_model=SimulationResult)
+def patent2_library_result(scenario: Patent2Scenario) -> SimulationResult:
+    try:
+        return read_library(scenario)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="尚未保存该工况的示范记录，请现场计算或导入记录") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="保存记录的结构或输入摘要不一致，不能回放") from exc
+
+
+@router.post("/api/patent2/runs", response_model=JobStatus, status_code=202)
+def create_patent2_run(body: Patent2RunRequest, job_manager: Jobs) -> JobStatus:
+    request = SimulationRequest(
+        name="专利二 · " + ("正常初始电量" if body.scenario == "normal" else "低电量恢复"),
+        scenario_type="cluster_coordination", steps=4, patent2_case=body.scenario,
+        storage_enabled=True, admm_max_iterations=1000,
+        solver={"time_limit_seconds": 60, "formulation": "misocp"},
+    )
+    try:
+        return job_manager.create(request)
+    except RetentionCapacityError as exc:
+        raise HTTPException(status_code=507, detail=str(exc)) from exc
+
+
 @router.get("/api/simulations/{simulation_id}", response_model=JobStatus)
 def get_simulation(simulation_id: str, job_manager: Jobs) -> JobStatus:
     try:
@@ -132,6 +206,15 @@ def get_simulation_result(simulation_id: str, job_manager: Jobs) -> SimulationRe
         ) from exc
 
 
+@router.get("/api/simulations/{simulation_id}/live")
+def simulation_live(simulation_id: str, job_manager: Jobs, after: int = Query(default=0, ge=0), stream: str | None = None) -> dict:
+    """Read committed display events; this never advances the simulation."""
+    try:
+        return job_manager.live(simulation_id, after, stream)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="仿真任务不存在") from exc
+
+
 @router.websocket("/api/simulations/{simulation_id}/stream")
 async def stream_simulation_status(
     websocket: WebSocket, simulation_id: str, job_manager: Jobs
@@ -167,6 +250,9 @@ def create_app(
     demo: DemoConfig | None = None,
     *,
     retention: RetentionPolicy = RetentionPolicy(),
+    field_transport: ExecutionTransport | None = None,
+    field_clock: Callable[[], datetime] | None = None,
+    field_recovery_verifier: RecoveryVerifier | None = None,
 ) -> FastAPI:
     """Assemble the unified local API; all workers belong to its lifespan."""
 
@@ -182,6 +268,29 @@ def create_app(
             pump = PeriodicWorker(manager.tick, 0.1)
             application.state.job_manager = manager
             application.state.job_pump = pump
+            application.state.field_initializer = create_field_initializer(
+                (root if root is not None else Path("artifacts")) / "field-initialization", transport=field_transport, clock=field_clock,
+            )
+            application.state.planning_updater = create_planning_updater(
+                (root if root is not None else Path("artifacts")) / "field-initialization", clock=field_clock,
+            )
+            application.state.pcc_target_requester = create_pcc_target_requester(
+                (root if root is not None else Path("artifacts")) / "field-initialization", clock=field_clock,
+            )
+            application.state.control_cycle_preparer = create_control_cycle_preparer(
+                (root if root is not None else Path("artifacts")) / "field-initialization", transport=field_transport, clock=field_clock,
+            )
+            application.state.snapshot_submitter = create_snapshot_submitter(
+                (root if root is not None else Path("artifacts")) / "field-initialization", clock=field_clock,
+            )
+            (application.state.execution_reporter, application.state.field_status_query,
+             application.state.field_stopper, application.state.field_dispatcher) = create_execution_services(
+                (root if root is not None else Path("artifacts")) / "field-initialization", transport=field_transport, clock=field_clock,
+            )
+            (application.state.recovery_preparer, application.state.run_resumer) = create_recovery_services(
+                (root if root is not None else Path("artifacts")) / "field-initialization",
+                clock=field_clock, transport=field_transport, verifier=field_recovery_verifier,
+            )
             if demo_runtime is not None:
                 application.state.demo_http_runtime = demo_runtime.http_runtime()
             try:
@@ -207,6 +316,7 @@ def create_app(
         allow_headers=["Content-Type"],
     )
     application.include_router(router)
+    application.include_router(field_initialization_router)
     application.include_router(demo_device_router())
     return application
 

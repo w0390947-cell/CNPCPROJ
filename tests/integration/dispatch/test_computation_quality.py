@@ -3,17 +3,19 @@
 from dataclasses import replace
 
 import numpy as np
+import pytest
 
 from oilfield_energy.ac_consistency import solve_case_ac_consistent
 from oilfield_energy.admm import run_admm_coordination
 from oilfield_energy.bootstrap.adapters.project_dataset import build_synthetic_case
 from oilfield_energy.hierarchy_types import ADMMConfig
-from oilfield_energy.modules.dispatch.contracts import ComputationQualityPolicy
+from oilfield_energy.modules.dispatch.contracts import ACRecoveryPolicy, ComputationQualityPolicy
 from oilfield_energy.bootstrap.adapters.cluster_execution import (
     RegionalPlanRequest,
     realize_regional_plan,
 )
 from oilfield_energy.workflows.cluster_execution.contracts import ExecutionPolicy
+from tests.support.ac_recovery import ac_tracking_case
 
 
 def test_admm_budget_extension_continues_same_iterates():
@@ -80,3 +82,63 @@ def test_suboptimal_plan_is_preserved_as_evidence_but_not_adopted(monkeypatch):
         next(c for c in evidence.checks if c.code == "OPTIMIZATION_QUALITY").status
         == "unknown"
     )
+
+
+@pytest.fixture(scope="module")
+def feasible_single_solve():
+    case = ac_tracking_case()
+    checked = solve_case_ac_consistent(
+        case, ["A"], storage_enabled=False, time_limit_seconds=10
+    )
+    assert checked.passed and checked.recovery is None
+    return case, checked.optimization
+
+
+@pytest.mark.parametrize(
+    "termination,gap,adopted",
+    [
+        ("timelimit", 0.2, False),
+        ("optimal", None, False),
+        ("optimal", float("nan"), False),
+        ("optimal", float("inf"), False),
+        ("optimal", -1.0, False),
+        ("optimal", 0.0, True),
+        ("gaplimit", 1e-4, True),
+        ("timelimit", 1e-4, True),
+    ],
+)
+def test_single_budget_still_requires_optimality_evidence(
+    monkeypatch, feasible_single_solve, termination, gap, adopted
+):
+    from oilfield_energy import ac_consistency
+
+    case, physical = feasible_single_solve
+    incumbent = replace(
+        physical, message=f"SCIP status: {termination}", mip_gap=gap
+    )
+    calls = []
+
+    def backend(*args, **kwargs):
+        calls.append(kwargs)
+        return incumbent
+
+    monkeypatch.setattr(ac_consistency, "solve_case_misocp", backend)
+    local = physical.microgrids["A"]
+    evidence, plan = realize_regional_plan(
+        RegionalPlanRequest(
+            case, "A", local["p_grid_mw"], local["q_grid_mvar"], False, 10,
+            ExecutionPolicy(ac_recovery=ACRecoveryPolicy(allow_feasible_adoption=False)),
+        )
+    )
+    assert len(calls) == 1
+    assert calls[0]["relative_gap"] == 1e-4
+    assert evidence.ac_recovery is None and evidence.adoption_basis == "standard"
+    assert (plan is not None) == adopted
+    assert evidence.executable_plan == adopted
+    check = next(c for c in evidence.checks if c.code == "OPTIMIZATION_QUALITY")
+    assert check.status == ("passed" if adopted else "unknown")
+    assert check.limit == 1e-4
+    if gap is None or not np.isfinite(gap) or gap < 0:
+        assert check.actual is None
+    else:
+        assert check.actual == gap

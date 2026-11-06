@@ -1,0 +1,233 @@
+{
+  "$defs": {
+    "Patent2Branch": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "parent": {
+          "title": "Parent",
+          "type": "string"
+        },
+        "child": {
+          "title": "Child",
+          "type": "string"
+        },
+        "r_pu": {
+          "title": "R Pu",
+          "type": "number"
+        },
+        "x_pu": {
+          "title": "X Pu",
+          "type": "number"
+        },
+        "s_max_mva": {
+          "title": "S Max Mva",
+          "type": "number"
+        },
+        "tap_ratio": {
+          "title": "Tap Ratio",
+          "type": "number"
+        }
+      },
+      "required": [
+        "name",
+        "parent",
+        "child",
+        "r_pu",
+        "x_pu",
+        "s_max_mva",
+        "tap_ratio"
+      ],
+      "title": "Patent2Branch",
+      "type": "object"
+    },
+    "Patent2Region": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "buses": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Buses",
+          "type": "array"
+        },
+        "branches": {
+          "items": {
+            "$ref": "#/$defs/Patent2Branch"
+          },
+          "title": "Branches",
+          "type": "array"
+        },
+        "initial_energy_mwh": {
+          "title": "Initial Energy Mwh",
+          "type": "number"
+        },
+        "minimum_energy_mwh": {
+          "title": "Minimum Energy Mwh",
+          "type": "number"
+        },
+        "maximum_energy_mwh": {
+          "title": "Maximum Energy Mwh",
+          "type": "number"
+        },
+        "storage_power_mw": {
+          "title": "Storage Power Mw",
+          "type": "number"
+        },
+        "eta_charge": {
+          "title": "Eta Charge",
+          "type": "number"
+        },
+        "eta_discharge": {
+          "title": "Eta Discharge",
+          "type": "number"
+        },
+        "load_p_mw": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Load P Mw",
+          "type": "object"
+        },
+        "load_q_mvar": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Load Q Mvar",
+          "type": "object"
+        },
+        "wind_available_mw": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Wind Available Mw",
+          "type": "object"
+        },
+        "pv_available_mw": {
+          "additionalProperties": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Pv Available Mw",
+          "type": "object"
+        },
+        "initial_p_mw": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Initial P Mw",
+          "type": "object"
+        },
+        "initial_q_mvar": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Initial Q Mvar",
+          "type": "object"
+        }
+      },
+      "required": [
+        "name",
+        "buses",
+        "branches",
+        "initial_energy_mwh",
+        "minimum_energy_mwh",
+        "maximum_energy_mwh",
+        "storage_power_mw",
+        "eta_charge",
+        "eta_discharge",
+        "load_p_mw",
+        "load_q_mvar",
+        "wind_available_mw",
+        "pv_available_mw",
+        "initial_p_mw",
+        "initial_q_mvar"
+      ],
+      "title": "Patent2Region",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": "patent2-example-v1",
+      "default": "patent2-example-v1",
+      "title": "Version",
+      "type": "string"
+    },
+    "scenario": {
+      "enum": [
+        "normal",
+        "low_energy"
+      ],
+      "title": "Scenario",
+      "type": "string"
+    },
+    "duration_minutes": {
+      "const": 60,
+      "default": 60,
+      "title": "Duration Minutes",
+      "type": "integer"
+    },
+    "source_start_minute": {
+      "const": 0,
+      "default": 0,
+      "title": "Source Start Minute",
+      "type": "integer"
+    },
+    "price_cny_per_mwh": {
+      "items": {
+        "type": "number"
+      },
+      "title": "Price Cny Per Mwh",
+      "type": "array"
+    },
+    "cluster_limit_mw": {
+      "title": "Cluster Limit Mw",
+      "type": "number"
+    },
+    "regions": {
+      "items": {
+        "$ref": "#/$defs/Patent2Region"
+      },
+      "title": "Regions",
+      "type": "array"
+    },
+    "input_sha256": {
+      "title": "Input Sha256",
+      "type": "string"
+    },
+    "input_snapshot_json": {
+      "title": "Input Snapshot Json",
+      "type": "string"
+    }
+  },
+  "required": [
+    "scenario",
+    "price_cny_per_mwh",
+    "cluster_limit_mw",
+    "regions",
+    "input_sha256",
+    "input_snapshot_json"
+  ],
+  "title": "Patent2Inputs",
+  "type": "object"
+}

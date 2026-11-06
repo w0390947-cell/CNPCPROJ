@@ -1,0 +1,234 @@
+{
+  "$defs": {
+    "InitializationResult": {
+      "additionalProperties": false,
+      "properties": {
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "context_id": {
+          "title": "Context Id",
+          "type": "string"
+        },
+        "run_state": {
+          "const": "ready",
+          "default": "ready",
+          "title": "Run State",
+          "type": "string"
+        },
+        "mode": {
+          "default": "shadow",
+          "enum": [
+            "shadow",
+            "closed_loop"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "dispatch_enabled": {
+          "default": false,
+          "title": "Dispatch Enabled",
+          "type": "boolean"
+        },
+        "accepted_versions": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Accepted Versions",
+          "type": "object"
+        },
+        "initial_safety_status": {
+          "const": "passed",
+          "default": "passed",
+          "title": "Initial Safety Status",
+          "type": "string"
+        },
+        "energy_task_guarantee": {
+          "enum": [
+            "not_required",
+            "maintained",
+            "unproven"
+          ],
+          "title": "Energy Task Guarantee",
+          "type": "string"
+        },
+        "missing_requirements": {
+          "default": [
+            "Shadow mode does not grant dispatch permission; configure a supported software execution port for closed_loop."
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Requirements",
+          "type": "array"
+        },
+        "evidence_ref": {
+          "title": "Evidence Ref",
+          "type": "string"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "context_id",
+        "accepted_versions",
+        "energy_task_guarantee",
+        "evidence_ref",
+        "valid_until"
+      ],
+      "title": "InitializationResult",
+      "type": "object"
+    },
+    "InterfaceError": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "field_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Field Path"
+        },
+        "resource_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resource Id"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        },
+        "required_action": {
+          "default": "Correct the input or resolve the stated prerequisite.",
+          "title": "Required Action",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "InterfaceError",
+      "type": "object"
+    },
+    "ResponsePayload": {
+      "additionalProperties": false,
+      "properties": {
+        "outcome": {
+          "enum": [
+            "accepted",
+            "rejected"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "errors": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/InterfaceError"
+          },
+          "title": "Errors",
+          "type": "array"
+        },
+        "data": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/InitializationResult"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "outcome"
+      ],
+      "title": "ResponsePayload",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "interface_version": {
+      "const": "single-microgrid-field-v0.1-draft",
+      "default": "single-microgrid-field-v0.1-draft",
+      "title": "Interface Version",
+      "type": "string"
+    },
+    "operation": {
+      "const": "InitializeRun",
+      "default": "InitializeRun",
+      "title": "Operation",
+      "type": "string"
+    },
+    "message_id": {
+      "title": "Message Id",
+      "type": "string"
+    },
+    "correlation_id": {
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "microgrid_id": {
+      "title": "Microgrid Id",
+      "type": "string"
+    },
+    "run_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Run Id"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/ResponsePayload"
+    }
+  },
+  "required": [
+    "message_id",
+    "correlation_id",
+    "microgrid_id",
+    "run_id",
+    "created_at",
+    "payload"
+  ],
+  "title": "InitializeResponse",
+  "type": "object"
+}

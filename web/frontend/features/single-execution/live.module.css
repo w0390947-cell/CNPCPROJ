@@ -1,0 +1,238 @@
+.live {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin: 0;
+  color: var(--science-text, #d9edf5);
+  font-size: 14px;
+  line-height: 1.75;
+}
+.live > p {
+  color: var(--science-muted, #9fbcca);
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 18px 20px;
+  background: var(--science-surface, #102d40);
+  border: 1px solid var(--science-border, #27526b);
+  border-radius: 8px;
+}
+.controls button,
+.live select {
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid var(--science-border, #518aa5);
+  border-radius: 6px;
+  color: var(--science-text, #d9edf5);
+  background: var(--science-surface, #102d40);
+  cursor: pointer;
+}
+.controls button:first-child {
+  background: var(--science-accent, #18819c);
+  border-color: var(--science-accent, #18819c);
+  color: white;
+}
+.controls button:hover:not(:disabled) {
+  border-color: var(--science-accent, #518aa5);
+}
+.controls button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.controls input {
+  flex: 1 1 200px;
+  min-width: 160px;
+}
+.live .note {
+  font-size: 12px;
+  margin: 8px 0;
+  color: var(--science-muted, #9fbcca);
+}
+.devices {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.device {
+  border: 1px solid var(--science-border, #27526b);
+  border-top-width: 3px;
+  border-radius: 8px;
+  background: var(--science-surface, #102d40);
+  padding: 18px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.device svg {
+  width: 56px;
+  height: 48px;
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  stroke: var(--science-accent, #70e0b7);
+  fill: none;
+  stroke-width: 2;
+  opacity: 0.8;
+}
+.device h3 {
+  margin: 0;
+  padding-right: 52px;
+  font-size: 14px;
+}
+.device strong {
+  font-size: 22px;
+  margin-top: 8px;
+  font-weight: 600;
+}
+.device span {
+  color: var(--science-muted, #9fbcca);
+  font-size: 13px;
+}
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  background: var(--science-surface, #102d40);
+  border: 1px solid var(--science-border, #27526b);
+  border-radius: 8px;
+  padding: 16px 20px;
+  gap: 8px 20px;
+  margin: 18px 0;
+  font-size: 13px;
+}
+.charts figure {
+  min-width: 0;
+}
+.charts figure > button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.table {
+  overflow: auto;
+  background: var(--science-surface, #102d40);
+  border: 1px solid var(--science-border, #27526b);
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+.table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table td,
+.table th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--science-border, #27526b);
+  text-align: left;
+  font-size: 13px;
+}
+.table caption {
+  text-align: left;
+  padding-bottom: 12px;
+  font-weight: 600;
+}
+.table th {
+  background: var(--science-subtle, #102d40);
+  color: var(--science-muted, #9fbcca);
+  font-weight: 500;
+}
+/* NetworkTopology is also used by the existing dark dashboard. */
+.network {
+  overflow: auto;
+}
+.network svg {
+  width: 100%;
+  min-width: 1000px;
+}
+.network rect {
+  fill: var(--science-subtle, #102d40);
+  stroke: var(--science-border, #518aa5);
+}
+.network text {
+  fill: var(--science-text, #d9edf5);
+  font-size: 12px;
+}
+.network p {
+  font-size: 12px;
+  color: var(--science-muted, #9fbcca);
+}
+.live .network {
+  background: var(--science-surface, #102d40);
+  border: 1px solid var(--science-border, #27526b);
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+.spin {
+  transform-origin: 40px 28px;
+  animation: rotation 3s linear infinite;
+}
+.pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+.line {
+  stroke-dasharray: 8 6;
+  animation: flow 1.5s linear infinite;
+}
+.live .line {
+  animation: networkPulse 1.5s ease-in-out infinite;
+}
+@keyframes rotation {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+@keyframes flow {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+@keyframes networkPulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+@media (max-width: 800px) {
+  .devices {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+  .device svg {
+    width: 38px;
+    right: 10px;
+  }
+  .device {
+    padding: 12px;
+  }
+  .device strong {
+    font-size: 18px;
+  }
+  .controls {
+    padding: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin,
+  .pulse,
+  .line,
+  .live .line {
+    animation: none;
+  }
+}

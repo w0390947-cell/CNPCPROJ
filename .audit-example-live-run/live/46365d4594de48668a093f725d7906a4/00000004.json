@@ -1,0 +1,2070 @@
+{
+  "kind": "cluster_cycle",
+  "minute": 2,
+  "step": {
+    "minute": 1,
+    "source": "backup",
+    "reason": "采用保留的认证后续策略",
+    "before": [
+      {
+        "p_mw": [
+          1.2781509232228985,
+          1.3780712074453423,
+          0.0,
+          0.0,
+          -0.637,
+          0.0
+        ],
+        "q_mvar": [
+          0.12354992685506422,
+          0.13320852317786114,
+          0.0,
+          0.0,
+          0.0,
+          1.8
+        ],
+        "energy_mwh": 0.5050429166666667
+      },
+      {
+        "p_mw": [
+          1.1840150560285942,
+          0.0,
+          -0.637,
+          0.0
+        ],
+        "q_mvar": [
+          0.12704002141674284,
+          0.0,
+          0.0,
+          2.45
+        ],
+        "energy_mwh": 0.4050429166666667
+      },
+      {
+        "p_mw": [
+          1.187367528696801,
+          0.0,
+          -0.637,
+          0.0
+        ],
+        "q_mvar": [
+          0.09695045197746677,
+          0.0,
+          0.0,
+          2.45
+        ],
+        "energy_mwh": 0.3650429166666667
+      }
+    ],
+    "after": [
+      {
+        "p_mw": [
+          1.4055944923433912,
+          1.515477760918835,
+          0.0,
+          0.0,
+          -1.274,
+          0.0
+        ],
+        "q_mvar": [
+          0.22279329960402117,
+          0.24021031148799857,
+          0.0,
+          0.0,
+          0.0,
+          1.8
+        ],
+        "energy_mwh": 0.5201716666666667
+      },
+      {
+        "p_mw": [
+          1.3020724011284963,
+          0.0,
+          -1.1732987108116806,
+          0.0
+        ],
+        "q_mvar": [
+          0.2290868661250163,
+          0.0,
+          0.0,
+          2.45
+        ],
+        "energy_mwh": 0.41937444812725916
+      },
+      {
+        "p_mw": [
+          1.3057591465922334,
+          0.0,
+          -1.0946048427542074,
+          0.0
+        ],
+        "q_mvar": [
+          0.15575387357479767,
+          0.0,
+          0.0,
+          2.45
+        ],
+        "energy_mwh": 0.3787514550051375
+      }
+    ],
+    "commands": [
+      {
+        "p_mw": [
+          1.6020480000000001,
+          1.7272891500000003,
+          0.0,
+          0.0,
+          -2.2559317305759405,
+          0.0
+        ],
+        "q_mvar": [
+          0.37577637142753206,
+          0.40515293498893057,
+          0.0,
+          0.0,
+          0.0,
+          1.8
+        ]
+      },
+      {
+        "p_mw": [
+          1.4840571,
+          0.0,
+          -2.0,
+          0.0
+        ],
+        "q_mvar": [
+          0.3863914733843714,
+          0.0,
+          0.0,
+          2.45
+        ]
+      },
+      {
+        "p_mw": [
+          1.488259125,
+          0.0,
+          -1.8,
+          0.0
+        ],
+        "q_mvar": [
+          0.2463989999999998,
+          0.0,
+          0.0,
+          2.45
+        ]
+      }
+    ],
+    "observed": [
+      {
+        "load_p_mw": [
+          {
+            "low": 0.0,
+            "high": 0.0
+          },
+          {
+            "low": 4.4955449,
+            "high": 4.4955449
+          },
+          {
+            "low": 0.72863,
+            "high": 0.72863
+          },
+          {
+            "low": 0.732027,
+            "high": 0.732027
+          },
+          {
+            "low": 1.4370553,
+            "high": 1.4370553
+          },
+          {
+            "low": 1.4834663,
+            "high": 1.4834663
+          },
+          {
+            "low": 1.3016898,
+            "high": 1.3016898
+          },
+          {
+            "low": 0.0,
+            "high": 0.0
+          },
+          {
+            "low": 0.0,
+            "high": 0.0
+          },
+          {
+            "low": 0.0,
+            "high": 0.0
+          }
+        ],
+        "load_q_mvar": [
+          {
+            "low": 0.0,
+            "high": 0.0
+          },
+          {
+            "low": 1.9150941,
+            "high": 1.9150941
+          },
+          {
+            "low": 0.287973,
+            "high": 0.287973
+          },
+          {
+            "low": 0.3335214,
+            "high": 0.3335214
+          },
+          {
+            "low": 0.5215814,
+            "high": 0.5215814
+          },
+          {
+            "low": 0.631954,
+            "high": 0.631954
+          },
+          {
+            "low": 0.5144607,
+            "high": 0.5144607
+          },
+          {
+            "low": 0.0,
+            "high": 0.0
+          },
+          {
+            "low": 0.0,
+            "high": 0.0
+          },
+          {
+            "low": 0.0,
+            "high": 0.0
+          }
+        ],
+        "available_mw": [
+          2.386064,
+          2.5530522,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "load_p_mw": [
+          {
+            "low": 0.0,
+            "high": 0.0
+          },
+          {
+            "low": 0.0,
+            "high": 0.0
+          },
+          {
+            "low": 0.0,
+            "high": 0.0
+          },
+          {
+            "low": 1.6476917,
+            "high": 1.6476917
+          },
+          {
+            "low": 1.2607232,
+            "high": 1.2607232
+          },
+          {
+            "low": 2.6479008,
+            "high": 2.6479008
+          },
+          {
+            "low": 1.4090876,
+            "high": 1.4090876
+          }
+        ],
+        "load_q_mvar": [
+          {
+            "low": 0.0,
+            "high": 0.0
+          },
+          {
+            "low": 0.0,
+            "high": 0.0
+          },
+          {
+            "low": 0.0,
+            "high": 0.0
+          },
+          {
+            "low": 0.7019137,
+            "high": 0.7019137
+          },
+          {
+            "low": 0.5370658,
+            "high": 0.5370658
+          },
+          {
+            "low": 1.128001,
+            "high": 1.128001
+          },
+          {
+            "low": 0.6002688,
+            "high": 0.6002688
+          }
+        ],
+        "available_mw": [
+          2.2287428,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "load_p_mw": [
+          {
+            "low": 0.0,
+            "high": 0.0
+          },
+          {
+            "low": 0.0,
+            "high": 0.0
+          },
+          {
+            "low": 0.0,
+            "high": 0.0
+          },
+          {
+            "low": 1.5504152,
+            "high": 1.5504152
+          },
+          {
+            "low": 1.1414195,
+            "high": 1.1414195
+          },
+          {
+            "low": 2.3776934,
+            "high": 2.3776934
+          },
+          {
+            "low": 1.2329099,
+            "high": 1.2329099
+          }
+        ],
+        "load_q_mvar": [
+          {
+            "low": 0.0,
+            "high": 0.0
+          },
+          {
+            "low": 0.0,
+            "high": 0.0
+          },
+          {
+            "low": 0.0,
+            "high": 0.0
+          },
+          {
+            "low": 0.6604741,
+            "high": 0.6604741
+          },
+          {
+            "low": 0.4862427,
+            "high": 0.4862427
+          },
+          {
+            "low": 1.0128931,
+            "high": 1.0128931
+          },
+          {
+            "low": 0.5252174,
+            "high": 0.5252174
+          }
+        ],
+        "available_mw": [
+          2.2343455,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "path": {
+      "minute": 1,
+      "endpoints": [
+        {
+          "p_mw": [
+            {
+              "low": 1.4055944923433912,
+              "high": 1.4055944923433914
+            },
+            {
+              "low": 1.515477760918835,
+              "high": 1.5154777609188352
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": -1.274,
+              "high": -1.2739999999999998
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            }
+          ],
+          "q_mvar": [
+            {
+              "low": 0.22279329960402117,
+              "high": 0.2227932996040212
+            },
+            {
+              "low": 0.24021031148799854,
+              "high": 0.24021031148799857
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": 1.8,
+              "high": 1.8
+            }
+          ],
+          "energy_mwh": {
+            "low": 0.5201716666666666,
+            "high": 0.5201716666666667
+          }
+        },
+        {
+          "p_mw": [
+            {
+              "low": 1.302072401128496,
+              "high": 1.3020724011284963
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": -1.1732987108116808,
+              "high": -1.1732987108116806
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            }
+          ],
+          "q_mvar": [
+            {
+              "low": 0.22908686612501628,
+              "high": 0.2290868661250163
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": 2.45,
+              "high": 2.45
+            }
+          ],
+          "energy_mwh": {
+            "low": 0.41937444812725916,
+            "high": 0.4193744481272592
+          }
+        },
+        {
+          "p_mw": [
+            {
+              "low": 1.3057591465922331,
+              "high": 1.3057591465922334
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": -1.0946048427542074,
+              "high": -1.0946048427542072
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            }
+          ],
+          "q_mvar": [
+            {
+              "low": 0.15575387357479764,
+              "high": 0.15575387357479767
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": 2.45,
+              "high": 2.45
+            }
+          ],
+          "energy_mwh": {
+            "low": 0.3787514550051375,
+            "high": 0.37875145500513757
+          }
+        }
+      ],
+      "paths": [
+        {
+          "p_mw": [
+            {
+              "low": 1.2781509232228985,
+              "high": 1.4055944923433914
+            },
+            {
+              "low": 1.3780712074453423,
+              "high": 1.5154777609188352
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": -1.274,
+              "high": -0.637
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            }
+          ],
+          "q_mvar": [
+            {
+              "low": 0.12354992685506422,
+              "high": 0.2227932996040212
+            },
+            {
+              "low": 0.13320852317786114,
+              "high": 0.24021031148799857
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": 1.8,
+              "high": 1.8
+            }
+          ],
+          "energy_mwh": {
+            "low": 0.5050429166666667,
+            "high": 0.5252145833333334
+          }
+        },
+        {
+          "p_mw": [
+            {
+              "low": 1.1840150560285942,
+              "high": 1.3020724011284963
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": -1.1732987108116808,
+              "high": -0.637
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            }
+          ],
+          "q_mvar": [
+            {
+              "low": 0.12704002141674284,
+              "high": 0.2290868661250163
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": 2.45,
+              "high": 2.45
+            }
+          ],
+          "energy_mwh": {
+            "low": 0.4050429166666667,
+            "high": 0.4236201462545183
+          }
+        },
+        {
+          "p_mw": [
+            {
+              "low": 1.187367528696801,
+              "high": 1.3057591465922334
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": -1.0946048427542074,
+              "high": -0.637
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            }
+          ],
+          "q_mvar": [
+            {
+              "low": 0.09695045197746677,
+              "high": 0.15575387357479767
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": 0.0,
+              "high": 0.0
+            },
+            {
+              "low": 2.45,
+              "high": 2.45
+            }
+          ],
+          "energy_mwh": {
+            "low": 0.3650429166666667,
+            "high": 0.382374160010275
+          }
+        }
+      ],
+      "networks": [
+        {
+          "model": "radial-ac-disc-v1",
+          "slack_voltage_input_pu": null,
+          "certified": true,
+          "reason": "",
+          "voltage_center": [
+            [
+              1.0,
+              0.0
+            ],
+            [
+              0.9976987910596656,
+              -0.0020925236809021036
+            ],
+            [
+              0.998073653730102,
+              -0.0012999728461748682
+            ],
+            [
+              0.9981305778707893,
+              -0.0011696573134565976
+            ],
+            [
+              0.9940744449805523,
+              -0.00701199361177997
+            ],
+            [
+              0.9936749168731278,
+              -0.0070317261119712425
+            ],
+            [
+              0.9963395683247422,
+              -0.0033281890543462875
+            ],
+            [
+              0.9978463219324835,
+              -0.001787286644962887
+            ],
+            [
+              0.9980588484749511,
+              -0.0023639016068795413
+            ],
+            [
+              0.9953406998835173,
+              -0.006251523742016528
+            ]
+          ],
+          "voltage_radius_pu": 0.001,
+          "contraction_upper": 0.012028000707002214,
+          "high_voltage_uniqueness_upper": 0.01316962601177331,
+          "voltage_bounds": [
+            {
+              "low": 1.0,
+              "high": 1.0
+            },
+            {
+              "low": 0.9967009854346508,
+              "high": 0.9987009854346509
+            },
+            {
+              "low": 0.9970745003252794,
+              "high": 0.9990745003252796
+            },
+            {
+              "low": 0.997131263200841,
+              "high": 0.9991312632008411
+            },
+            {
+              "low": 0.9930991752424929,
+              "high": 0.995099175242493
+            },
+            {
+              "low": 0.9926997965154924,
+              "high": 0.9946997965154926
+            },
+            {
+              "low": 0.9953451270779192,
+              "high": 0.9973451270779193
+            },
+            {
+              "low": 0.9968479225752472,
+              "high": 0.9988479225752473
+            },
+            {
+              "low": 0.9970616479205843,
+              "high": 0.9990616479205844
+            },
+            {
+              "low": 0.9943603319369859,
+              "high": 0.996360331936986
+            }
+          ],
+          "branch_mva_upper": [
+            9.401765081788664,
+            1.5626929260693865,
+            2.6753432509267197,
+            1.803610609241172,
+            3.2374332059452584,
+            0.7250587855545322,
+            0.8380887012994294,
+            1.5721475290836409,
+            1.6588694874032868
+          ],
+          "branch_current_pu_bounds": [
+            {
+              "low": 0.39256498501612286,
+              "high": 0.47008825408943317
+            },
+            {
+              "low": 0.05738349590370942,
+              "high": 0.07822476729192289
+            },
+            {
+              "low": 0.09841565288543576,
+              "high": 0.13394115405635487
+            },
+            {
+              "low": 0.09008434995603079,
+              "high": 0.09026523102929387
+            },
+            {
+              "low": 0.15385457457438753,
+              "high": 0.1620822074455186
+            },
+            {
+              "low": 0.026223421058216,
+              "high": 0.03628652244244383
+            },
+            {
+              "low": 0.03116270063870189,
+              "high": 0.04194087064268754
+            },
+            {
+              "low": 0.074891158554621,
+              "high": 0.07889452634205583
+            },
+            {
+              "low": 0.07902219878236025,
+              "high": 0.08324646386605648
+            }
+          ],
+          "pcc_p_mw": {
+            "low": 7.660101508262567,
+            "high": 9.07874021361758
+          },
+          "pcc_q_mvar": {
+            "low": 1.87688251465674,
+            "high": 2.3061468059801835
+          },
+          "balance_scope": "aggregate_constrained_box",
+          "aggregate_p_mw": {
+            "low": 7.639880714237773,
+            "high": 9.050651501831759
+          },
+          "aggregate_q_mvar": {
+            "low": 1.83646637390798,
+            "high": 2.2529407649670747
+          }
+        },
+        {
+          "model": "radial-ac-disc-v1",
+          "slack_voltage_input_pu": null,
+          "certified": true,
+          "reason": "",
+          "voltage_center": [
+            [
+              1.0,
+              0.0
+            ],
+            [
+              0.9861008541075258,
+              -0.014267583451996664
+            ],
+            [
+              0.9847289477439198,
+              -0.013829227173329345
+            ],
+            [
+              1.0294202860015587,
+              -0.04776898082830135
+            ],
+            [
+              1.0310807187038655,
+              -0.04925515627168758
+            ],
+            [
+              1.0309255168521092,
+              -0.047047490081074346
+            ],
+            [
+              0.9804583679628974,
+              -0.01603619832440871
+            ]
+          ],
+          "voltage_radius_pu": 0.005,
+          "contraction_upper": 0.07537445513667851,
+          "high_voltage_uniqueness_upper": 0.08702463467579044,
+          "voltage_bounds": [
+            {
+              "low": 1.0,
+              "high": 1.0
+            },
+            {
+              "low": 0.9812040652974168,
+              "high": 0.9912040652974169
+            },
+            {
+              "low": 0.979826049639762,
+              "high": 0.9898260496397622
+            },
+            {
+              "low": 1.0255280203666979,
+              "high": 1.035528020366698
+            },
+            {
+              "low": 1.0272565179751727,
+              "high": 1.037256517975173
+            },
+            {
+              "low": 1.0269984920627147,
+              "high": 1.0369984920627149
+            },
+            {
+              "low": 0.9755895017616536,
+              "high": 0.9855895017616537
+            }
+          ],
+          "branch_mva_upper": [
+            7.372619731213143,
+            0.5960632337937082,
+            6.981580348932654,
+            1.5928166675509046,
+            1.8562761446981255,
+            3.2207105858065046
+          ],
+          "branch_current_pu_bounds": [
+            {
+              "low": 0.3089440891244718,
+              "high": 0.3686309865606571
+            },
+            {
+              "low": 0.016728544431071916,
+              "high": 0.030067634640645654
+            },
+            {
+              "low": 0.29126565127447207,
+              "high": 0.3354064200617212
+            },
+            {
+              "low": 0.07573406537923173,
+              "high": 0.08045942355884629
+            },
+            {
+              "low": 0.08428906001492482,
+              "high": 0.08950235506156662
+            },
+            {
+              "low": 0.1246879514989855,
+              "high": 0.15525140261801632
+            }
+          ],
+          "pcc_p_mw": {
+            "low": 6.223798163447143,
+            "high": 7.264923906736363
+          },
+          "pcc_q_mvar": {
+            "low": 0.4879396570063316,
+            "high": 0.8361424926938575
+          },
+          "balance_scope": "aggregate_constrained_box",
+          "aggregate_p_mw": {
+            "low": 6.126195816371504,
+            "high": 7.128822037283087
+          },
+          "aggregate_q_mvar": {
+            "low": 0.21398120137498342,
+            "high": 0.4643905110832573
+          }
+        },
+        {
+          "model": "radial-ac-disc-v1",
+          "slack_voltage_input_pu": null,
+          "certified": true,
+          "reason": "",
+          "voltage_center": [
+            [
+              1.0,
+              0.0
+            ],
+            [
+              0.9703015775418573,
+              -0.031533209888095326
+            ],
+            [
+              0.971060130201616,
+              -0.030723669150542667
+            ],
+            [
+              1.012095390751787,
+              -0.05733889547601276
+            ],
+            [
+              1.0137842463427529,
+              -0.05883617356208615
+            ],
+            [
+              1.01354222203408,
+              -0.056663497446756445
+            ],
+            [
+              1.0125400021485291,
+              -0.05719987268032388
+            ]
+          ],
+          "voltage_radius_pu": 0.01,
+          "contraction_upper": 0.11072163882728263,
+          "high_voltage_uniqueness_upper": 0.12287635335945607,
+          "voltage_bounds": [
+            {
+              "low": 1.0,
+              "high": 1.0
+            },
+            {
+              "low": 0.9608138311262687,
+              "high": 0.9808138311262689
+            },
+            {
+              "low": 0.9615460464194434,
+              "high": 0.9815460464194435
+            },
+            {
+              "low": 1.003718318328825,
+              "high": 1.0237183183288252
+            },
+            {
+              "low": 1.0054901247437964,
+              "high": 1.0254901247437966
+            },
+            {
+              "low": 1.0051249124066843,
+              "high": 1.0251249124066846
+            },
+            {
+              "low": 1.0041543676312736,
+              "high": 1.0241543676312739
+            }
+          ],
+          "branch_mva_upper": [
+            6.7211990911633,
+            1.3464818853964209,
+            7.775163100334033,
+            1.4023088724686383,
+            1.7642047703473998,
+            3.1266785976295566
+          ],
+          "branch_current_pu_bounds": [
+            {
+              "low": 0.27761366712826097,
+              "high": 0.336059954558165
+            },
+            {
+              "low": 0.060374757486016915,
+              "high": 0.06858984814355971
+            },
+            {
+              "low": 0.3296491834439232,
+              "high": 0.37748841846521963
+            },
+            {
+              "low": 0.06374458905640949,
+              "high": 0.06839697560253606
+            },
+            {
+              "low": 0.08019453607634293,
+              "high": 0.08604828294561578
+            },
+            {
+              "low": 0.12407604989744193,
+              "high": 0.15244801106254977
+            }
+          ],
+          "pcc_p_mw": {
+            "low": 5.637226987390117,
+            "high": 6.599601652509362
+          },
+          "pcc_q_mvar": {
+            "low": 0.33706632479508797,
+            "high": 0.657783316725116
+          },
+          "balance_scope": "aggregate_constrained_box",
+          "aggregate_p_mw": {
+            "low": 5.476117903407767,
+            "high": 6.367236264057406
+          },
+          "aggregate_q_mvar": {
+            "low": 0.011952743925202153,
+            "high": 0.20499753052253322
+          }
+        }
+      ],
+      "pcc_p_mw": {
+        "low": 19.521126659099828,
+        "high": 22.943265772863306
+      },
+      "pcc_q_mvar": {
+        "low": 2.7018884964581593,
+        "high": 3.800072615399157
+      }
+    },
+    "reserve": {
+      "start_minute": 2,
+      "status": "unknown",
+      "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure",
+      "regions": [
+        {
+          "model": "reserve-delivery-box-v1",
+          "inputs": {
+            "region": "SC",
+            "start_minute": 2,
+            "support_minutes": 15,
+            "policy": {
+              "version": "reserve-delivery-box-v1",
+              "response_minutes": 1,
+              "activation_slew_fraction_per_minute": 1.0,
+              "pcc_tolerance_mw": 1e-05,
+              "response_roundoff_mw": 1e-09,
+              "correction_rounds": 2,
+              "source": "研究要求：一分钟内响应；并非现场核定值"
+            },
+            "network": {
+              "slack_voltage_bounds_pu": null,
+              "network_id": "SC:normal",
+              "buses": [
+                "SC_PCC",
+                "SC_MAIN",
+                "SC_WT1",
+                "SC_WT2",
+                "SC_PV1",
+                "SC_PV2",
+                "SC_FLEX",
+                "SC_WIND_COLLECTOR",
+                "SC_SVG",
+                "SC_PV_BUS"
+              ],
+              "branches": [
+                {
+                  "parent": 0,
+                  "child": 1,
+                  "r_pu": 0.004,
+                  "x_pu": 0.006,
+                  "tap": 1.0,
+                  "rating_mva": 20.0
+                },
+                {
+                  "parent": 1,
+                  "child": 7,
+                  "r_pu": 0.003,
+                  "x_pu": 0.004,
+                  "tap": 1.0,
+                  "rating_mva": 12.0
+                },
+                {
+                  "parent": 1,
+                  "child": 6,
+                  "r_pu": 0.009,
+                  "x_pu": 0.013,
+                  "tap": 1.0,
+                  "rating_mva": 7.0
+                },
+                {
+                  "parent": 1,
+                  "child": 8,
+                  "r_pu": 0.003,
+                  "x_pu": 0.004,
+                  "tap": 1.0,
+                  "rating_mva": 3.0
+                },
+                {
+                  "parent": 1,
+                  "child": 9,
+                  "r_pu": 0.004,
+                  "x_pu": 0.03,
+                  "tap": 1.0,
+                  "rating_mva": 20.0
+                },
+                {
+                  "parent": 7,
+                  "child": 2,
+                  "r_pu": 0.01,
+                  "x_pu": 0.014,
+                  "tap": 1.0,
+                  "rating_mva": 6.0
+                },
+                {
+                  "parent": 7,
+                  "child": 3,
+                  "r_pu": 0.011,
+                  "x_pu": 0.015,
+                  "tap": 1.0,
+                  "rating_mva": 6.0
+                },
+                {
+                  "parent": 9,
+                  "child": 4,
+                  "r_pu": 0.012,
+                  "x_pu": 0.015,
+                  "tap": 1.0,
+                  "rating_mva": 4.0
+                },
+                {
+                  "parent": 9,
+                  "child": 5,
+                  "r_pu": 0.015,
+                  "x_pu": 0.017,
+                  "tap": 1.0,
+                  "rating_mva": 4.0
+                }
+              ],
+              "slack": 0,
+              "base_mva": 20.0,
+              "slack_voltage_pu": 1.0,
+              "shunt_q_mvar": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "voltage_min_pu": 0.95,
+              "voltage_max_pu": 1.05,
+              "pcc_min_mw": 0.5,
+              "pcc_max_mw": 18.0,
+              "pf_min": 0.9
+            },
+            "demand_p_mw": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 4.3831562774999995,
+                "high": 4.63003119
+              },
+              {
+                "low": -0.7049543248433912,
+                "high": -0.6587487423433912
+              },
+              {
+                "low": -0.803640108418835,
+                "high": -0.765150085918835
+              },
+              {
+                "low": 1.4011289175,
+                "high": 1.5091340475
+              },
+              {
+                "low": 1.4463796425,
+                "high": 1.5464610625000001
+              },
+              {
+                "low": 1.269147555,
+                "high": 1.386678425
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "demand_q_mvar": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 1.8672167474999999,
+                "high": 1.9723850525
+              },
+              {
+                "low": 0.05411742539597886,
+                "high": 0.07237902539597879
+              },
+              {
+                "low": 0.08411251851200144,
+                "high": 0.10164912351200148
+              },
+              {
+                "low": 0.508541865,
+                "high": 0.5477424725
+              },
+              {
+                "low": 0.61615515,
+                "high": 0.65878964
+              },
+              {
+                "low": 0.5015991825,
+                "high": 0.5480503824999999
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": -1.8,
+                "high": -1.8
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              }
+            ],
+            "storage_bus": 6,
+            "baseline_power_mw": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "initial_power_mw": -1.274,
+            "initial_energy_mwh": 0.5201716666666667,
+            "initial_energy_bounds_mwh": {
+              "low": 0.5201716666666667,
+              "high": 0.5201716666666667
+            },
+            "minimum_energy_mwh": 0.5,
+            "maximum_energy_mwh": 5.0,
+            "maximum_power_mw": 2.5,
+            "storage_s_mva": 2.7,
+            "storage_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "eta_charge": 0.95,
+            "eta_discharge": 0.95,
+            "response_alpha": 0.3934693402873666,
+            "ramp_mw_per_minute": 0.65,
+            "required_mw": 0.365043994,
+            "activation_headroom_mw": 1.460175976,
+            "context_id": "508beee60d0264ed41df3cbf2df1cba00d39481c0909d10eb9e77a86a3a22f2f",
+            "other_resources": []
+          },
+          "status": "unknown",
+          "reason": "full response/support energy; standby energy not restored",
+          "storage_power_mw": {
+            "low": -1.460175977,
+            "high": 1.460175977
+          },
+          "energy_mwh": {
+            "low": 0.11029770821052634,
+            "high": 0.8900829141733334
+          },
+          "command_mw": {
+            "low": -5.961881230474282,
+            "high": 5.961881230474282
+          },
+          "maximum_change_mw": 2.920351953,
+          "network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "nominal_network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "up_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "down_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          }
+        },
+        {
+          "model": "reserve-delivery-box-v1",
+          "inputs": {
+            "region": "YA_B",
+            "start_minute": 2,
+            "support_minutes": 15,
+            "policy": {
+              "version": "reserve-delivery-box-v1",
+              "response_minutes": 1,
+              "activation_slew_fraction_per_minute": 1.0,
+              "pcc_tolerance_mw": 1e-05,
+              "response_roundoff_mw": 1e-09,
+              "correction_rounds": 2,
+              "source": "研究要求：一分钟内响应；并非现场核定值"
+            },
+            "network": {
+              "slack_voltage_bounds_pu": null,
+              "network_id": "YA_B:normal",
+              "buses": [
+                "YA_B_PCC",
+                "YA_B_MAIN",
+                "YA_B_WIND",
+                "YA_B_PV",
+                "YA_B_FLEX",
+                "YA_B_LV",
+                "YA_B_REMOTE"
+              ],
+              "branches": [
+                {
+                  "parent": 0,
+                  "child": 1,
+                  "r_pu": 0.036728163265306125,
+                  "x_pu": 0.045910204081632655,
+                  "tap": 1.0,
+                  "rating_mva": 16.36788013152589
+                },
+                {
+                  "parent": 1,
+                  "child": 2,
+                  "r_pu": 0.03845224489795918,
+                  "x_pu": 0.048065306122448984,
+                  "tap": 1.0,
+                  "rating_mva": 4.728498704663035
+                },
+                {
+                  "parent": 1,
+                  "child": 5,
+                  "r_pu": 0.010821576868506714,
+                  "x_pu": 0.10276499834902005,
+                  "tap": 0.9523809523809523,
+                  "rating_mva": 13.974210801360046
+                },
+                {
+                  "parent": 2,
+                  "child": 6,
+                  "r_pu": 0.03845224489795918,
+                  "x_pu": 0.048065306122448984,
+                  "tap": 1.0,
+                  "rating_mva": 4.728498704663035
+                },
+                {
+                  "parent": 5,
+                  "child": 3,
+                  "r_pu": 0.012,
+                  "x_pu": 0.015,
+                  "tap": 1.0,
+                  "rating_mva": 8.0
+                },
+                {
+                  "parent": 5,
+                  "child": 4,
+                  "r_pu": 0.009,
+                  "x_pu": 0.013,
+                  "tap": 1.0,
+                  "rating_mva": 7.0
+                }
+              ],
+              "slack": 0,
+              "base_mva": 20.0,
+              "slack_voltage_pu": 1.0,
+              "shunt_q_mvar": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "voltage_min_pu": 0.95,
+              "voltage_max_pu": 1.05,
+              "pcc_min_mw": 0.5,
+              "pcc_max_mw": 18.0,
+              "pf_min": 0.9
+            },
+            "demand_p_mw": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": -1.3020724011284963,
+                "high": -1.3020724011284963
+              },
+              {
+                "low": 1.6064994074999999,
+                "high": 1.7347554075
+              },
+              {
+                "low": 1.2190847175,
+                "high": 1.2922412799999998
+              },
+              {
+                "low": 2.58170328,
+                "high": 2.7217313925
+              },
+              {
+                "low": 1.37386041,
+                "high": 1.456271415
+              }
+            ],
+            "demand_q_mvar": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": -0.2290868661250163,
+                "high": -0.2290868661250163
+              },
+              {
+                "low": 0.6843658575,
+                "high": 0.7390027575
+              },
+              {
+                "low": -1.9306721000000002,
+                "high": -1.899507555
+              },
+              {
+                "low": 1.099800975,
+                "high": 1.159452735
+              },
+              {
+                "low": 0.58526208,
+                "high": 0.6203690525
+              }
+            ],
+            "storage_bus": 4,
+            "baseline_power_mw": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "initial_power_mw": -1.1732987108116806,
+            "initial_energy_mwh": 0.41937444812725916,
+            "initial_energy_bounds_mwh": {
+              "low": 0.41937444812725916,
+              "high": 0.41937444812725916
+            },
+            "minimum_energy_mwh": 0.4,
+            "maximum_energy_mwh": 4.0,
+            "maximum_power_mw": 2.0,
+            "storage_s_mva": 2.16,
+            "storage_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "eta_charge": 0.95,
+            "eta_discharge": 0.95,
+            "response_alpha": 0.3934693402873666,
+            "ramp_mw_per_minute": 0.65,
+            "required_mw": 0.24588996200000002,
+            "activation_headroom_mw": 1.1732987108116806,
+            "context_id": "5775d699eb546805e27522871189acbacd1e0e990dd2e303082db93c307d25a3",
+            "other_resources": []
+          },
+          "status": "unknown",
+          "reason": "full response/support energy; standby energy not restored",
+          "storage_power_mw": {
+            "low": -1.1732987118116807,
+            "high": 1.1732987118116807
+          },
+          "energy_mwh": {
+            "low": 0.09002744130292775,
+            "high": 0.7166101217862183
+          },
+          "command_mw": {
+            "low": -4.7905647518816945,
+            "high": 4.7905647518816945
+          },
+          "maximum_change_mw": 2.3465974226233612,
+          "network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "nominal_network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "up_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "down_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          }
+        },
+        {
+          "model": "reserve-delivery-box-v1",
+          "inputs": {
+            "region": "YA_C",
+            "start_minute": 2,
+            "support_minutes": 15,
+            "policy": {
+              "version": "reserve-delivery-box-v1",
+              "response_minutes": 1,
+              "activation_slew_fraction_per_minute": 1.0,
+              "pcc_tolerance_mw": 1e-05,
+              "response_roundoff_mw": 1e-09,
+              "correction_rounds": 2,
+              "source": "研究要求：一分钟内响应；并非现场核定值"
+            },
+            "network": {
+              "slack_voltage_bounds_pu": null,
+              "network_id": "YA_C:normal",
+              "buses": [
+                "YA_C_PCC",
+                "YA_C_MAIN",
+                "YA_C_WIND",
+                "YA_C_PV",
+                "YA_C_FLEX",
+                "YA_C_LV",
+                "YA_C_LOAD"
+              ],
+              "branches": [
+                {
+                  "parent": 0,
+                  "child": 1,
+                  "r_pu": 0.08818938775510204,
+                  "x_pu": 0.11023673469387754,
+                  "tap": 1.0,
+                  "rating_mva": 16.489123688055713
+                },
+                {
+                  "parent": 1,
+                  "child": 2,
+                  "r_pu": 0.01,
+                  "x_pu": 0.014,
+                  "tap": 1.0,
+                  "rating_mva": 6.0
+                },
+                {
+                  "parent": 1,
+                  "child": 5,
+                  "r_pu": 0.00888888888888889,
+                  "x_pu": 0.06768548908073846,
+                  "tap": 0.9523809523809523,
+                  "rating_mva": 22.5
+                },
+                {
+                  "parent": 5,
+                  "child": 6,
+                  "r_pu": 0.01,
+                  "x_pu": 0.014,
+                  "tap": 1.0,
+                  "rating_mva": 7.0
+                },
+                {
+                  "parent": 5,
+                  "child": 3,
+                  "r_pu": 0.012,
+                  "x_pu": 0.015,
+                  "tap": 1.0,
+                  "rating_mva": 8.0
+                },
+                {
+                  "parent": 5,
+                  "child": 4,
+                  "r_pu": 0.009,
+                  "x_pu": 0.013,
+                  "tap": 1.0,
+                  "rating_mva": 7.0
+                }
+              ],
+              "slack": 0,
+              "base_mva": 20.0,
+              "slack_voltage_pu": 1.0,
+              "shunt_q_mvar": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "voltage_min_pu": 0.95,
+              "voltage_max_pu": 1.05,
+              "pcc_min_mw": 0.5,
+              "pcc_max_mw": 18.0,
+              "pf_min": 0.9
+            },
+            "demand_p_mw": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": -1.3057591465922334,
+                "high": -1.3057591465922334
+              },
+              {
+                "low": 1.4743067625,
+                "high": 1.58917558
+              },
+              {
+                "low": 1.1128840125000001,
+                "high": 1.1988578349999999
+              },
+              {
+                "low": 2.318251065,
+                "high": 2.4462027825
+              },
+              {
+                "low": 1.2020871524999999,
+                "high": 1.271665635
+              }
+            ],
+            "demand_q_mvar": [
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": 0.0,
+                "high": 0.0
+              },
+              {
+                "low": -0.15575387357479767,
+                "high": -0.15575387357479767
+              },
+              {
+                "low": 0.6280520025,
+                "high": 0.6769859524999999
+              },
+              {
+                "low": -1.9759133675000002,
+                "high": -1.9392887275000001
+              },
+              {
+                "low": 0.9875707725000001,
+                "high": 1.0420780375
+              },
+              {
+                "low": 0.512086965,
+                "high": 0.54172726
+              }
+            ],
+            "storage_bus": 4,
+            "baseline_power_mw": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "initial_power_mw": -1.0946048427542074,
+            "initial_energy_mwh": 0.3787514550051375,
+            "initial_energy_bounds_mwh": {
+              "low": 0.3787514550051375,
+              "high": 0.3787514550051375
+            },
+            "minimum_energy_mwh": 0.36000000000000004,
+            "maximum_energy_mwh": 3.6,
+            "maximum_power_mw": 1.8,
+            "storage_s_mva": 1.9440000000000002,
+            "storage_q_mvar": {
+              "low": 0.0,
+              "high": 0.0
+            },
+            "eta_charge": 0.95,
+            "eta_discharge": 0.95,
+            "response_alpha": 0.3934693402873666,
+            "ramp_mw_per_minute": 0.65,
+            "required_mw": 0.230274278,
+            "activation_headroom_mw": 1.0946048427542074,
+            "context_id": "e005fefe8b9c545d2878df3111e8c794c725ca02173f4929232948288d3c7a93",
+            "other_resources": []
+          },
+          "status": "unknown",
+          "reason": "full response/support energy; standby energy not restored",
+          "storage_power_mw": {
+            "low": -1.0946048437542075,
+            "high": 1.0946048437542075
+          },
+          "energy_mwh": {
+            "low": 0.07149395500395646,
+            "high": 0.6560513487562034
+          },
+          "command_mw": {
+            "low": -4.469258619939168,
+            "high": 4.469258619939168
+          },
+          "maximum_change_mw": 2.189209686508415,
+          "network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "nominal_network": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "up_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          },
+          "down_endpoint": {
+            "model": "radial-ac-disc-v1",
+            "slack_voltage_input_pu": null,
+            "certified": false,
+            "reason": "device/energy precondition unproven; AC not computed",
+            "voltage_center": [],
+            "voltage_radius_pu": null,
+            "contraction_upper": null,
+            "high_voltage_uniqueness_upper": null,
+            "voltage_bounds": [],
+            "branch_mva_upper": [],
+            "branch_current_pu_bounds": [],
+            "pcc_p_mw": null,
+            "pcc_q_mvar": null,
+            "balance_scope": "independent_bus_box",
+            "aggregate_p_mw": null,
+            "aggregate_q_mvar": null
+          }
+        }
+      ],
+      "import_upper_mw": null,
+      "import_limit_mw": 26.0,
+      "pf_target": 0.95
+    },
+    "activation": []
+  },
+  "pcc": {
+    "SC": [
+      8.55668344801081,
+      1.9901145018626754,
+      null,
+      null
+    ],
+    "YA_B": [
+      6.960272475118412,
+      0.6337886129139974,
+      null,
+      null
+    ],
+    "YA_C": [
+      6.298291214764188,
+      0.489744649819594,
+      null,
+      null
+    ]
+  },
+  "tasks": [
+    {
+      "region": "SC",
+      "direction": "up",
+      "first_minute": 0,
+      "deadline_minute": 15,
+      "last_observed_minute": 2,
+      "required_mw": 0.365043994,
+      "status": "unknown",
+      "completed_minute": null,
+      "breached": false,
+      "deadline_status": "pending",
+      "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure"
+    },
+    {
+      "region": "SC",
+      "direction": "down",
+      "first_minute": 0,
+      "deadline_minute": 15,
+      "last_observed_minute": 2,
+      "required_mw": 0.365043994,
+      "status": "unknown",
+      "completed_minute": null,
+      "breached": false,
+      "deadline_status": "pending",
+      "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure"
+    },
+    {
+      "region": "YA_B",
+      "direction": "up",
+      "first_minute": 0,
+      "deadline_minute": 15,
+      "last_observed_minute": 2,
+      "required_mw": 0.24588996200000002,
+      "status": "unknown",
+      "completed_minute": null,
+      "breached": false,
+      "deadline_status": "pending",
+      "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure"
+    },
+    {
+      "region": "YA_B",
+      "direction": "down",
+      "first_minute": 0,
+      "deadline_minute": 15,
+      "last_observed_minute": 2,
+      "required_mw": 0.24588996200000002,
+      "status": "unknown",
+      "completed_minute": null,
+      "breached": false,
+      "deadline_status": "pending",
+      "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure"
+    },
+    {
+      "region": "YA_C",
+      "direction": "up",
+      "first_minute": 0,
+      "deadline_minute": 15,
+      "last_observed_minute": 2,
+      "required_mw": 0.230274278,
+      "status": "unknown",
+      "completed_minute": null,
+      "breached": false,
+      "deadline_status": "pending",
+      "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure"
+    },
+    {
+      "region": "YA_C",
+      "direction": "down",
+      "first_minute": 0,
+      "deadline_minute": 15,
+      "last_observed_minute": 2,
+      "required_mw": 0.230274278,
+      "status": "unknown",
+      "completed_minute": null,
+      "breached": false,
+      "deadline_status": "pending",
+      "reason": "SC: full response/support energy; standby energy not restored; YA_B: full response/support energy; standby energy not restored; YA_C: full response/support energy; standby energy not restored; missing regional PCC enclosure; missing regional PCC enclosure; missing regional PCC enclosure"
+    }
+  ],
+  "sequence": 4
+}

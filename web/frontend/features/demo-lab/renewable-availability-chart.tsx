@@ -39,7 +39,7 @@ export function RenewableAvailabilityChart({
 }) {
   return (
     <figure
-      aria-label={`${deviceId} 的合成资源基准曲线；当前可用 ${displayMeasurement(available)} MW，实际出力 ${displayMeasurement(actual)} MW。`}
+      aria-label={`${deviceId} 的资源基准曲线；当前可用 ${displayMeasurement(available)} MW，实际出力 ${displayMeasurement(actual)} MW。`}
       className="demo-resource-chart"
     >
       <ResponsiveContainer height="100%" width="100%">

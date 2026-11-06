@@ -1,0 +1,15 @@
+{
+  "simulation_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "name": "fixture",
+  "state": "cancelled",
+  "created_at": "2026-11-05T13:33:39.372104+00:00",
+  "updated_at": "2026-11-05T13:33:39.372104+00:00",
+  "stage": null,
+  "stage_label": null,
+  "stage_sequence": null,
+  "total_stages": 6,
+  "rolling": null,
+  "result_available": false,
+  "error_code": null,
+  "error_message": null
+}

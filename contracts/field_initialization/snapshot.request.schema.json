@@ -1,0 +1,629 @@
+{
+  "$defs": {
+    "Availability": {
+      "additionalProperties": false,
+      "properties": {
+        "resource_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "available_p_mw": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "method_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Method Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource_id",
+        "available_p_mw",
+        "method_ref"
+      ],
+      "title": "Availability",
+      "type": "object"
+    },
+    "BusLoad": {
+      "additionalProperties": false,
+      "properties": {
+        "bus_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "p_mw": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "q_mvar": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "scope_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Scope Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bus_id",
+        "p_mw",
+        "q_mvar",
+        "scope_ref"
+      ],
+      "title": "BusLoad",
+      "type": "object"
+    },
+    "DeviceState": {
+      "additionalProperties": false,
+      "properties": {
+        "status_timestamp_uncertainty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimestampUncertainty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "resource_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "p_mw": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "q_mvar": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "energy_mwh": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MeasuredValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "online": {
+          "title": "Online",
+          "type": "boolean"
+        },
+        "remote_enabled": {
+          "title": "Remote Enabled",
+          "type": "boolean"
+        },
+        "blocked": {
+          "title": "Blocked",
+          "type": "boolean"
+        },
+        "status_observed_at": {
+          "format": "date-time",
+          "title": "Status Observed At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource_id",
+        "p_mw",
+        "q_mvar",
+        "online",
+        "remote_enabled",
+        "blocked",
+        "status_observed_at"
+      ],
+      "title": "DeviceState",
+      "type": "object"
+    },
+    "HeldSetpoint": {
+      "additionalProperties": false,
+      "properties": {
+        "timestamp_uncertainty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimestampUncertainty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "held_since": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Held Since"
+        },
+        "since_uncertainty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimestampUncertainty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "resource_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "p_mw": {
+          "title": "P Mw",
+          "type": "number"
+        },
+        "q_mvar": {
+          "title": "Q Mvar",
+          "type": "number"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource_id",
+        "p_mw",
+        "q_mvar",
+        "observed_at",
+        "source_ref"
+      ],
+      "title": "HeldSetpoint",
+      "type": "object"
+    },
+    "MeasuredValue": {
+      "additionalProperties": false,
+      "properties": {
+        "uncertainty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MeasurementUncertainty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "quality": {
+          "enum": [
+            "good",
+            "bad",
+            "questionable",
+            "unknown"
+          ],
+          "title": "Quality",
+          "type": "string"
+        },
+        "source_kind": {
+          "enum": [
+            "measured",
+            "estimated"
+          ],
+          "title": "Source Kind",
+          "type": "string"
+        },
+        "source_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Source Ref",
+          "type": "string"
+        },
+        "value_semantics": {
+          "enum": [
+            "instantaneous",
+            "interval_average",
+            "interval_energy"
+          ],
+          "title": "Value Semantics",
+          "type": "string"
+        },
+        "interval_start": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Interval Start"
+        },
+        "interval_end": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Interval End"
+        }
+      },
+      "required": [
+        "value",
+        "observed_at",
+        "quality",
+        "source_kind",
+        "source_ref",
+        "value_semantics"
+      ],
+      "title": "MeasuredValue",
+      "type": "object"
+    },
+    "MeasurementUncertainty": {
+      "additionalProperties": false,
+      "properties": {
+        "absolute_error": {
+          "minimum": 0,
+          "title": "Absolute Error",
+          "type": "number"
+        },
+        "calibration_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Calibration Revision",
+          "type": "string"
+        },
+        "provenance_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Provenance Ref",
+          "type": "string"
+        },
+        "valid_from": {
+          "format": "date-time",
+          "title": "Valid From",
+          "type": "string"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        },
+        "timestamp": {
+          "$ref": "#/$defs/TimestampUncertainty"
+        }
+      },
+      "required": [
+        "absolute_error",
+        "calibration_revision",
+        "provenance_ref",
+        "valid_from",
+        "valid_until",
+        "timestamp"
+      ],
+      "title": "MeasurementUncertainty",
+      "type": "object"
+    },
+    "Pcc": {
+      "additionalProperties": false,
+      "properties": {
+        "bus_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Bus Id",
+          "type": "string"
+        },
+        "p_import_mw": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "q_import_mvar": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "voltage_pu": {
+          "$ref": "#/$defs/MeasuredValue"
+        }
+      },
+      "required": [
+        "bus_id",
+        "p_import_mw",
+        "q_import_mvar",
+        "voltage_pu"
+      ],
+      "title": "Pcc",
+      "type": "object"
+    },
+    "SubmittedSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "snapshot_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Snapshot Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 0,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "snapshot_at": {
+          "format": "date-time",
+          "title": "Snapshot At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "model_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Model Revision",
+          "type": "string"
+        },
+        "mapping_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Mapping Revision",
+          "type": "string"
+        },
+        "operating_mode_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Operating Mode Id",
+          "type": "string"
+        },
+        "permission_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Permission Revision",
+          "type": "string"
+        },
+        "bus_loads": {
+          "items": {
+            "$ref": "#/$defs/BusLoad"
+          },
+          "maxItems": 512,
+          "minItems": 1,
+          "title": "Bus Loads",
+          "type": "array"
+        },
+        "device_states": {
+          "items": {
+            "$ref": "#/$defs/DeviceState"
+          },
+          "maxItems": 128,
+          "minItems": 1,
+          "title": "Device States",
+          "type": "array"
+        },
+        "renewable_availability": {
+          "items": {
+            "$ref": "#/$defs/Availability"
+          },
+          "title": "Renewable Availability",
+          "type": "array"
+        },
+        "pcc": {
+          "$ref": "#/$defs/Pcc"
+        },
+        "operating_state_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Operating State Ref",
+          "type": "string"
+        },
+        "held_setpoints": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/HeldSetpoint"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Held Setpoints"
+        },
+        "context_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Context Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "snapshot_id",
+        "sequence",
+        "snapshot_at",
+        "received_at",
+        "model_revision",
+        "mapping_revision",
+        "operating_mode_id",
+        "permission_revision",
+        "bus_loads",
+        "device_states",
+        "renewable_availability",
+        "pcc",
+        "operating_state_ref",
+        "context_id"
+      ],
+      "title": "SubmittedSnapshot",
+      "type": "object"
+    },
+    "TimestampUncertainty": {
+      "additionalProperties": false,
+      "properties": {
+        "error_seconds": {
+          "minimum": 0,
+          "title": "Error Seconds",
+          "type": "number"
+        },
+        "clock_revision": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Clock Revision",
+          "type": "string"
+        },
+        "provenance_ref": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Provenance Ref",
+          "type": "string"
+        },
+        "valid_from": {
+          "format": "date-time",
+          "title": "Valid From",
+          "type": "string"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        }
+      },
+      "required": [
+        "error_seconds",
+        "clock_revision",
+        "provenance_ref",
+        "valid_from",
+        "valid_until"
+      ],
+      "title": "TimestampUncertainty",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "interface_version": {
+      "const": "single-microgrid-field-v0.1-draft",
+      "title": "Interface Version",
+      "type": "string"
+    },
+    "operation": {
+      "const": "SubmitSnapshot",
+      "title": "Operation",
+      "type": "string"
+    },
+    "message_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Message Id",
+      "type": "string"
+    },
+    "correlation_id": {
+      "anyOf": [
+        {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "\\S",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Correlation Id"
+    },
+    "microgrid_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Microgrid Id",
+      "type": "string"
+    },
+    "run_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/SubmittedSnapshot"
+    }
+  },
+  "required": [
+    "interface_version",
+    "operation",
+    "message_id",
+    "correlation_id",
+    "microgrid_id",
+    "run_id",
+    "created_at",
+    "payload"
+  ],
+  "title": "SubmitSnapshotRequest",
+  "type": "object"
+}

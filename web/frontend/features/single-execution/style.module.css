@@ -1,0 +1,233 @@
+.demo {
+  margin: 20px 0;
+  padding: 24px;
+  border: 1px solid var(--science-border, #315369);
+  border-radius: 12px;
+  background: var(--science-surface, #0d1f2e);
+  color: var(--science-text, #d9e7f1);
+  min-width: 0;
+}
+.demo h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+.demo h3 {
+  margin: 22px 0 12px;
+  font-size: 1.05rem;
+}
+.demo p {
+  color: var(--science-muted, #adbfce);
+  line-height: 1.7;
+}
+.demo button,
+.demo select,
+.demo input {
+  color: var(--science-text, #dfedf6);
+  background: var(--science-subtle, #132c3d);
+  border: 1px solid var(--science-border, #456477);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+.demo button {
+  cursor: pointer;
+}
+.demo button[aria-pressed='true'] {
+  background: var(--science-selected, #20516a);
+  border-color: var(--science-border, #69d9f2);
+  color: var(--science-muted, #b8f3ff);
+}
+.demo button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.header,
+.toolbar,
+.tabs {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.header {
+  justify-content: space-between;
+}
+.tabs {
+  margin: 20px 0;
+}
+.toolbar {
+  padding: 14px;
+  margin: 16px 0;
+  background: var(--science-subtle, #102737);
+  border-radius: 8px;
+}
+.toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toolbar input[type='range'] {
+  flex: 1 1 240px;
+  padding: 0;
+}
+.toolbar input[type='number'] {
+  width: 95px;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.stats > div {
+  background: var(--science-subtle, #142c3c);
+  padding: 14px;
+  border-radius: 8px;
+}
+.stats span {
+  color: var(--science-muted, #a8bdcc);
+  display: block;
+  font-size: 0.85rem;
+}
+.stats strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.15rem;
+}
+.scroll {
+  max-width: 100%;
+  overflow: auto;
+  max-height: 520px;
+  border: 1px solid var(--science-border, #2e4a5d);
+  border-radius: 7px;
+  margin: 14px 0;
+}
+.demo table {
+  border-collapse: collapse;
+  width: 100%;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+}
+.demo caption {
+  padding: 12px;
+  text-align: left;
+  color: var(--science-muted, #b4d7e9);
+}
+.demo th,
+.demo td {
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--science-border, #2a4152);
+  white-space: nowrap;
+}
+.demo thead {
+  position: sticky;
+  top: 0;
+  background: var(--science-subtle, #193346);
+  z-index: 1;
+}
+.demo tbody tr:hover {
+  background: var(--science-selected, #173347);
+}
+.demo summary {
+  cursor: pointer;
+  padding: 12px 0;
+  color: var(--science-accent, #89def3);
+}
+.chart {
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid var(--science-border, #2e4a5d);
+  border-radius: 8px;
+  background: var(--science-surface, #0b1a27);
+}
+.chart figcaption {
+  color: var(--science-text, #d2e8f5);
+  font-weight: 600;
+}
+.chart svg {
+  display: block;
+  width: 100%;
+  min-width: 280px;
+  cursor: crosshair;
+}
+.chart text {
+  fill: var(--science-muted, #a2b8c9);
+  font-size: 12px;
+}
+.demo .chartButton {
+  display: block;
+  padding: 0;
+  width: 100%;
+  border: 0;
+  background: transparent;
+}
+.demo fieldset {
+  border: 0;
+  padding: 0;
+}
+.chart p {
+  margin-bottom: 0;
+  font-size: 0.8rem;
+}
+.legend {
+  list-style: none;
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 0;
+  margin: 8px 0;
+  font-size: 0.8rem;
+}
+.legend li {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.legend i {
+  width: 16px;
+  height: 3px;
+  display: inline-block;
+}
+.notice {
+  border-left: 3px solid var(--science-border, #5fcbe5);
+  padding: 10px 14px;
+  background: var(--science-subtle, #142f40);
+  overflow-wrap: anywhere;
+}
+.error {
+  color: var(--science-danger, #ffb6a6) !important;
+}
+.network {
+  overflow: auto;
+  border: 1px solid var(--science-border, #2e4a5d);
+  border-radius: 8px;
+  margin: 16px 0;
+}
+.network svg {
+  min-width: 850px;
+  width: 100%;
+  display: block;
+}
+.network text {
+  fill: var(--science-muted, #bdd4e3);
+  font-size: 11px;
+}
+.network rect {
+  fill: var(--science-subtle, #153347);
+  stroke: var(--science-border, #4c8eab);
+}
+.file {
+  max-width: 320px;
+}
+.demo :focus-visible {
+  outline: 2px solid var(--science-accent, #8ce5ff);
+  outline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .demo {
+    padding: 14px;
+  }
+  .toolbar {
+    padding: 10px;
+  }
+}
